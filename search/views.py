@@ -121,8 +121,8 @@ def do_search(request, course_id=None):
 
             # update the data with the right url
             for result_data in [result["data"] for result in results["results"]]:
-                result_data["excerpt"] = result_info.excerpt(search_terms)
                 result_info = SearchResultProcessor(result_data)
+                result_data["excerpt"] = result_info.excerpt(search_terms)
                 result_data["url"] = result_info.url
 
             status_code = 200
