@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
-# from nose.tools import set_trace
+from nose.tools import set_trace
 
 from search.manager import SearchEngine
 from search.elastic import ElasticSearchEngine
@@ -51,18 +51,23 @@ class ElasticSearchTests(TestCase):
 
             config_body = {}
             es.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
-        else:
-            self._searcher = None
+        self._searcher = None
 
     def tearDown(self):
         if self._is_elastic:
             es = Elasticsearch()
             es.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
-        else:
-            self._searcher = None
+        self._searcher = None
 
     def test_factory_creator(self):
         self.assertTrue(isinstance(self.searcher, SearchEngine))
+
+    def test_abstract_impl(self):
+        abstract = SearchEngine("test_index_name")
+        test_string = "A test string"
+        abstract.index("test_doc", {"name": test_string})
+        results = abstract.search(test_string)
+        self.assertFalse(results)
 
     def test_find_all(self):
         test_string = "A test string"
@@ -105,6 +110,9 @@ class ElasticSearchTests(TestCase):
         self.searcher.index("test_doc", {"name": test_string})
 
         # search string
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 1)
+
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 1)
 
@@ -121,13 +129,22 @@ class ElasticSearchTests(TestCase):
                 "tag_one": "one",
                 "tag_two": "two"
             },
-            "fieldX": "valueY"
+            "fieldX": "valueY",
+            "id": "12345"
         }
         self.searcher.index("test_doc", test_object)
 
         # search tags
         response = self.searcher.search_fields({"tags.tag_one": "one"})
         self.assertEqual(response["total"], 1)
+
+        # search id
+        response = self.searcher.search_fields({"id": "12345"})
+        self.assertEqual(response["total"], 1)
+
+        # search id
+        response = self.searcher.search_fields({"id": "54321"})
+        self.assertEqual(response["total"], 0)
 
         # search tags
         response = self.searcher.search_fields({"tags.tag_one": "one", "tags.tag_two": "two"})
@@ -177,43 +194,44 @@ class ElasticSearchTests(TestCase):
             "shape": "square",
             "taste": "sour",
         }
-        self.searcher.index("test_doc", test_object, tags=tags)
+        test_object["tags"] = tags
+        self.searcher.index("test_doc", test_object)
 
-        response = self.searcher.search_tags({"color": "red"})
+        response = self.searcher.search_fields({"tags.color": "red"})
         self.assertEqual(response["total"], 1)
-        result = response["results"][0]
+        result = response["results"][0]["data"]
         self.assertEqual(result["tags"]["color"], "red")
         self.assertEqual(result["tags"]["shape"], "square")
         self.assertEqual(result["tags"]["taste"], "sour")
 
-        response = self.searcher.search(tag_dictionary={"color": "red"})
+        response = self.searcher.search(field_dictionary={"tags.color": "red"})
         self.assertEqual(response["total"], 1)
-        result = response["results"][0]
+        result = response["results"][0]["data"]
         self.assertEqual(result["tags"]["color"], "red")
         self.assertEqual(result["tags"]["shape"], "square")
         self.assertEqual(result["tags"]["taste"], "sour")
 
-        response = self.searcher.search(tag_dictionary={"color": "blue"})
+        response = self.searcher.search(field_dictionary={"tags.color": "blue"})
         self.assertEqual(response["total"], 0)
 
-        response = self.searcher.search(tag_dictionary={"shape": "square"})
+        response = self.searcher.search(field_dictionary={"tags.shape": "square"})
         self.assertEqual(response["total"], 1)
-        result = response["results"][0]
+        result = response["results"][0]["data"]
         self.assertEqual(result["tags"]["color"], "red")
         self.assertEqual(result["tags"]["shape"], "square")
         self.assertEqual(result["tags"]["taste"], "sour")
 
-        response = self.searcher.search(tag_dictionary={"shape": "round"})
+        response = self.searcher.search(field_dictionary={"tags.shape": "round"})
         self.assertEqual(response["total"], 0)
 
-        response = self.searcher.search(tag_dictionary={"shape": "square", "color": "red"})
+        response = self.searcher.search(field_dictionary={"tags.shape": "square", "tags.color": "red"})
         self.assertEqual(response["total"], 1)
-        result = response["results"][0]
+        result = response["results"][0]["data"]
         self.assertEqual(result["tags"]["color"], "red")
         self.assertEqual(result["tags"]["shape"], "square")
         self.assertEqual(result["tags"]["taste"], "sour")
 
-        response = self._searcher.search(tag_dictionary={"shape": "square", "color": "blue"})
+        response = self._searcher.search(field_dictionary={"tags.shape": "square", "tags.color": "blue"})
         self.assertEqual(response["total"], 0)
 
 class SearchResultProcessorTests(TestCase):

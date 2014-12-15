@@ -10,7 +10,7 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         self._mock_elastic = {}
 
-    def index(self, doc_type, body, tags=None, **kwargs):
+    def index(self, doc_type, body, **kwargs):
         if self.index_name not in self._mock_elastic:
             self._mock_elastic[self.index_name] = {}
 
@@ -18,16 +18,9 @@ class MockSearchEngine(SearchEngine):
         if doc_type not in _mock_index:
             _mock_index[doc_type] = []
 
-        if tags:
-            body.update({"_tags": tags})
-
         _mock_index[doc_type].append(body)
 
-    def search(self, query_string=None, field_dictionary=None, tag_dictionary=None, **kwargs):
-        # from nose.tools import set_trace; set_trace()
-        if kwargs is None:
-            kwargs = {}
-
+    def search(self, query_string=None, field_dictionary=None, **kwargs):
         documents_to_search = []
         if "doc_type" in kwargs:
             if kwargs["doc_type"] in self._mock_elastic[self.index_name]:
@@ -35,14 +28,6 @@ class MockSearchEngine(SearchEngine):
         else:
             for index, doc_type in enumerate(self._mock_elastic[self.index_name]):
                 documents_to_search.extend(self._mock_elastic[self.index_name][doc_type])
-
-        if tag_dictionary:
-            if field_dictionary is None:
-                field_dictionary = {}
-            for i, tag_name in enumerate(tag_dictionary):
-                field_dictionary.update({
-                    "_tags.{}".format(tag_name): tag_dictionary[tag_name]
-                })
 
         if field_dictionary:
             def find_field(doc, field_name):
@@ -83,11 +68,9 @@ class MockSearchEngine(SearchEngine):
             documents_to_search = [d for d in documents_to_search if d != current_doc]
 
             data = copy.copy(current_doc)
-            tags = data.pop("_tags") if "_tags" in current_doc else {}
             search_results.append(
                 {
                     "score": score,
-                    "tags": tags,
                     "data": data,
                 }
             )

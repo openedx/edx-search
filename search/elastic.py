@@ -10,10 +10,7 @@ class ElasticSearchEngine(SearchEngine):
     def __init__(self, index=None):
         super(ElasticSearchEngine, self).__init__(index)
 
-    def index(self, doc_type, body, tags=None, **kwargs):
-        if tags:
-            body.update({"_tags": tags})
-
+    def index(self, doc_type, body, **kwargs):
         if 'id' in body:
             kwargs['id'] = body['id']
 
@@ -33,11 +30,9 @@ class ElasticSearchEngine(SearchEngine):
 
         def process_result(result):
             data = result.pop("_source")
-            tags = data.pop("_tags") if "_tags" in data else {}
 
             result.update({
                 "data": data,
-                "tags": tags,
                 "score": result["_score"]
             })
 
@@ -48,7 +43,7 @@ class ElasticSearchEngine(SearchEngine):
 
         return response
 
-    def search(self, query_string=None, field_dictionary=None, tag_dictionary=None, **kwargs):
+    def search(self, query_string=None, field_dictionary=None, **kwargs):
         queries = []
 
         if query_string:
@@ -66,14 +61,6 @@ class ElasticSearchEngine(SearchEngine):
                     }
                 })
 
-        if tag_dictionary:
-            for tag in tag_dictionary:
-                queries.append({
-                    "match": {
-                        "_tags.{}".format(tag): tag_dictionary[tag]
-                    }
-                })
-
         query = {
             "match_all": {}
         }
@@ -86,8 +73,6 @@ class ElasticSearchEngine(SearchEngine):
         elif len(queries) > 0:
             query = queries[0]
 
-        if kwargs is None:
-            kwargs = {}
         if query:
             kwargs.update({
                 "body": {"query": query}
