@@ -53,7 +53,7 @@ class MockSearchEngine(SearchEngine):
             search_strings = query_string.split(" ")
             documents_to_keep = []
             for search_string in search_strings:
-                documents_to_keep.extend([d for d in documents_to_search if has_string(d, search_string)])
+                documents_to_keep.extend([d for d in documents_to_search if has_string(d["content"], search_string)])
 
             documents_to_search = documents_to_keep
 

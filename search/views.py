@@ -10,7 +10,6 @@ from manager import SearchEngine
 
 DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = "&hellip;"
-EXCLUDE_FIELDS = ["id", "url", "content_type", "xblock_keywords", "course"]
 
 
 class SearchResultProcessor(object):
@@ -21,13 +20,9 @@ class SearchResultProcessor(object):
         self._results_fields = dictionary
 
     @staticmethod
-    def strings_in_dictionary(dictionary, excluded_fields = EXCLUDE_FIELDS):
-        local_dictionary = dict(dictionary)
-        for exclude_field in excluded_fields:
-            if exclude_field in local_dictionary:
-                del local_dictionary[exclude_field]
-        strings = [value for value in local_dictionary.itervalues() if not isinstance(value, dict)]
-        for child_dict in [dv for dv in local_dictionary.itervalues() if isinstance(dv, dict)]:
+    def strings_in_dictionary(dictionary):
+        strings = [value for value in dictionary.itervalues() if not isinstance(value, dict)]
+        for child_dict in [dv for dv in dictionary.itervalues() if isinstance(dv, dict)]:
             strings.extend(SearchResultProcessor.strings_in_dictionary(child_dict))
         return strings
 
@@ -57,7 +52,7 @@ class SearchResultProcessor(object):
             match_words.extend(match_phrase.split(' '))
 
         matches = SearchResultProcessor.find_matches(
-            SearchResultProcessor.strings_in_dictionary(self._results_fields),
+            SearchResultProcessor.strings_in_dictionary(self._results_fields["content"]),
             match_words,
             DESIRED_EXCERPT_LENGTH
         )

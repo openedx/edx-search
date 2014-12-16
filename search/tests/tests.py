@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
@@ -107,7 +110,7 @@ class ElasticSearchTests(TestCase):
 
     def test_find_string(self):
         test_string = "A test string"
-        self.searcher.index("test_doc", {"name": test_string})
+        self.searcher.index("test_doc", {"content": {"name": test_string}})
 
         # search string
         response = self.searcher.search(test_string)
@@ -116,7 +119,7 @@ class ElasticSearchTests(TestCase):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 1)
 
-        self.searcher.index("not_test_doc", {"value": test_string})
+        self.searcher.index("not_test_doc", {"content": {"value": test_string}})
 
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 2)
@@ -159,7 +162,9 @@ class ElasticSearchTests(TestCase):
 
     def test_search_string_and_field(self):
         test_object = {
-            "name": "You may find me in a coffee shop",
+            "content":{
+                "name": "You may find me in a coffee shop",
+            },
             "course_id": "A/B/C",
             "abc": "xyz",
         }
@@ -234,6 +239,23 @@ class ElasticSearchTests(TestCase):
         response = self._searcher.search(field_dictionary={"tags.shape": "square", "tags.color": "blue"})
         self.assertEqual(response["total"], 0)
 
+    def test_extended_characters(self):
+        test_string = "قضايـا هامـة"
+        self.searcher.index("test_doc", {"content": {"name": test_string}})
+
+        # search string
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search_string(test_string)
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.index("not_test_doc", {"content": {"value": test_string}})
+
+        response = self.searcher.search_string(test_string)
+        self.assertEqual(response["total"], 2)
+
+
 class SearchResultProcessorTests(TestCase):
 
     def test_strings_in_dictionary(self):
@@ -281,18 +303,6 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(get_strings[1], test_dict["b"])
         self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
         self.assertEqual(get_strings[3], test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"])
-
-        test_dict = {
-            "id": "excluded",
-            "content_type": "excluded",
-            "xblock_keywords": "excluded",
-            "name": "not excluded",
-            "url": "excluded",
-        }
-
-        excluded_fields = ["id", "content_type", "xblock_keywords", "url"]
-        get_strings = SearchResultProcessor.strings_in_dictionary(test_dict, excluded_fields)
-        self.assertEqual(len(get_strings), 1)
 
 
     def test_find_matches(self):
@@ -370,8 +380,10 @@ class SearchResultProcessorTests(TestCase):
 
     def test_excerpt(self):
         test_result = {
-            "notes": "Here is a note about edx",
-            "name": "edX search a lot",
+            "content": {
+                "notes": "Here is a note about edx",
+                "name": "edX search a lot",
+            }
         }
         srp = SearchResultProcessor(test_result)
         edx_excerpt = srp.excerpt("note")
@@ -382,7 +394,9 @@ class SearchResultProcessorTests(TestCase):
 
     def test_too_long_excerpt(self):
         test_result = {
-            "notes": "Here is a note about edx and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the characters around in order to show the selected text in bold",
+            "content": {
+                "notes": "Here is a note about edx and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the characters around in order to show the selected text in bold",
+            }
         }
         srp = SearchResultProcessor(test_result)
         edx_excerpt = srp.excerpt("edx")
@@ -390,7 +404,9 @@ class SearchResultProcessorTests(TestCase):
         self.assertTrue("note about <b>edx</b> and it is" in edx_excerpt)
 
         test_result = {
-            "notes": "Here is a note about stuff and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the edx characters around in order to show the selected text in bold",
+            "content": {
+                "notes": "Here is a note about stuff and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the edx characters around in order to show the selected text in bold",
+            }
         }
         srp = SearchResultProcessor(test_result)
         edx_excerpt = srp.excerpt("edx")

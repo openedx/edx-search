@@ -49,6 +49,7 @@ class ElasticSearchEngine(SearchEngine):
         if query_string:
             queries.append({
                 "query_string": {
+                    "fields" : ["content.*"],
                     "query": query_string
                 }
             })
