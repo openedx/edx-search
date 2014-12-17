@@ -20,6 +20,12 @@ class MockSearchEngine(SearchEngine):
 
         _mock_index[doc_type].append(body)
 
+    def remove(self, doc_type, id, **kwargs):
+        _mock_index = self._mock_elastic[self.index_name]
+        delete_documents = [d for d in _mock_index[doc_type] if "id" in d and d["id"] == id]
+        for delete_document in delete_documents:
+            del _mock_index[doc_type]
+
     def search(self, query_string=None, field_dictionary=None, **kwargs):
         documents_to_search = []
         if "doc_type" in kwargs:

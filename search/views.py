@@ -1,3 +1,4 @@
+""" handle requests for courseware search http requests """
 import json
 import re
 

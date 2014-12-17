@@ -1,9 +1,11 @@
+""" Elatic Search implementation for courseware search index """
 from elasticsearch import Elasticsearch
 
 from search.manager import SearchEngine
 
 
 class ElasticSearchEngine(SearchEngine):
+    """ ElasticSearch implementation of SearchEngine abstraction """
 
     _es = Elasticsearch()
 
@@ -18,6 +20,14 @@ class ElasticSearchEngine(SearchEngine):
             index=self.index_name,
             doc_type=doc_type,
             body=body,
+            **kwargs
+        )
+
+    def remove(self, doc_type, doc_id, **kwargs):
+        self._es.delete(
+            index=self.index_name,
+            doc_type=doc_type,
+            id=doc_id,
             **kwargs
         )
 
@@ -49,7 +59,7 @@ class ElasticSearchEngine(SearchEngine):
         if query_string:
             queries.append({
                 "query_string": {
-                    "fields" : ["content.*"],
+                    "fields": ["content.*"],
                     "query": query_string
                 }
             })

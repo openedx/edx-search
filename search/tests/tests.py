@@ -26,13 +26,15 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
         })
         super(ForceRefreshElasticSearchEngine, self).index(doc_type, body, **kwargs)
 
-TEST_ENGINE = MockSearchEngine
-# Uncomment below in order to test against Elastic Search installation
-# TEST_ENGINE = ForceRefreshElasticSearchEngine
+    def remove(self, doc_type, doc_id, **kwargs):
+        kwargs.update({
+            "refresh": True
+        })
+        super(ForceRefreshElasticSearchEngine, self).remove(doc_type, doc_id, **kwargs)
 
 
-@override_settings(SEARCH_ENGINE=TEST_ENGINE)
-class ElasticSearchTests(TestCase):
+@override_settings(SEARCH_ENGINE=MockSearchEngine)
+class MockSearchTests(TestCase):
 
     _searcher = None
 
@@ -68,9 +70,12 @@ class ElasticSearchTests(TestCase):
     def test_abstract_impl(self):
         abstract = SearchEngine("test_index_name")
         test_string = "A test string"
-        abstract.index("test_doc", {"name": test_string})
-        results = abstract.search(test_string)
-        self.assertFalse(results)
+        with self.assertRaises(NotImplementedError):
+            abstract.index("test_doc", {"name": test_string})
+        with self.assertRaises(NotImplementedError):
+            results = abstract.search(test_string)
+        with self.assertRaises(NotImplementedError):
+            abstract.remove("test_doc", "test_id")
 
     def test_find_all(self):
         test_string = "A test string"
@@ -124,6 +129,16 @@ class ElasticSearchTests(TestCase):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 2)
 
+        response = self.searcher.search_string(test_string, doc_type="test_doc")
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search_string("something else")
+        self.assertEqual(response["total"], 0)
+
+        self.searcher.index("test_doc", {"content": {"deep": {"down": test_string}}})
+        response = self.searcher.search_string(test_string)
+        self.assertEqual(response["total"], 3)
+
     def test_field(self):
         test_string = "A test string"
         test_object = {
@@ -162,7 +177,7 @@ class ElasticSearchTests(TestCase):
 
     def test_search_string_and_field(self):
         test_object = {
-            "content":{
+            "content": {
                 "name": "You may find me in a coffee shop",
             },
             "course_id": "A/B/C",
@@ -255,6 +270,38 @@ class ElasticSearchTests(TestCase):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 2)
 
+    def test_delete_item(self):
+        test_string = "This is a test of the emergency broadcast system"
+        self.searcher.index("test_doc", {"id": "FAKE_ID", "content": {"name": test_string}})
+
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.remove("test_doc", response["results"][0]["data"]["id"])
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 0)
+
+    def test_delete_item_slashes(self):
+        test_string = "This is a test of the emergency broadcast system"
+        self.searcher.index(
+            "test_doc", {
+                "id": "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4",
+                "content": {"name": test_string}
+            }
+        )
+
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.remove("test_doc", "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4")
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 0)
+
+# Uncomment below in order to test against installed Elastic Search installation
+@override_settings(SEARCH_ENGINE=ForceRefreshElasticSearchEngine)
+class ElasticSearchTests(MockSearchTests):
+    pass
+
 
 class SearchResultProcessorTests(TestCase):
 
@@ -304,7 +351,6 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
         self.assertEqual(get_strings[3], test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"])
 
-
     def test_find_matches(self):
         words = ["hello"]
         strings = [
@@ -352,10 +398,20 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(matches[1], strings[0])
         self.assertEqual(matches[2], strings[2])
 
+        words = ["none of these are present"]
+        strings = [
+            "goodbye",
+            "goodbye there",
+            "Sail away to say GOODBYE",
+        ]
+        matches = SearchResultProcessor.find_matches(strings, words, 100)
+        self.assertEqual(len(matches), 0)
+
     def test_too_long_find_matches(self):
         words = ["edx", "afterward"]
         strings = [
-            "Here is a note about edx and it is very long - more than the desirable length of 100 characters - indeed this should show up",
+            ("Here is a note about edx and it is very long - more than the desirable length of 100 characters"
+             " - indeed this should show up"),
             "This matches too but comes afterward",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
@@ -395,20 +451,38 @@ class SearchResultProcessorTests(TestCase):
     def test_too_long_excerpt(self):
         test_result = {
             "content": {
-                "notes": "Here is a note about edx and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the characters around in order to show the selected text in bold",
+                "notes": (
+                    "Here is a note about edx and it is very long - more than the desirable length of 100"
+                    " characters - indeed this should show up but it should trim the characters around in"
+                    " order to show the selected text in bold"
+                ),
             }
         }
         srp = SearchResultProcessor(test_result)
         edx_excerpt = srp.excerpt("edx")
-        self.assertNotEqual(edx_excerpt, "Here is a note about <b>edx</b> and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the characters around in order to show the selected text in bold")
+        self.assertNotEqual(edx_excerpt, (
+            "Here is a note about <b>edx</b> and it is very long - more than the desirable "
+            "length of 100 characters - indeed this should show up but it should trim the "
+            "characters around in order to show the selected text in bold"
+        )
+        )
         self.assertTrue("note about <b>edx</b> and it is" in edx_excerpt)
 
         test_result = {
             "content": {
-                "notes": "Here is a note about stuff and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the edx characters around in order to show the selected text in bold",
+                "notes": (
+                    "Here is a note about stuff and it is very long - more than the desirable length of 100"
+                    " characters - indeed this should show up but it should trim the edx characters around in"
+                    " order to show the selected text in bold"
+                ),
             }
         }
         srp = SearchResultProcessor(test_result)
         edx_excerpt = srp.excerpt("edx")
-        self.assertNotEqual(edx_excerpt, "Here is a note about stuff and it is very long - more than the desirable length of 100 characters - indeed this should show up but it should trim the edx characters around in order to show the selected text in bold")
+        self.assertNotEqual(edx_excerpt, (
+            "Here is a note about stuff and it is very long - more than the desirable length of 100 characters"
+            " - indeed this should show up but it should trim the edx characters around in order to "
+            "show the selected text in bold"
+        )
+        )
         self.assertTrue("should trim the <b>edx</b> characters around" in edx_excerpt)

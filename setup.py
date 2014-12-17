@@ -1,3 +1,4 @@
+""" Setup to allow pip installs of edx-search module """
 #!/usr/bin/env python
 
 from setuptools import setup

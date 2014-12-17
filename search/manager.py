@@ -1,7 +1,9 @@
+""" Abstract SearchEngine with factory method """
 from django.conf import settings
 
 
 class SearchEngine(object):
+    """ Base abstract SearchEngine object """
 
     index_name = "courseware"
 
@@ -10,10 +12,13 @@ class SearchEngine(object):
             self.index_name = index
 
     def index(self, doc_type, body, **kwargs):
-        pass
+        raise NotImplementedError
+
+    def remove(self, doc_type, id, **kwargs):
+        raise NotImplementedError
 
     def search(self, query_string=None, field_dictionary=None, **kwargs):
-        return None
+        raise NotImplementedError
 
     def search_string(self, query_string, **kwargs):
         return self.search(query_string=query_string, **kwargs)
