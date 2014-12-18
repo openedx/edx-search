@@ -1,5 +1,3 @@
-""" main runner for management commands """
-
 #!/usr/bin/env python
 import os
 import sys

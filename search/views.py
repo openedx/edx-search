@@ -1,13 +1,15 @@
 """ handle requests for courseware search http requests """
+import importlib
+import inspect
 import json
 import re
 
+from django.conf import settings
 from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 
 from manager import SearchEngine
-
 
 DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = "&hellip;"
@@ -16,9 +18,11 @@ ELLIPSIS = "&hellip;"
 class SearchResultProcessor(object):
 
     _results_fields = {}
+    _match_phrase = None
 
-    def __init__(self, dictionary):
+    def __init__(self, dictionary, match_phrase):
         self._results_fields = dictionary
+        self._match_phrase = match_phrase
 
     @staticmethod
     def strings_in_dictionary(dictionary):
@@ -35,8 +39,8 @@ class SearchResultProcessor(object):
             length_found += sum([len(s) for s in strings if word.lower() in s.lower() and s not in matches])
             matches.extend([s for s in strings if word.lower() in s.lower() and s not in matches])
             if length_found >= length_hoped:
-                return matches
-        return matches
+                return [SearchResultProcessor.shorten_string(m, words, length_hoped) for m in matches]
+        return [SearchResultProcessor.shorten_string(m, words, length_hoped) for m in matches]
 
     @staticmethod
     def boldface_matches(match_in, match_word):
@@ -45,12 +49,66 @@ class SearchResultProcessor(object):
             match_in = match_in.replace(matched_string, "<b>{}</b>".format(matched_string))
         return match_in
 
-    def excerpt(self, match_phrase):
+    @staticmethod
+    def shorten_string(string_in, words, length_hoped):
+        if len(string_in) <= length_hoped:
+            return string_in
 
-        match_words = [match_phrase]
-        separate_words = match_phrase.split(' ')
+        word_at = -1
+        word_index = 0
+        while word_at < 0 and word_index < len(words):
+            word = words[word_index]
+            word_at = string_in.lower().find(word.lower())
+            word_index += 1
+
+        start_index = (word_at - length_hoped / 2)
+        if start_index < 0:
+            start_index = 0
+        end_index = (word_at + length_hoped / 2) + len(word) + 1
+        if end_index >= len(string_in):
+            end_index = -1
+
+        return "{}{}{}".format(
+            "" if start_index < 1 else ELLIPSIS,
+            string_in[start_index:end_index].strip(),
+            "" if end_index < 0 else ELLIPSIS,
+        )
+
+    def should_remove(self, user):
+        return False
+
+    def add_properties(self):
+        for property_name in [p[0] for p in inspect.getmembers(self.__class__) if isinstance(p[1], property)]:
+            self._results_fields[property_name] = getattr(self, property_name, None)
+
+    @classmethod
+    def process_result(cls, dictionary, match_phrase, user):
+        use_processor = getattr(settings, "SEARCH_RESULT_PROCESSOR", None)
+        if use_processor:
+            component = use_processor.rsplit('.', 1)
+            result_processor = getattr(
+                importlib.import_module(component[0]),
+                component[1],
+                cls
+            ) if len(component) > 1 else cls
+        else:
+            result_processor = cls
+
+        srp = result_processor(dictionary, match_phrase)
+        if srp.should_remove(user):
+            return None
+        srp.add_properties()
+        return dictionary
+
+    @property
+    def excerpt(self):
+        if "content" not in self._results_fields:
+            return None
+
+        match_words = [self._match_phrase]
+        separate_words = self._match_phrase.split(' ')
         if len(separate_words) > 1:
-            match_words.extend(match_phrase.split(' '))
+            match_words.extend(self._match_phrase.split(' '))
 
         matches = SearchResultProcessor.find_matches(
             SearchResultProcessor.strings_in_dictionary(self._results_fields["content"]),
@@ -58,28 +116,6 @@ class SearchResultProcessor(object):
             DESIRED_EXCERPT_LENGTH
         )
         excerpt_text = '...'.join(matches)
-        if len(matches) == 1 and len(matches[0]) > DESIRED_EXCERPT_LENGTH:
-            # find first match and position
-            excerpt_text = matches[0]
-
-            word_at = -1
-            word_index = 0
-            while word_at < 0 and word_index < len(match_words):
-                word_at = excerpt_text.lower().find(match_words[word_index].lower())
-                word_index += 1
-
-            start_index = (word_at - DESIRED_EXCERPT_LENGTH / 2)
-            if start_index < 0:
-                start_index = 0
-            end_index = (word_at + DESIRED_EXCERPT_LENGTH / 2)
-            if end_index >= len(excerpt_text):
-                end_index = -1
-
-            excerpt_text = "{}{}{}".format(
-                "" if start_index < 1 else ELLIPSIS,
-                excerpt_text[start_index:end_index],
-                "" if end_index < 0 else ELLIPSIS,
-            )
 
         for match_word in match_words:
             excerpt_text = SearchResultProcessor.boldface_matches(excerpt_text, match_word)
@@ -95,7 +131,6 @@ class SearchResultProcessor(object):
             course_id=self._results_fields["course"],
             location=self._results_fields["id"],
         )
-
 
 @csrf_exempt
 def do_search(request, course_id=None):
@@ -115,11 +150,12 @@ def do_search(request, course_id=None):
             results = searcher.search_string(
                 search_terms, field_dictionary=field_dictionary)
 
-            # update the data with the right url
-            for result_data in [result["data"] for result in results["results"]]:
-                result_info = SearchResultProcessor(result_data)
-                result_data["excerpt"] = result_info.excerpt(search_terms)
-                result_data["url"] = result_info.url
+            # post-process the result
+            for result in results["results"]:
+                result["data"] = SearchResultProcessor.process_result(result["data"], search_terms, request.user)
+
+            results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
+            results["results"] = [r for r in results["results"] if r["data"] is not None]
 
             status_code = 200
     except Exception as err:

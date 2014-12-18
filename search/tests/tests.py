@@ -255,7 +255,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
     def test_extended_characters(self):
-        test_string = "قضايـا هامـة"
+        test_string = u"قضايـا هامـة"
         self.searcher.index("test_doc", {"content": {"name": test_string}})
 
         # search string
@@ -407,6 +407,27 @@ class SearchResultProcessorTests(TestCase):
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 0)
 
+    def test_shorten_string(self):
+        words = ["hello", "there"]
+        strings = [
+            "hello there",
+            "goodbye there",
+            "Sail away to say HELLO",
+        ]
+
+        test_string = "hello there"
+        shortened = SearchResultProcessor.shorten_string(test_string, words, 20)
+        self.assertEqual(shortened, test_string)
+        self.assertTrue(len(shortened) == len(test_string))
+
+        test_string = "this is too long hello there yes really long"
+        shortened = SearchResultProcessor.shorten_string(test_string, words, 20)
+        self.assertNotEqual(shortened, test_string)
+        self.assertTrue(len(shortened) < len(test_string))
+        shortened = SearchResultProcessor.shorten_string(test_string, words, 100)
+        self.assertEqual(shortened, test_string)
+        self.assertTrue(len(shortened) == len(test_string))
+
     def test_too_long_find_matches(self):
         words = ["edx", "afterward"]
         strings = [
@@ -422,16 +443,16 @@ class SearchResultProcessorTests(TestCase):
             "course": "testmetestme",
             "id": "herestheid"
         }
-        srp = SearchResultProcessor(test_result)
+        srp = SearchResultProcessor(test_result, "fake search pattern")
         self.assertEqual(srp.url, "/courses/testmetestme/jump_to/herestheid")
 
-        srp = SearchResultProcessor({"course": "testmetestme"})
+        srp = SearchResultProcessor({"course": "testmetestme"}, "fake search pattern")
         self.assertEqual(srp.url, None)
 
-        srp = SearchResultProcessor({"id": "herestheid"})
+        srp = SearchResultProcessor({"id": "herestheid"}, "fake search pattern")
         self.assertEqual(srp.url, None)
 
-        srp = SearchResultProcessor({"something_else": "altogether"})
+        srp = SearchResultProcessor({"something_else": "altogether"}, "fake search pattern")
         self.assertEqual(srp.url, None)
 
     def test_excerpt(self):
@@ -441,48 +462,72 @@ class SearchResultProcessorTests(TestCase):
                 "name": "edX search a lot",
             }
         }
-        srp = SearchResultProcessor(test_result)
-        edx_excerpt = srp.excerpt("note")
-        self.assertEqual(edx_excerpt, "Here is a <b>note</b> about edx")
+        srp = SearchResultProcessor(test_result, "note")
+        self.assertEqual(srp.excerpt, "Here is a <b>note</b> about edx")
 
-        edx_excerpt = srp.excerpt("edx")
-        self.assertEqual(edx_excerpt, "Here is a note about <b>edx</b>...<b>edX</b> search a lot")
+        srp = SearchResultProcessor(test_result, "edx")
+        self.assertEqual(srp.excerpt, "Here is a note about <b>edx</b>...<b>edX</b> search a lot")
 
     def test_too_long_excerpt(self):
+        test_string = (
+                        "Here is a note about edx and it is very long - more than the desirable length of 100"
+                        " characters - indeed this should show up but it should trim the characters around in"
+                        " order to show the selected text in bold"
+                    )
         test_result = {
             "content": {
-                "notes": (
-                    "Here is a note about edx and it is very long - more than the desirable length of 100"
-                    " characters - indeed this should show up but it should trim the characters around in"
-                    " order to show the selected text in bold"
-                ),
+                "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result)
-        edx_excerpt = srp.excerpt("edx")
-        self.assertNotEqual(edx_excerpt, (
-            "Here is a note about <b>edx</b> and it is very long - more than the desirable "
-            "length of 100 characters - indeed this should show up but it should trim the "
-            "characters around in order to show the selected text in bold"
-        )
-        )
-        self.assertTrue("note about <b>edx</b> and it is" in edx_excerpt)
+        srp = SearchResultProcessor(test_result, "edx")
+        test_string_compare = SearchResultProcessor.boldface_matches(test_string, "edx")
+        excerpt = srp.excerpt
+        self.assertNotEqual(excerpt, test_string_compare)
+        self.assertTrue("note about <b>edx</b> and it is" in excerpt)
 
+        test_string = (
+                        "Here is a note about stuff and it is very long - more than the desirable length of 100"
+                        " characters - indeed this should show up but it should trim the edx characters around in"
+                        " order to show the selected text in bold"
+                    )
         test_result = {
             "content": {
-                "notes": (
-                    "Here is a note about stuff and it is very long - more than the desirable length of 100"
-                    " characters - indeed this should show up but it should trim the edx characters around in"
-                    " order to show the selected text in bold"
-                ),
+                "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result)
-        edx_excerpt = srp.excerpt("edx")
-        self.assertNotEqual(edx_excerpt, (
-            "Here is a note about stuff and it is very long - more than the desirable length of 100 characters"
-            " - indeed this should show up but it should trim the edx characters around in order to "
-            "show the selected text in bold"
-        )
-        )
-        self.assertTrue("should trim the <b>edx</b> characters around" in edx_excerpt)
+        srp = SearchResultProcessor(test_result, "edx")
+        test_string_compare = SearchResultProcessor.boldface_matches(test_string, "edx")
+        excerpt = srp.excerpt
+        self.assertNotEqual(excerpt, test_string_compare)
+        self.assertTrue("should trim the <b>edx</b> characters around" in excerpt)
+
+class OverrideSearchResultProcessor(SearchResultProcessor):
+    @property
+    def additional_property(self):
+        return "Should have an extra value"
+
+    def should_remove(self, user):
+        return self.url is None
+
+@override_settings(SEARCH_RESULT_PROCESSOR="search.tests.tests.OverrideSearchResultProcessor")
+class TestOverrideSearchResultProcessor(TestCase):
+
+    def test_additional_property(self):
+        test_result = {
+            "course": "testmetestme",
+            "id": "herestheid"
+        }
+        new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
+        self.assertEqual(new_result, test_result)
+        self.assertEqual(test_result["url"], "/courses/testmetestme/jump_to/herestheid")
+        self.assertIsNone(test_result["excerpt"])
+        self.assertEqual(test_result["additional_property"], "Should have an extra value")
+
+    def test_removal(self):
+        test_result = {
+            "not_course": "testmetestme",
+            "id": "herestheid"
+        }
+        new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
+        self.assertIsNone(new_result)
+
