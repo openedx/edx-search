@@ -66,12 +66,12 @@ class SearchResultProcessor(object):
             start_index = 0
         end_index = (word_at + length_hoped / 2) + len(word) + 1
         if end_index >= len(string_in):
-            end_index = -1
+            end_index = None
 
         return "{}{}{}".format(
             "" if start_index < 1 else ELLIPSIS,
             string_in[start_index:end_index].strip(),
-            "" if end_index < 0 else ELLIPSIS,
+            "" if end_index is None else ELLIPSIS,
         )
 
     def should_remove(self, user):

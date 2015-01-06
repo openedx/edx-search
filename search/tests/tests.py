@@ -501,6 +501,102 @@ class SearchResultProcessorTests(TestCase):
         self.assertNotEqual(excerpt, test_string_compare)
         self.assertTrue("should trim the <b>edx</b> characters around" in excerpt)
 
+    def test_excerpt_front(self):
+        test_result = {
+            "content": {
+                "notes": "Dog - match upon first word",
+            }
+        }
+        srp = SearchResultProcessor(test_result, "dog")
+        self.assertEqual(srp.excerpt, "<b>Dog</b> - match upon first word")
+
+        test_result = {
+            "content": {
+                "notes": (
+                            "Dog - match upon first word "
+                            "The long and winding road "
+                            "That leads to your door "
+                            "Will never disappear "
+                            "I've seen that road before "
+                            "It always leads me here "
+                            "Lead me to you door "
+                            "The wild and windy night "
+                            "That the rain washed away "
+                            "Has left a pool of tears "
+                            "Crying for the day "
+                            "Why leave me standing here "
+                            "Let me know the way "
+                            "Many times I've been alone "
+                            "And many times I've cried "
+                            "Any way you'll never know "
+                            "The many ways I've tried "
+                            "But still they lead me back "
+                            "To the long winding road "
+                            "You left me standing here "
+                            "A long long time ago "
+                            "Don't leave me waiting here "
+                            "Lead me to your door "
+                            "But still they lead me back "
+                            "To the long winding road "
+                            "You left me standing here "
+                            "A long long time ago "
+                            "Don't leave me waiting here "
+                            "Lead me to your door "
+                            "Yeah, yeah, yeah, yeah "
+                        ),
+            }
+        }
+        srp = SearchResultProcessor(test_result, "dog")
+        self.assertEqual(srp.excerpt[0:34], "<b>Dog</b> - match upon first word")
+
+    def test_excerpt_back(self):
+        test_result = {
+            "content": {
+                "notes": "Match upon last word - Dog",
+            }
+        }
+        srp = SearchResultProcessor(test_result, "dog")
+        self.assertEqual(srp.excerpt, "Match upon last word - <b>Dog</b>")
+
+        test_result = {
+            "content": {
+                "notes": (
+                            "The long and winding road "
+                            "That leads to your door "
+                            "Will never disappear "
+                            "I've seen that road before "
+                            "It always leads me here "
+                            "Lead me to you door "
+                            "The wild and windy night "
+                            "That the rain washed away "
+                            "Has left a pool of tears "
+                            "Crying for the day "
+                            "Why leave me standing here "
+                            "Let me know the way "
+                            "Many times I've been alone "
+                            "And many times I've cried "
+                            "Any way you'll never know "
+                            "The many ways I've tried "
+                            "But still they lead me back "
+                            "To the long winding road "
+                            "You left me standing here "
+                            "A long long time ago "
+                            "Don't leave me waiting here "
+                            "Lead me to your door "
+                            "But still they lead me back "
+                            "To the long winding road "
+                            "You left me standing here "
+                            "A long long time ago "
+                            "Don't leave me waiting here "
+                            "Lead me to your door "
+                            "Yeah, yeah, yeah, yeah "
+                            "Match upon last word - Dog"
+                        ),
+            }
+        }
+        srp = SearchResultProcessor(test_result, "dog")
+        self.assertEqual(srp.excerpt[-33:], "Match upon last word - <b>Dog</b>")
+
 class OverrideSearchResultProcessor(SearchResultProcessor):
     @property
     def additional_property(self):
