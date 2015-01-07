@@ -74,15 +74,23 @@ class MockSearchEngine(SearchEngine):
             else:
                 return doc[field_chain[0]] if field_chain[0] in doc else None
 
+        def contains_numbers(array_of_values):
+            for v in array_of_values:
+                if isinstance(v, Number):
+                    return True
+            return False
+
         if field_dictionary:
             for i, field_name in enumerate(field_dictionary):
                 field_value = field_dictionary[field_name]
                 if isinstance(field_value, list) and len(field_value) == 2:
-                    fn_conv = self._null_conversion if (isinstance(field_value[0], Number) or isinstance(field_value[1], Number)) else self._convert_to_date
+                    fn_conv = self._null_conversion if contains_numbers(field_value) else self._convert_to_date
                     if field_value[0]:
-                        documents_to_search = [d for d in documents_to_search if fn_conv(find_field(d, field_name)) >= fn_conv(field_value[0])]
+                        documents_to_search = [d for d in documents_to_search if fn_conv(
+                            find_field(d, field_name)) >= fn_conv(field_value[0])]
                     if field_value[1]:
-                        documents_to_search = [d for d in documents_to_search if fn_conv(find_field(d, field_name)) <= fn_conv(field_value[1])]
+                        documents_to_search = [d for d in documents_to_search if fn_conv(
+                            find_field(d, field_name)) <= fn_conv(field_value[1])]
                 else:
                     documents_to_search = [d for d in documents_to_search if find_field(d, field_name) == field_value]
 
@@ -90,13 +98,16 @@ class MockSearchEngine(SearchEngine):
             for i, field_name in enumerate(filter_dictionary):
                 field_value = filter_dictionary[field_name]
                 if isinstance(field_value, list) and len(field_value) == 2:
-                    fn_conv = self._null_conversion if (isinstance(field_value[0], Number) or isinstance(field_value[1], Number)) else self._convert_to_date
+                    fn_conv = self._null_conversion if contains_numbers(field_value) else self._convert_to_date
                     if field_value[0]:
-                        documents_to_search = [d for d in documents_to_search if fn_conv(find_field(d, field_name)) >= fn_conv(field_value[0]) or find_field(d, field_name) is None]
+                        documents_to_search = [d for d in documents_to_search if fn_conv(
+                            find_field(d, field_name)) >= fn_conv(field_value[0]) or find_field(d, field_name) is None]
                     if field_value[1]:
-                        documents_to_search = [d for d in documents_to_search if fn_conv(find_field(d, field_name)) <= fn_conv(field_value[1]) or find_field(d, field_name) is None]
+                        documents_to_search = [d for d in documents_to_search if fn_conv(
+                            find_field(d, field_name)) <= fn_conv(field_value[1]) or find_field(d, field_name) is None]
                 else:
-                    documents_to_search = [d for d in documents_to_search if find_field(d, field_name) == field_value or find_field(d, field_name) is None]
+                    documents_to_search = [d for d in documents_to_search if find_field(
+                        d, field_name) == field_value or find_field(d, field_name) is None]
 
         if query_string:
             def has_string(dictionary_object, search_string):

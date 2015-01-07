@@ -132,6 +132,7 @@ class SearchResultProcessor(object):
             location=self._results_fields["id"],
         )
 
+
 @csrf_exempt
 def do_search(request, course_id=None):
     results = {

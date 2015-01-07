@@ -4,7 +4,6 @@ import datetime
 import json
 
 from django.core.urlresolvers import resolve
-from django.http import HttpResponseServerError
 from django.test import TestCase, Client
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
@@ -14,7 +13,6 @@ from search.elastic import ElasticSearchEngine
 
 from .mock_search_engine import MockSearchEngine
 from search.views import SearchResultProcessor
-#from nose.tools import set_trace
 
 TEST_INDEX_NAME = "test_index"
 
@@ -425,6 +423,7 @@ class MockSearchTests(TestCase):
 class ElasticSearchTests(MockSearchTests):
     pass
 
+
 class MockSearchSpecifcTests(TestCase):
 
     def test_date_from_string(self):
@@ -618,10 +617,10 @@ class SearchResultProcessorTests(TestCase):
 
     def test_too_long_excerpt(self):
         test_string = (
-                        "Here is a note about edx and it is very long - more than the desirable length of 100"
-                        " characters - indeed this should show up but it should trim the characters around in"
-                        " order to show the selected text in bold"
-                    )
+            "Here is a note about edx and it is very long - more than the desirable length of 100"
+            " characters - indeed this should show up but it should trim the characters around in"
+            " order to show the selected text in bold"
+        )
         test_result = {
             "content": {
                 "notes": test_string,
@@ -634,10 +633,10 @@ class SearchResultProcessorTests(TestCase):
         self.assertTrue("note about <b>edx</b> and it is" in excerpt)
 
         test_string = (
-                        "Here is a note about stuff and it is very long - more than the desirable length of 100"
-                        " characters - indeed this should show up but it should trim the edx characters around in"
-                        " order to show the selected text in bold"
-                    )
+            "Here is a note about stuff and it is very long - more than the desirable length of 100"
+            " characters - indeed this should show up but it should trim the edx characters around in"
+            " order to show the selected text in bold"
+        )
         test_result = {
             "content": {
                 "notes": test_string,
@@ -661,37 +660,37 @@ class SearchResultProcessorTests(TestCase):
         test_result = {
             "content": {
                 "notes": (
-                            "Dog - match upon first word "
-                            "The long and winding road "
-                            "That leads to your door "
-                            "Will never disappear "
-                            "I've seen that road before "
-                            "It always leads me here "
-                            "Lead me to you door "
-                            "The wild and windy night "
-                            "That the rain washed away "
-                            "Has left a pool of tears "
-                            "Crying for the day "
-                            "Why leave me standing here "
-                            "Let me know the way "
-                            "Many times I've been alone "
-                            "And many times I've cried "
-                            "Any way you'll never know "
-                            "The many ways I've tried "
-                            "But still they lead me back "
-                            "To the long winding road "
-                            "You left me standing here "
-                            "A long long time ago "
-                            "Don't leave me waiting here "
-                            "Lead me to your door "
-                            "But still they lead me back "
-                            "To the long winding road "
-                            "You left me standing here "
-                            "A long long time ago "
-                            "Don't leave me waiting here "
-                            "Lead me to your door "
-                            "Yeah, yeah, yeah, yeah "
-                        ),
+                    "Dog - match upon first word "
+                    "The long and winding road "
+                    "That leads to your door "
+                    "Will never disappear "
+                    "I've seen that road before "
+                    "It always leads me here "
+                    "Lead me to you door "
+                    "The wild and windy night "
+                    "That the rain washed away "
+                    "Has left a pool of tears "
+                    "Crying for the day "
+                    "Why leave me standing here "
+                    "Let me know the way "
+                    "Many times I've been alone "
+                    "And many times I've cried "
+                    "Any way you'll never know "
+                    "The many ways I've tried "
+                    "But still they lead me back "
+                    "To the long winding road "
+                    "You left me standing here "
+                    "A long long time ago "
+                    "Don't leave me waiting here "
+                    "Lead me to your door "
+                    "But still they lead me back "
+                    "To the long winding road "
+                    "You left me standing here "
+                    "A long long time ago "
+                    "Don't leave me waiting here "
+                    "Lead me to your door "
+                    "Yeah, yeah, yeah, yeah "
+                ),
             }
         }
         srp = SearchResultProcessor(test_result, "dog")
@@ -709,37 +708,37 @@ class SearchResultProcessorTests(TestCase):
         test_result = {
             "content": {
                 "notes": (
-                            "The long and winding road "
-                            "That leads to your door "
-                            "Will never disappear "
-                            "I've seen that road before "
-                            "It always leads me here "
-                            "Lead me to you door "
-                            "The wild and windy night "
-                            "That the rain washed away "
-                            "Has left a pool of tears "
-                            "Crying for the day "
-                            "Why leave me standing here "
-                            "Let me know the way "
-                            "Many times I've been alone "
-                            "And many times I've cried "
-                            "Any way you'll never know "
-                            "The many ways I've tried "
-                            "But still they lead me back "
-                            "To the long winding road "
-                            "You left me standing here "
-                            "A long long time ago "
-                            "Don't leave me waiting here "
-                            "Lead me to your door "
-                            "But still they lead me back "
-                            "To the long winding road "
-                            "You left me standing here "
-                            "A long long time ago "
-                            "Don't leave me waiting here "
-                            "Lead me to your door "
-                            "Yeah, yeah, yeah, yeah "
-                            "Match upon last word - Dog"
-                        ),
+                    "The long and winding road "
+                    "That leads to your door "
+                    "Will never disappear "
+                    "I've seen that road before "
+                    "It always leads me here "
+                    "Lead me to you door "
+                    "The wild and windy night "
+                    "That the rain washed away "
+                    "Has left a pool of tears "
+                    "Crying for the day "
+                    "Why leave me standing here "
+                    "Let me know the way "
+                    "Many times I've been alone "
+                    "And many times I've cried "
+                    "Any way you'll never know "
+                    "The many ways I've tried "
+                    "But still they lead me back "
+                    "To the long winding road "
+                    "You left me standing here "
+                    "A long long time ago "
+                    "Don't leave me waiting here "
+                    "Lead me to your door "
+                    "But still they lead me back "
+                    "To the long winding road "
+                    "You left me standing here "
+                    "A long long time ago "
+                    "Don't leave me waiting here "
+                    "Lead me to your door "
+                    "Yeah, yeah, yeah, yeah "
+                    "Match upon last word - Dog"
+                ),
             }
         }
         srp = SearchResultProcessor(test_result, "dog")
@@ -778,6 +777,7 @@ class TestOverrideSearchResultProcessor(TestCase):
         new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
         self.assertIsNone(new_result)
 
+
 @override_settings(SEARCH_ENGINE=MockSearchEngine)
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
@@ -806,7 +806,6 @@ class MockSearchUrlTest(TestCase):
         resolver = resolve('/blah')
         self.assertEqual(resolver.view_name, 'do_search')
         self.assertEqual(resolver.kwargs['course_id'], 'blah')
-
 
     def _post_request(self, body, course_id=None):
         address = '/' if course_id is None else '/{}'.format(course_id)
@@ -908,10 +907,13 @@ class MockSearchUrlTest(TestCase):
         self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)
 
 BAD_REQUEST_ERROR = "There is a problem here"
+
+
 class ErroringSearchEngine(MockSearchEngine):
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
         raise Exception(BAD_REQUEST_ERROR)
+
 
 @override_settings(SEARCH_ENGINE=ErroringSearchEngine)
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})

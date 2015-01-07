@@ -8,6 +8,7 @@ from search.manager import SearchEngine
 
 
 class ElasticSearchEngine(SearchEngine):
+
     """ ElasticSearch implementation of SearchEngine abstraction """
 
     _es = Elasticsearch()
@@ -20,9 +21,9 @@ class ElasticSearchEngine(SearchEngine):
         if doc_type not in known_mappings[self.index_name]:
             try:
                 known_mappings[self.index_name][doc_type] = self._es.indices.get_mapping(
-                        index=self.index_name,
-                        doc_type=doc_type
-                    )[doc_type]
+                    index=self.index_name,
+                    doc_type=doc_type
+                )[doc_type]
             except:
                 return {}
 
@@ -37,7 +38,8 @@ class ElasticSearchEngine(SearchEngine):
         super(ElasticSearchEngine, self).__init__(index)
 
     def _check_mappings(self, doc_type, body):
-        # Make fields other than content be indexed as unanalyzed terms - content contains fields that are to be analyzed
+        # Make fields other than content be indexed as unanalyzed terms - content
+        # contains fields that are to be analyzed
         exclude_fields = ["content", "id", "course"]
         current_mappings = self._get_mappings(doc_type)
         field_properties = getattr(settings, "ELASTIC_FIELD_MAPPINGS", {})
@@ -48,7 +50,7 @@ class ElasticSearchEngine(SearchEngine):
             if field_name in field_properties:
                 prop_val = field_properties[field_name]
             elif isinstance(field_value, dict):
-                props = {fn:field_property(fn, field_value[fn]) for fn in field_value}
+                props = {fn: field_property(fn, field_value[fn]) for fn in field_value}
                 prop_val = {"properties": props}
             else:
                 prop_val = {
@@ -161,10 +163,10 @@ class ElasticSearchEngine(SearchEngine):
             for field in field_dictionary:
                 if search_using_fields:
                     queries.append({
-                            "match": {
-                                field: field_dictionary[field]
-                            }
-                        })
+                        "match": {
+                            field: field_dictionary[field]
+                        }
+                    })
                 else:
                     filters.append(get_filter_field(field, field_dictionary[field]))
 
