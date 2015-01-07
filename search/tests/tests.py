@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import datetime
+import json
 
-from django.test import TestCase
+from django.core.urlresolvers import resolve
+from django.http import HttpResponseServerError
+from django.test import TestCase, Client
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
-from nose.tools import set_trace
 
 from search.manager import SearchEngine
 from search.elastic import ElasticSearchEngine
 
 from .mock_search_engine import MockSearchEngine
 from search.views import SearchResultProcessor
+#from nose.tools import set_trace
 
 TEST_INDEX_NAME = "test_index"
 
@@ -34,6 +38,7 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
 
 
 @override_settings(SEARCH_ENGINE=MockSearchEngine)
+@override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 class MockSearchTests(TestCase):
 
     _searcher = None
@@ -56,12 +61,17 @@ class MockSearchTests(TestCase):
 
             config_body = {}
             es.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
+        else:
+            MockSearchEngine.destroy()
         self._searcher = None
 
     def tearDown(self):
         if self._is_elastic:
             es = Elasticsearch()
             es.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+        else:
+            MockSearchEngine.destroy()
+
         self._searcher = None
 
     def test_factory_creator(self):
@@ -254,6 +264,10 @@ class MockSearchTests(TestCase):
         response = self._searcher.search(field_dictionary={"tags.shape": "square", "tags.color": "blue"})
         self.assertEqual(response["total"], 0)
 
+        response = self._searcher.search(
+            field_dictionary={"tags.shape": "square", "tags.color": "blue"}, search_fields=True)
+        self.assertEqual(response["total"], 0)
+
     def test_extended_characters(self):
         test_string = u"قضايـا هامـة"
         self.searcher.index("test_doc", {"content": {"name": test_string}})
@@ -297,10 +311,144 @@ class MockSearchTests(TestCase):
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
+    def test_filter_items(self):
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2"})
+
+        response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
+        self.assertEqual(response["total"], 2)
+
+        response = self.searcher.search(field_dictionary={"filter_field": "my_filter_value"})
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"})
+        response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
+        self.assertEqual(response["total"], 2)
+
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 3)
+
+    def test_date_range(self):
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": "2010-01-01"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": "2100-01-01"})
+
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 2)
+
+        response = self.searcher.search(field_dictionary={"start_date": [None, "now"]})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(field_dictionary={"start_date": ["2099-01-01", None]})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(filter_dictionary={"start_date": [None, "now"]})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(filter_dictionary={"start_date": ["2099-01-01", None]})
+        self.assertEqual(response["total"], 1)
+
+    def test_numeric_range(self):
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "age": 40})
+
+        def test_age_range(begin, end, expect, filter_method="field_dictionary"):
+            kwargs = {
+                filter_method: {"age": [begin, end]}
+            }
+            response = self.searcher.search(**kwargs)
+            self.assertEqual(response["total"], expect)
+
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 3)
+
+        test_age_range(19, 29, 1)
+        test_age_range(19, 39, 2)
+        test_age_range(19, 49, 3)
+        test_age_range(29, 49, 2)
+        test_age_range(39, 49, 1)
+        test_age_range(None, 29, 1)
+        test_age_range(39, None, 1)
+
+        test_age_range(19, 29, 1, filter_method="filter_dictionary")
+        test_age_range(19, 39, 2, filter_method="filter_dictionary")
+        test_age_range(19, 49, 3, filter_method="filter_dictionary")
+        test_age_range(29, 49, 2, filter_method="filter_dictionary")
+        test_age_range(39, 49, 1, filter_method="filter_dictionary")
+        test_age_range(None, 29, 1, filter_method="filter_dictionary")
+        test_age_range(39, None, 1, filter_method="filter_dictionary")
+
+        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "test_value": "4", "age": 50})
+
+        test_age_range(19, 29, 1)
+        test_age_range(19, 39, 2)
+        test_age_range(19, 49, 3)
+        test_age_range(29, 49, 2)
+        test_age_range(39, 49, 1)
+        test_age_range(None, 29, 1)
+        test_age_range(39, None, 2)
+
+        test_age_range(19, 29, 1, filter_method="filter_dictionary")
+        test_age_range(19, 39, 2, filter_method="filter_dictionary")
+        test_age_range(19, 49, 3, filter_method="filter_dictionary")
+        test_age_range(29, 49, 2, filter_method="filter_dictionary")
+        test_age_range(39, 49, 1, filter_method="filter_dictionary")
+        test_age_range(None, 29, 1, filter_method="filter_dictionary")
+        test_age_range(39, None, 2, filter_method="filter_dictionary")
+
+        self.searcher.index("test_doc", {"id": "FAKE_ID_5", "test_value": "5", "not_age": 50})
+        test_age_range(19, 29, 2, filter_method="filter_dictionary")
+        test_age_range(19, 39, 3, filter_method="filter_dictionary")
+        test_age_range(19, 49, 4, filter_method="filter_dictionary")
+        test_age_range(29, 49, 3, filter_method="filter_dictionary")
+        test_age_range(39, 49, 2, filter_method="filter_dictionary")
+        test_age_range(None, 29, 2, filter_method="filter_dictionary")
+        test_age_range(39, None, 3, filter_method="filter_dictionary")
+
+    def test_range_filter(self):
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "not_age": 40})
+
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 3)
+
+        response = self.searcher.search(field_dictionary={"age": [19, 29]})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(filter_dictionary={"age": [19, 29]})
+        self.assertEqual(response["total"], 2)
+
+
 # Uncomment below in order to test against installed Elastic Search installation
 @override_settings(SEARCH_ENGINE=ForceRefreshElasticSearchEngine)
 class ElasticSearchTests(MockSearchTests):
     pass
+
+class MockSearchSpecifcTests(TestCase):
+
+    def test_date_from_string(self):
+        mse = MockSearchEngine(TEST_INDEX_NAME)
+
+        def check_date_conversion(date_string, expected_date):
+            self.assertEqual(
+                mse._convert_to_date(date_string),
+                expected_date
+            )
+
+        now_date = mse._convert_to_date("now")
+        this_date = datetime.datetime.utcnow()
+        self.assertEqual(now_date.year, this_date.year)
+        self.assertEqual(now_date.month, this_date.month)
+        self.assertEqual(now_date.day, this_date.day)
+        self.assertEqual(now_date.hour, this_date.hour)
+        self.assertEqual(now_date.minute, this_date.minute)
+
+        check_date_conversion(None, None)
+        check_date_conversion("BLAHSDLASDJASLD", None)
+        check_date_conversion('2014-12-25', datetime.datetime(2014, 12, 25))
+        check_date_conversion('2014-12-25T11:22:00Z', datetime.datetime(2014, 12, 25, 11, 22, 0))
+        check_date_conversion('2014-12-25T23:22:00.000999Z', datetime.datetime(2014, 12, 25, 23, 22, 0, 999))
 
 
 class SearchResultProcessorTests(TestCase):
@@ -597,13 +745,16 @@ class SearchResultProcessorTests(TestCase):
         srp = SearchResultProcessor(test_result, "dog")
         self.assertEqual(srp.excerpt[-33:], "Match upon last word - <b>Dog</b>")
 
+
 class OverrideSearchResultProcessor(SearchResultProcessor):
+
     @property
     def additional_property(self):
         return "Should have an extra value"
 
     def should_remove(self, user):
         return self.url is None
+
 
 @override_settings(SEARCH_RESULT_PROCESSOR="search.tests.tests.OverrideSearchResultProcessor")
 class TestOverrideSearchResultProcessor(TestCase):
@@ -627,3 +778,189 @@ class TestOverrideSearchResultProcessor(TestCase):
         new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
         self.assertIsNone(new_result)
 
+@override_settings(SEARCH_ENGINE=MockSearchEngine)
+@override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
+@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+class MockSearchUrlTest(TestCase):
+
+    _searcher = None
+
+    def setUp(self):
+        MockSearchEngine.destroy()
+        self._searcher = None
+
+    def tearDown(self):
+        MockSearchEngine.destroy()
+        self._searcher = None
+
+    @property
+    def searcher(self):
+        if self._searcher is None:
+            self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        return self._searcher
+
+    def test_url_resolution(self):
+        resolver = resolve('/')
+        self.assertEqual(resolver.view_name, 'do_search')
+
+        resolver = resolve('/blah')
+        self.assertEqual(resolver.view_name, 'do_search')
+        self.assertEqual(resolver.kwargs['course_id'], 'blah')
+
+
+    def _post_request(self, body, course_id=None):
+        address = '/' if course_id is None else '/{}'.format(course_id)
+        response = Client().post(address, body)
+
+        return response.status_code, json.loads(response.content)
+
+    def test_search_from_url(self):
+        self.searcher.index(
+            "test_doc",
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
+                }
+            }
+        )
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+
+        code, results = self._post_request({"search_string": "sun"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_3" in result_ids and "FAKE_ID_2" in result_ids)
+
+        code, results = self._post_request({"search_string": "Darling"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        code, results = self._post_request({"search_string": "winter"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids)
+
+    def test_search_with_course_from_url(self):
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since you've been gone"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "XYZ",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+
+        code, results = self._post_request({"search_string": "Little Darling"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+
+        code, results = self._post_request({"search_string": "Darling"}, "ABC")
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        code, results = self._post_request({"search_string": "winter"}, "ABC")
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" not in result_ids)
+
+        code, results = self._post_request({"search_string": "winter"}, "XYZ")
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)
+
+BAD_REQUEST_ERROR = "There is a problem here"
+class ErroringSearchEngine(MockSearchEngine):
+
+    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
+        raise Exception(BAD_REQUEST_ERROR)
+
+@override_settings(SEARCH_ENGINE=ErroringSearchEngine)
+@override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
+@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+class BadSearchTest(TestCase):
+
+    _searcher = None
+
+    def setUp(self):
+        MockSearchEngine.destroy()
+        self._searcher = None
+
+    def tearDown(self):
+        MockSearchEngine.destroy()
+        self._searcher = None
+
+    @property
+    def searcher(self):
+        if self._searcher is None:
+            self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        return self._searcher
+
+    def _post_request(self, body, course_id=None):
+        address = '/' if course_id is None else '/{}'.format(course_id)
+        response = Client().post(address, body)
+
+        return response.status_code, json.loads(response.content)
+
+    def test_search_from_url(self):
+        self.searcher.index(
+            "test_doc",
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
+                }
+            }
+        )
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+
+        code, results = self._post_request({"search_string": "sun"})
+        self.assertTrue(code > 499)
+        self.assertEqual(results["error"], BAD_REQUEST_ERROR)

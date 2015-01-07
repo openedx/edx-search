@@ -146,9 +146,11 @@ def do_search(request, course_id=None):
             field_dictionary = None
             if course_id:
                 field_dictionary = {"course": course_id}
-            searcher = SearchEngine.get_search_engine("courseware_index")
+            searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
             results = searcher.search_string(
-                search_terms, field_dictionary=field_dictionary)
+                search_terms,
+                field_dictionary=field_dictionary
+            )
 
             # post-process the result
             for result in results["results"]:

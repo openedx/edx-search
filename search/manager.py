@@ -17,7 +17,7 @@ class SearchEngine(object):
     def remove(self, doc_type, id, **kwargs):
         raise NotImplementedError
 
-    def search(self, query_string=None, field_dictionary=None, **kwargs):
+    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
         raise NotImplementedError
 
     def search_string(self, query_string, **kwargs):
