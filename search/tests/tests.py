@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+""" Tests for search functionalty """
 import datetime
 import json
 
@@ -11,16 +12,24 @@ from elasticsearch import Elasticsearch
 from search.manager import SearchEngine
 from search.elastic import ElasticSearchEngine
 
-from .mock_search_engine import MockSearchEngine
+from .mock_search_engine import MockSearchEngine, _convert_to_date
 from search.views import SearchResultProcessor
 
 TEST_INDEX_NAME = "test_index"
+
+# Any class that inherits from TestCase will cause too-many-public-methods pylint error
+# pylint: disable=too-many-public-methods
 
 # We override ElasticSearchEngine class in order to force an index refresh upon index
 # otherwise we often get results from the prior state, rendering the tests less useful
 
 
 class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
+
+    """
+    Override of ElasticSearchEngine that forces the update of the index,
+    so that tests can relaibly search right afterward
+    """
 
     def index(self, doc_type, body, **kwargs):
         kwargs.update({
@@ -39,53 +48,65 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 class MockSearchTests(TestCase):
 
+    """ Test operation of search activities """
     _searcher = None
 
     @property
     def searcher(self):
+        """ cached instance of search engine """
         if self._searcher is None:
             self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         return self._searcher
 
     @property
     def _is_elastic(self):
+        """ check search engine implementation, to manage cleanup differently """
         return isinstance(self.searcher, ElasticSearchEngine)
 
     def setUp(self):
+        # ignore unexpected-keyword-arg; ES python client documents that it can be used
+        # pylint: disable=unexpected-keyword-arg
         if self._is_elastic:
-            es = Elasticsearch()
+            _elasticsearch = Elasticsearch()
             # Make sure that we are fresh
-            es.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+            _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
 
             config_body = {}
-            es.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
+            # ignore unexpected-keyword-arg; ES python client documents that it can be used
+            _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
         else:
             MockSearchEngine.destroy()
         self._searcher = None
 
     def tearDown(self):
+        # ignore unexpected-keyword-arg; ES python client documents that it can be used
+        # pylint: disable=unexpected-keyword-arg
         if self._is_elastic:
-            es = Elasticsearch()
-            es.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+            _elasticsearch = Elasticsearch()
+            # ignore unexpected-keyword-arg; ES python client documents that it can be used
+            _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
         else:
             MockSearchEngine.destroy()
 
         self._searcher = None
 
     def test_factory_creator(self):
+        """ Make sure that search object implements SearchEngine interface """
         self.assertTrue(isinstance(self.searcher, SearchEngine))
 
     def test_abstract_impl(self):
+        """ Make sure that if one tries to use the abstract base, then operations yeild NotImplementedError s """
         abstract = SearchEngine("test_index_name")
         test_string = "A test string"
         with self.assertRaises(NotImplementedError):
             abstract.index("test_doc", {"name": test_string})
         with self.assertRaises(NotImplementedError):
-            results = abstract.search(test_string)
+            abstract.search(test_string)
         with self.assertRaises(NotImplementedError):
             abstract.remove("test_doc", "test_id")
 
     def test_find_all(self):
+        """ Make sure that null search finds everything in the index """
         test_string = "A test string"
         self.searcher.index("test_doc", {"name": test_string})
 
@@ -106,6 +127,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(test_1["value"], test_string)
 
     def test_find_doctype(self):
+        """ Make sure that searches for specific doc_type only return requested doc_type """
         test_string = "A test string"
         self.searcher.index("test_doc", {"name": test_string})
 
@@ -122,6 +144,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 1)
 
     def test_find_string(self):
+        """ Find a string within the object "content" node """
         test_string = "A test string"
         self.searcher.index("test_doc", {"content": {"name": test_string}})
 
@@ -148,6 +171,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 3)
 
     def test_field(self):
+        """ test matching on a field """
         test_string = "A test string"
         test_object = {
             "name": test_string,
@@ -184,6 +208,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
     def test_search_string_and_field(self):
+        """ test matching on both string and field value """
         test_object = {
             "content": {
                 "name": "You may find me in a coffee shop",
@@ -212,6 +237,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 1)
 
     def test_search_tags(self):
+        """ test nested object tags """
         test_object = {
             "name": "John Lester",
             "course_id": "A/B/C",
@@ -267,6 +293,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
     def test_extended_characters(self):
+        """ Make sure that extended character searches work """
         test_string = u"قضايـا هامـة"
         self.searcher.index("test_doc", {"content": {"name": test_string}})
 
@@ -283,6 +310,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 2)
 
     def test_delete_item(self):
+        """ make sure that we can remove an item from the index """
         test_string = "This is a test of the emergency broadcast system"
         self.searcher.index("test_doc", {"id": "FAKE_ID", "content": {"name": test_string}})
 
@@ -294,6 +322,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
     def test_delete_item_slashes(self):
+        """ make sure that we can remove an item from the index with complex id """
         test_string = "This is a test of the emergency broadcast system"
         self.searcher.index(
             "test_doc", {
@@ -310,6 +339,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
     def test_filter_items(self):
+        """ Make sure that filters work """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})
         self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2"})
 
@@ -327,6 +357,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 3)
 
     def test_date_range(self):
+        """ Make sure that date ranges can be searched """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": "2010-01-01"})
         self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": "2100-01-01"})
 
@@ -346,64 +377,69 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 1)
 
     def test_numeric_range(self):
+        """ Make sure that numeric ranges can be searched with both field and filter queries """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
         self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
         self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "age": 40})
 
-        def test_age_range(begin, end, expect, filter_method="field_dictionary"):
-            kwargs = {
-                filter_method: {"age": [begin, end]}
-            }
-            response = self.searcher.search(**kwargs)
+        def test_age_range_field(begin, end, expect):
+            """ repeated operations consolidated for tests """
+            response = self.searcher.search(field_dictionary={"age": [begin, end]})
+            self.assertEqual(response["total"], expect)
+
+        def test_age_range_filter(begin, end, expect):
+            """ repeated operations consolidated for tests """
+            response = self.searcher.search(filter_dictionary={"age": [begin, end]})
             self.assertEqual(response["total"], expect)
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
 
-        test_age_range(19, 29, 1)
-        test_age_range(19, 39, 2)
-        test_age_range(19, 49, 3)
-        test_age_range(29, 49, 2)
-        test_age_range(39, 49, 1)
-        test_age_range(None, 29, 1)
-        test_age_range(39, None, 1)
+        test_age_range_field(19, 29, 1)
+        test_age_range_field(19, 39, 2)
+        test_age_range_field(19, 49, 3)
+        test_age_range_field(29, 49, 2)
+        test_age_range_field(39, 49, 1)
+        test_age_range_field(None, 29, 1)
+        test_age_range_field(39, None, 1)
 
-        test_age_range(19, 29, 1, filter_method="filter_dictionary")
-        test_age_range(19, 39, 2, filter_method="filter_dictionary")
-        test_age_range(19, 49, 3, filter_method="filter_dictionary")
-        test_age_range(29, 49, 2, filter_method="filter_dictionary")
-        test_age_range(39, 49, 1, filter_method="filter_dictionary")
-        test_age_range(None, 29, 1, filter_method="filter_dictionary")
-        test_age_range(39, None, 1, filter_method="filter_dictionary")
+        test_age_range_filter(19, 29, 1)
+        test_age_range_filter(19, 39, 2)
+        test_age_range_filter(19, 49, 3)
+        test_age_range_filter(29, 49, 2)
+        test_age_range_filter(39, 49, 1)
+        test_age_range_filter(None, 29, 1)
+        test_age_range_filter(39, None, 1)
 
         self.searcher.index("test_doc", {"id": "FAKE_ID_4", "test_value": "4", "age": 50})
 
-        test_age_range(19, 29, 1)
-        test_age_range(19, 39, 2)
-        test_age_range(19, 49, 3)
-        test_age_range(29, 49, 2)
-        test_age_range(39, 49, 1)
-        test_age_range(None, 29, 1)
-        test_age_range(39, None, 2)
+        test_age_range_field(19, 29, 1)
+        test_age_range_field(19, 39, 2)
+        test_age_range_field(19, 49, 3)
+        test_age_range_field(29, 49, 2)
+        test_age_range_field(39, 49, 1)
+        test_age_range_field(None, 29, 1)
+        test_age_range_field(39, None, 2)
 
-        test_age_range(19, 29, 1, filter_method="filter_dictionary")
-        test_age_range(19, 39, 2, filter_method="filter_dictionary")
-        test_age_range(19, 49, 3, filter_method="filter_dictionary")
-        test_age_range(29, 49, 2, filter_method="filter_dictionary")
-        test_age_range(39, 49, 1, filter_method="filter_dictionary")
-        test_age_range(None, 29, 1, filter_method="filter_dictionary")
-        test_age_range(39, None, 2, filter_method="filter_dictionary")
+        test_age_range_filter(19, 29, 1)
+        test_age_range_filter(19, 39, 2)
+        test_age_range_filter(19, 49, 3)
+        test_age_range_filter(29, 49, 2)
+        test_age_range_filter(39, 49, 1)
+        test_age_range_filter(None, 29, 1)
+        test_age_range_filter(39, None, 2)
 
         self.searcher.index("test_doc", {"id": "FAKE_ID_5", "test_value": "5", "not_age": 50})
-        test_age_range(19, 29, 2, filter_method="filter_dictionary")
-        test_age_range(19, 39, 3, filter_method="filter_dictionary")
-        test_age_range(19, 49, 4, filter_method="filter_dictionary")
-        test_age_range(29, 49, 3, filter_method="filter_dictionary")
-        test_age_range(39, 49, 2, filter_method="filter_dictionary")
-        test_age_range(None, 29, 2, filter_method="filter_dictionary")
-        test_age_range(39, None, 3, filter_method="filter_dictionary")
+        test_age_range_filter(19, 29, 2)
+        test_age_range_filter(19, 39, 3)
+        test_age_range_filter(19, 49, 4)
+        test_age_range_filter(29, 49, 3)
+        test_age_range_filter(39, 49, 2)
+        test_age_range_filter(None, 29, 2)
+        test_age_range_filter(39, None, 3)
 
     def test_range_filter(self):
+        """ Make sure that ranges can be used in field_dictionary and filter_dictionary """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
         self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
         self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "not_age": 40})
@@ -421,21 +457,18 @@ class MockSearchTests(TestCase):
 # Uncomment below in order to test against installed Elastic Search installation
 @override_settings(SEARCH_ENGINE=ForceRefreshElasticSearchEngine)
 class ElasticSearchTests(MockSearchTests):
+
+    """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
     pass
 
 
 class MockSearchSpecifcTests(TestCase):
 
+    """ Test code specific to MockSearchEngine which cannot be tested from Elastic implementation """
+
     def test_date_from_string(self):
-        mse = MockSearchEngine(TEST_INDEX_NAME)
-
-        def check_date_conversion(date_string, expected_date):
-            self.assertEqual(
-                mse._convert_to_date(date_string),
-                expected_date
-            )
-
-        now_date = mse._convert_to_date("now")
+        """ Make sure that the string -> date conversion works as expected """
+        now_date = _convert_to_date("now")
         this_date = datetime.datetime.utcnow()
         self.assertEqual(now_date.year, this_date.year)
         self.assertEqual(now_date.month, this_date.month)
@@ -443,16 +476,20 @@ class MockSearchSpecifcTests(TestCase):
         self.assertEqual(now_date.hour, this_date.hour)
         self.assertEqual(now_date.minute, this_date.minute)
 
-        check_date_conversion(None, None)
-        check_date_conversion("BLAHSDLASDJASLD", None)
-        check_date_conversion('2014-12-25', datetime.datetime(2014, 12, 25))
-        check_date_conversion('2014-12-25T11:22:00Z', datetime.datetime(2014, 12, 25, 11, 22, 0))
-        check_date_conversion('2014-12-25T23:22:00.000999Z', datetime.datetime(2014, 12, 25, 23, 22, 0, 999))
+        self.assertEqual(_convert_to_date(None), None)
+        self.assertEqual(_convert_to_date("BLAHSDLASDJASLD"), None)
+        self.assertEqual(_convert_to_date('2014-12-25'), datetime.datetime(2014, 12, 25))
+        self.assertEqual(_convert_to_date('2014-12-25T11:22:00Z'), datetime.datetime(2014, 12, 25, 11, 22, 0))
+        self.assertEqual(_convert_to_date('2014-12-25T23:22:00.000999Z'),
+                         datetime.datetime(2014, 12, 25, 23, 22, 0, 999))
 
 
 class SearchResultProcessorTests(TestCase):
 
+    """ Tests to check SearchResultProcessor is working as desired """
+
     def test_strings_in_dictionary(self):
+        """ Test finding strings within dictionary item """
         test_dict = {
             "a": "This is a string that should show up"
         }
@@ -499,6 +536,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(get_strings[3], test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"])
 
     def test_find_matches(self):
+        """ test finding matches """
         words = ["hello"]
         strings = [
             "hello there",
@@ -555,12 +593,8 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(len(matches), 0)
 
     def test_shorten_string(self):
+        """ test that we appropriately shorten the string to the desired size """
         words = ["hello", "there"]
-        strings = [
-            "hello there",
-            "goodbye there",
-            "Sail away to say HELLO",
-        ]
 
         test_string = "hello there"
         shortened = SearchResultProcessor.shorten_string(test_string, words, 20)
@@ -576,6 +610,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertTrue(len(shortened) == len(test_string))
 
     def test_too_long_find_matches(self):
+        """ make sure that we keep the expert snippets short enough """
         words = ["edx", "afterward"]
         strings = [
             ("Here is a note about edx and it is very long - more than the desirable length of 100 characters"
@@ -586,6 +621,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(len(matches), 1)
 
     def test_url(self):
+        """ test generation of url from id of the result """
         test_result = {
             "course": "testmetestme",
             "id": "herestheid"
@@ -603,6 +639,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.url, None)
 
     def test_excerpt(self):
+        """ test that we return an excerpt """
         test_result = {
             "content": {
                 "notes": "Here is a note about edx",
@@ -616,6 +653,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt, "Here is a note about <b>edx</b>...<b>edX</b> search a lot")
 
     def test_too_long_excerpt(self):
+        """ test that we shorten an excerpt that is too long appropriately """
         test_string = (
             "Here is a note about edx and it is very long - more than the desirable length of 100"
             " characters - indeed this should show up but it should trim the characters around in"
@@ -649,6 +687,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertTrue("should trim the <b>edx</b> characters around" in excerpt)
 
     def test_excerpt_front(self):
+        """ test that we process correctly when match is at the front of the excerpt """
         test_result = {
             "content": {
                 "notes": "Dog - match upon first word",
@@ -697,6 +736,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt[0:34], "<b>Dog</b> - match upon first word")
 
     def test_excerpt_back(self):
+        """ test that we process correctly when match is at the end of the excerpt """
         test_result = {
             "content": {
                 "notes": "Match upon last word - Dog",
@@ -747,18 +787,28 @@ class SearchResultProcessorTests(TestCase):
 
 class OverrideSearchResultProcessor(SearchResultProcessor):
 
+    """
+    Override the SearchResultProcessor so that we get the additional (inferred) properties
+    and can identify results that should be removed due to access restriction
+    """
+    # pylint: disable=no-self-use
     @property
     def additional_property(self):
+        """ additional property that should appear within processed results """
         return "Should have an extra value"
 
     def should_remove(self, user):
+        """ remove items when url is None """
         return self.url is None
 
 
 @override_settings(SEARCH_RESULT_PROCESSOR="search.tests.tests.OverrideSearchResultProcessor")
 class TestOverrideSearchResultProcessor(TestCase):
 
+    """ test the correct processing of results using the SEARCH_RESULT_PROCESSOR specified class """
+
     def test_additional_property(self):
+        """ make sure the addition properties are returned """
         test_result = {
             "course": "testmetestme",
             "id": "herestheid"
@@ -770,6 +820,7 @@ class TestOverrideSearchResultProcessor(TestCase):
         self.assertEqual(test_result["additional_property"], "Should have an extra value")
 
     def test_removal(self):
+        """ make sure that the override of should remove let's the application prevent access to a result """
         test_result = {
             "not_course": "testmetestme",
             "id": "herestheid"
@@ -778,11 +829,22 @@ class TestOverrideSearchResultProcessor(TestCase):
         self.assertIsNone(new_result)
 
 
+def _post_request(body, course_id=None):
+    """ Helper method to post the request and process the response """
+    address = '/' if course_id is None else '/{}'.format(course_id)
+    response = Client().post(address, body)
+
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+
+
 @override_settings(SEARCH_ENGINE=MockSearchEngine)
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class MockSearchUrlTest(TestCase):
 
+    """
+    Make sure that requests to the url get routed to the correct view handler
+    """
     _searcher = None
 
     def setUp(self):
@@ -795,11 +857,13 @@ class MockSearchUrlTest(TestCase):
 
     @property
     def searcher(self):
+        """ return instance of searcher """
         if self._searcher is None:
             self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         return self._searcher
 
     def test_url_resolution(self):
+        """ make sure that the url is resolved as expected """
         resolver = resolve('/')
         self.assertEqual(resolver.view_name, 'do_search')
 
@@ -807,13 +871,8 @@ class MockSearchUrlTest(TestCase):
         self.assertEqual(resolver.view_name, 'do_search')
         self.assertEqual(resolver.kwargs['course_id'], 'blah')
 
-    def _post_request(self, body, course_id=None):
-        address = '/' if course_id is None else '/{}'.format(course_id)
-        response = Client().post(address, body)
-
-        return response.status_code, json.loads(response.content)
-
     def test_search_from_url(self):
+        """ test searching using the url """
         self.searcher.index(
             "test_doc",
             {
@@ -834,25 +893,26 @@ class MockSearchUrlTest(TestCase):
         )
         self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
 
-        code, results = self._post_request({"search_string": "sun"})
+        code, results = _post_request({"search_string": "sun"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids and "FAKE_ID_2" in result_ids)
 
-        code, results = self._post_request({"search_string": "Darling"})
+        code, results = _post_request({"search_string": "Darling"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
-        code, results = self._post_request({"search_string": "winter"})
+        code, results = _post_request({"search_string": "winter"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids)
 
-    def test_search_with_course_from_url(self):
+    def test_course_search_url(self):
+        """ test searching using the course url """
         self.searcher.index(
             "test_doc",
             {
@@ -884,23 +944,23 @@ class MockSearchUrlTest(TestCase):
             }
         )
 
-        code, results = self._post_request({"search_string": "Little Darling"})
+        code, results = _post_request({"search_string": "Little Darling"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
 
-        code, results = self._post_request({"search_string": "Darling"}, "ABC")
+        code, results = _post_request({"search_string": "Darling"}, "ABC")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
-        code, results = self._post_request({"search_string": "winter"}, "ABC")
+        code, results = _post_request({"search_string": "winter"}, "ABC")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" not in result_ids)
 
-        code, results = self._post_request({"search_string": "winter"}, "XYZ")
+        code, results = _post_request({"search_string": "winter"}, "XYZ")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
@@ -911,39 +971,29 @@ BAD_REQUEST_ERROR = "There is a problem here"
 
 class ErroringSearchEngine(MockSearchEngine):
 
+    """ Override to generate search engine error to test """
+
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
-        raise Exception(BAD_REQUEST_ERROR)
+        raise StandardError(BAD_REQUEST_ERROR)
 
 
 @override_settings(SEARCH_ENGINE=ErroringSearchEngine)
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase):
-
+    """ Make sure that we can error message when there is a problem """
     _searcher = None
 
     def setUp(self):
         MockSearchEngine.destroy()
-        self._searcher = None
 
     def tearDown(self):
         MockSearchEngine.destroy()
-        self._searcher = None
-
-    @property
-    def searcher(self):
-        if self._searcher is None:
-            self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        return self._searcher
-
-    def _post_request(self, body, course_id=None):
-        address = '/' if course_id is None else '/{}'.format(course_id)
-        response = Client().post(address, body)
-
-        return response.status_code, json.loads(response.content)
 
     def test_search_from_url(self):
-        self.searcher.index(
+        """ ensure that we get the error back when the backend fails """
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        searcher.index(
             "test_doc",
             {
                 "id": "FAKE_ID_1",
@@ -952,7 +1002,7 @@ class BadSearchTest(TestCase):
                 }
             }
         )
-        self.searcher.index(
+        searcher.index(
             "test_doc",
             {
                 "id": "FAKE_ID_2",
@@ -961,8 +1011,8 @@ class BadSearchTest(TestCase):
                 }
             }
         )
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+        searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
 
-        code, results = self._post_request({"search_string": "sun"})
+        code, results = _post_request({"search_string": "sun"})
         self.assertTrue(code > 499)
         self.assertEqual(results["error"], BAD_REQUEST_ERROR)

@@ -9,13 +9,25 @@ from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 
-from manager import SearchEngine
+from .manager import SearchEngine
 
 DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = "&hellip;"
 
 
 class SearchResultProcessor(object):
+
+    """
+    Class to post-process a search result from the search.
+    Each @property defined herein will be exposed as a member in the json-results given to the end user
+
+    Users of this search app will override this class and update setting for SEARCH_RESULT_PROCESSOR
+    In particular, an application using this search app will want to:
+        * override `should_remove`:
+            - This is where an application can decide whether to deny access to the result provided
+        * provide additional properties to be included
+            - Mark a method as a property and it's returned value will be added into the resultset given
+    """
 
     _results_fields = {}
     _match_phrase = None
@@ -26,6 +38,7 @@ class SearchResultProcessor(object):
 
     @staticmethod
     def strings_in_dictionary(dictionary):
+        """ Used by default implementation for finding excerpt """
         strings = [value for value in dictionary.itervalues() if not isinstance(value, dict)]
         for child_dict in [dv for dv in dictionary.itervalues() if isinstance(dv, dict)]:
             strings.extend(SearchResultProcessor.strings_in_dictionary(child_dict))
@@ -33,6 +46,7 @@ class SearchResultProcessor(object):
 
     @staticmethod
     def find_matches(strings, words, length_hoped):
+        """ Used by default property excerpt """
         matches = []
         length_found = 0
         for word in words:
@@ -44,6 +58,7 @@ class SearchResultProcessor(object):
 
     @staticmethod
     def boldface_matches(match_in, match_word):
+        """ boldface the matches within the excerpt """
         matches = re.finditer(match_word, match_in, re.IGNORECASE)
         for matched_string in set([match.group() for match in matches]):
             match_in = match_in.replace(matched_string, "<b>{}</b>".format(matched_string))
@@ -51,6 +66,7 @@ class SearchResultProcessor(object):
 
     @staticmethod
     def shorten_string(string_in, words, length_hoped):
+        """ Used by default property excerpt - Make sure the excerpt is not too long"""
         if len(string_in) <= length_hoped:
             return string_in
 
@@ -74,15 +90,28 @@ class SearchResultProcessor(object):
             "" if end_index is None else ELLIPSIS,
         )
 
-    def should_remove(self, user):
+    # disabling pylint violations because overriders will want to use these
+    def should_remove(self, user):  # pylint: disable=unused-argument, no-self-use
+        """
+        Override this in a class in order to add in last-chance access checks to the search process
+        Your application will want to make this decision
+        """
         return False
 
     def add_properties(self):
+        """
+        Called during post processing of result
+        Any properties defined in your subclass will get exposed as members of the result json from the search
+        """
         for property_name in [p[0] for p in inspect.getmembers(self.__class__) if isinstance(p[1], property)]:
             self._results_fields[property_name] = getattr(self, property_name, None)
 
     @classmethod
     def process_result(cls, dictionary, match_phrase, user):
+        """
+        Called from within search handler. Finds desired subclass and decides if the
+        result should be removed and adds properties derived from the result information
+        """
         use_processor = getattr(settings, "SEARCH_RESULT_PROCESSOR", None)
         if use_processor:
             component = use_processor.rsplit('.', 1)
@@ -102,6 +131,9 @@ class SearchResultProcessor(object):
 
     @property
     def excerpt(self):
+        """
+        Property to display a useful excerpt representing the matches within the results
+        """
         if "content" not in self._results_fields:
             return None
 
@@ -124,6 +156,9 @@ class SearchResultProcessor(object):
 
     @property
     def url(self):
+        """
+        Property to display the url for the given location, useful for allowing navigation
+        """
         if "course" not in self._results_fields or "id" not in self._results_fields:
             return None
 
@@ -135,6 +170,9 @@ class SearchResultProcessor(object):
 
 @csrf_exempt
 def do_search(request, course_id=None):
+    """
+    Search view for http requests
+    """
     results = {
         "error": _("Nothing to search")
     }
@@ -161,7 +199,7 @@ def do_search(request, course_id=None):
             results["results"] = [r for r in results["results"] if r["data"] is not None]
 
             status_code = 200
-    except Exception as err:
+    except StandardError as err:
         results = {
             "error": str(err)
         }

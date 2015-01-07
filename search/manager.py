@@ -1,4 +1,5 @@
 """ Abstract SearchEngine with factory method """
+# pylint: disable=R0921
 from django.conf import settings
 
 
@@ -12,20 +13,28 @@ class SearchEngine(object):
             self.index_name = index
 
     def index(self, doc_type, body, **kwargs):
+        """ This operation is called to add a document of given type to the search index """
         raise NotImplementedError
 
-    def remove(self, doc_type, id, **kwargs):
+    def remove(self, doc_type, doc_id, **kwargs):
+        """ This operation is called to remove a document of given type from the search index """
         raise NotImplementedError
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
+        """ This operation is called to search for matching documents within the search index """
         raise NotImplementedError
 
     def search_string(self, query_string, **kwargs):
+        """ Helper function when primary search is for a query string """
         return self.search(query_string=query_string, **kwargs)
 
     def search_fields(self, field_dictionary, **kwargs):
-        return self.search(field_dictionary=field_dictionary)
+        """ Helper function when primary search is for a set of matching fields """
+        return self.search(field_dictionary=field_dictionary, **kwargs)
 
     @staticmethod
     def get_search_engine(index=None):
+        """
+        Returns the desired implementor (defined in settings)
+        """
         return settings.SEARCH_ENGINE(index=index)

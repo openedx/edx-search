@@ -6,4 +6,6 @@ from django.conf.urls import patterns, include, url
 
 import search
 
+# urlpatterns is the standard name to use here
+# pylint: disable=invalid-name
 urlpatterns = patterns('', url(r'^search/', include(search.urls)),)
