@@ -136,7 +136,7 @@ class ElasticSearchEngine(SearchEngine):
 
         # Make fields other than content be indexed as unanalyzed terms - content
         # contains fields that are to be analyzed
-        exclude_fields = ["content", "id", "course"]
+        exclude_fields = ["content"]
         current_mappings = self._get_mappings(doc_type)
         field_properties = getattr(settings, "ELASTIC_FIELD_MAPPINGS", {})
         properties = {}
