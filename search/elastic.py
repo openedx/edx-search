@@ -123,6 +123,8 @@ class ElasticSearchEngine(SearchEngine):
 
     def __init__(self, index=None):
         super(ElasticSearchEngine, self).__init__(index)
+        if not self._es.indices.exists(index=self.index_name):
+            self._es.indices.create(index=self.index_name)
 
     def _check_mappings(self, doc_type, body):
         """
@@ -131,6 +133,7 @@ class ElasticSearchEngine(SearchEngine):
         set up the mappings for these fields as "not_analyzed" - this will allow our filters to work faster because
         they only have to work off exact matches
         """
+
         # Make fields other than content be indexed as unanalyzed terms - content
         # contains fields that are to be analyzed
         exclude_fields = ["content", "id", "course"]
