@@ -79,14 +79,20 @@ def _filter_filter_dictionary(documents_to_search, filter_dictionary):
         if isinstance(field_value, list) and len(field_value) == 2:
             fn_conv = _null_conversion if contains_numbers(field_value) else _convert_to_date
             if field_value[0]:
-                filtered_documents = [d for d in filtered_documents if fn_conv(
-                    find_field(d, field_name)) >= fn_conv(field_value[0]) or find_field(d, field_name) is None]
+                filtered_documents = [d for d in filtered_documents if (
+                    find_field(d, field_name) is None or
+                    fn_conv(find_field(d, field_name)) >= fn_conv(field_value[0])
+                    )]
             if field_value[1]:
-                filtered_documents = [d for d in filtered_documents if fn_conv(
-                    find_field(d, field_name)) <= fn_conv(field_value[1]) or find_field(d, field_name) is None]
+                filtered_documents = [d for d in filtered_documents if (
+                    find_field(d, field_name) is None or
+                    fn_conv(find_field(d, field_name)) <= fn_conv(field_value[1])
+                    )]
         else:
-            filtered_documents = [d for d in filtered_documents if find_field(
-                d, field_name) == field_value or find_field(d, field_name) is None]
+            filtered_documents = [d for d in filtered_documents if (
+                find_field(d, field_name) == field_value or
+                find_field(d, field_name) is None
+                )]
 
     return filtered_documents
 

@@ -15,6 +15,21 @@ DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = "&hellip;"
 
 
+def _load_class(class_path, default):
+    """ Loads the class from the class_path string """
+    if class_path is None:
+        return default
+
+    component = class_path.rsplit('.', 1)
+    result_processor = getattr(
+        importlib.import_module(component[0]),
+        component[1],
+        default
+    ) if len(component) > 1 else default
+
+    return result_processor
+
+
 class SearchResultProcessor(object):
 
     """
@@ -112,17 +127,7 @@ class SearchResultProcessor(object):
         Called from within search handler. Finds desired subclass and decides if the
         result should be removed and adds properties derived from the result information
         """
-        use_processor = getattr(settings, "SEARCH_RESULT_PROCESSOR", None)
-        if use_processor:
-            component = use_processor.rsplit('.', 1)
-            result_processor = getattr(
-                importlib.import_module(component[0]),
-                component[1],
-                cls
-            ) if len(component) > 1 else cls
-        else:
-            result_processor = cls
-
+        result_processor = _load_class(getattr(settings, "SEARCH_RESULT_PROCESSOR", None), cls)
         srp = result_processor(dictionary, match_phrase)
         if srp.should_remove(user):
             return None
@@ -168,6 +173,37 @@ class SearchResultProcessor(object):
         )
 
 
+class SearchFilterGenerator(object):
+
+    """
+    Class to provide a set of filters for the search.
+    Users of this search app will override this class and update setting for SEARCH_FILTER_GENERATOR
+    """
+
+    # disabling pylint violations because overriders will want to use these
+    # pylint: disable=unused-argument, no-self-use
+    def filter_dictionary(self, **kwargs):
+        """ base implementation which filters via start_date """
+        return {"start_date": [None, "now"]}
+
+    def field_dictionary(self, **kwargs):
+        """ base implementation which add course if provided """
+        field_dictionary = {}
+        if "course_id" in kwargs and kwargs["course_id"]:
+            field_dictionary["course"] = kwargs["course_id"]
+
+        return field_dictionary
+
+    @classmethod
+    def generate_field_filters(cls, **kwargs):
+        """
+        Called from within search handler
+        Finds desired subclass and adds filter information based upon user information
+        """
+        generator = _load_class(getattr(settings, "SEARCH_FILTER_GENERATOR", None), cls)()
+        return generator.field_dictionary(**kwargs), generator.filter_dictionary(**kwargs)
+
+
 @csrf_exempt
 def do_search(request, course_id=None):
     """
@@ -182,13 +218,18 @@ def do_search(request, course_id=None):
         if request.method == 'POST':
             search_terms = request.POST["search_string"]
 
-            field_dictionary = None
-            if course_id:
-                field_dictionary = {"course": course_id}
+            # field_ and filter_dictionary(s) which can be overridden by calling application
+            # field_dictionary includes course if course_id provided
+            field_dictionary, filter_dictionary = SearchFilterGenerator.generate_field_filters(
+                user=request.user,
+                course_id=course_id,
+            )
+
             searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
             results = searcher.search_string(
                 search_terms,
-                field_dictionary=field_dictionary
+                field_dictionary=field_dictionary,
+                filter_dictionary=filter_dictionary,
             )
 
             # post-process the result
