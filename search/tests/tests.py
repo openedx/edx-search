@@ -642,49 +642,49 @@ class SearchResultProcessorTests(TestCase):
         """ test that we return an excerpt """
         test_result = {
             "content": {
-                "notes": "Here is a note about edx",
+                "notes": u"Here is a الاستحسان about edx",
                 "name": "edX search a lot",
             }
         }
-        srp = SearchResultProcessor(test_result, "note")
-        self.assertEqual(srp.excerpt, "Here is a <b>note</b> about edx")
+        srp = SearchResultProcessor(test_result, u"الاستحسان")
+        self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
 
-        srp = SearchResultProcessor(test_result, "edx")
-        self.assertEqual(srp.excerpt, "Here is a note about <b>edx</b>...<b>edX</b> search a lot")
+        srp = SearchResultProcessor(test_result, u"edx")
+        self.assertEqual(srp.excerpt, u"Here is a الاستحسان about <b>edx</b>...<b>edX</b> search a lot")
 
     def test_too_long_excerpt(self):
         """ test that we shorten an excerpt that is too long appropriately """
         test_string = (
-            "Here is a note about edx and it is very long - more than the desirable length of 100"
-            " characters - indeed this should show up but it should trim the characters around in"
-            " order to show the selected text in bold"
+            u"Here is a note about الاستحسان and it is very long - more than the desirable length of 100"
+            u" characters - indeed this should show up but it should trim the characters around in"
+            u" order to show the selected text in bold"
         )
         test_result = {
             "content": {
                 "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result, "edx")
-        test_string_compare = SearchResultProcessor.boldface_matches(test_string, "edx")
+        srp = SearchResultProcessor(test_result, u"الاستحسان")
+        test_string_compare = SearchResultProcessor.boldface_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertTrue("note about <b>edx</b> and it is" in excerpt)
+        self.assertTrue(u"note about <b>الاستحسان</b> and it is" in excerpt)
 
         test_string = (
-            "Here is a note about stuff and it is very long - more than the desirable length of 100"
-            " characters - indeed this should show up but it should trim the edx characters around in"
-            " order to show the selected text in bold"
+            u"Here is a note about stuff and it is very long - more than the desirable length of 100"
+            u" characters - indeed this should show up but it should trim the الاستحسان characters around in"
+            u" order to show the selected text in bold"
         )
         test_result = {
             "content": {
                 "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result, "edx")
-        test_string_compare = SearchResultProcessor.boldface_matches(test_string, "edx")
+        srp = SearchResultProcessor(test_result, u"الاستحسان")
+        test_string_compare = SearchResultProcessor.boldface_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertTrue("should trim the <b>edx</b> characters around" in excerpt)
+        self.assertTrue(u"should trim the <b>الاستحسان</b> characters around" in excerpt)
 
     def test_excerpt_front(self):
         """ test that we process correctly when match is at the front of the excerpt """

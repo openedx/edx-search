@@ -76,7 +76,7 @@ class SearchResultProcessor(object):
         """ boldface the matches within the excerpt """
         matches = re.finditer(match_word, match_in, re.IGNORECASE)
         for matched_string in set([match.group() for match in matches]):
-            match_in = match_in.replace(matched_string, "<b>{}</b>".format(matched_string))
+            match_in = match_in.replace(matched_string, u"<b>{}</b>".format(matched_string))
         return match_in
 
     @staticmethod
@@ -99,7 +99,7 @@ class SearchResultProcessor(object):
         if end_index >= len(string_in):
             end_index = None
 
-        return "{}{}{}".format(
+        return u"{}{}{}".format(
             "" if start_index < 1 else ELLIPSIS,
             string_in[start_index:end_index].strip(),
             "" if end_index is None else ELLIPSIS,
