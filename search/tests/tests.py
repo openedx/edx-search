@@ -871,6 +871,10 @@ class MockSearchUrlTest(TestCase):
         self.assertEqual(resolver.view_name, 'do_search')
         self.assertEqual(resolver.kwargs['course_id'], 'blah')
 
+        resolver = resolve('/edX/DemoX/Demo_Course')
+        self.assertEqual(resolver.view_name, 'do_search')
+        self.assertEqual(resolver.kwargs['course_id'], 'edX/DemoX/Demo_Course')
+
     def test_search_from_url(self):
         """ test searching using the url """
         self.searcher.index(

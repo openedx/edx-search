@@ -37,4 +37,5 @@ class SearchEngine(object):
         """
         Returns the desired implementor (defined in settings)
         """
-        return settings.SEARCH_ENGINE(index=index)
+        search_engine_class = getattr(settings, "SEARCH_ENGINE", None)
+        return search_engine_class(index=index) if search_engine_class else None
