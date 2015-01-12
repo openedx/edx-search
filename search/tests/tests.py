@@ -453,6 +453,85 @@ class MockSearchTests(TestCase):
         response = self.searcher.search(filter_dictionary={"age": [19, 29]})
         self.assertEqual(response["total"], 2)
 
+    def test_pagination(self):
+        """ Test paging operation """
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling Little Darling, it's been a year since you've been gone"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "XYZ",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+
+        response = self.searcher.search(query_string="Little Darling")
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 3)
+
+        response = self.searcher.search(query_string="Little Darling", size=1)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=1, from_=0)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=1, from_=1)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_2" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=1, from_=2)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_3" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=2)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 2)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=2, from_=0)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 2)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        response = self.searcher.search(query_string="Little Darling", size=2, from_=2)
+        self.assertEqual(response["total"], 3)
+        self.assertEqual(len(response["results"]), 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertTrue("FAKE_ID_3" in result_ids)
+
 
 # Uncomment below in order to test against installed Elastic Search installation
 @override_settings(SEARCH_ENGINE=ForceRefreshElasticSearchEngine)
@@ -970,6 +1049,94 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)
 
+    def test_pagination(self):
+        """ test searching using the course url """
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling Little Darling, it's been a year since you've been gone"
+                }
+            }
+        )
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "XYZ",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
+
+        code, results = _post_request({"search_string": "Little Darling"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 3)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 1})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 0})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 1})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_2" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 2})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_3" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 2})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 0})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 1})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 3)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertTrue("FAKE_ID_3" in result_ids)
+
+
 BAD_REQUEST_ERROR = "There is a problem here"
 
 
@@ -985,6 +1152,7 @@ class ErroringSearchEngine(MockSearchEngine):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase):
+
     """ Make sure that we can error message when there is a problem """
     _searcher = None
 

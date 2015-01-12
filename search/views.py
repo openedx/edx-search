@@ -218,6 +218,13 @@ def do_search(request, course_id=None):
         if request.method == 'POST':
             search_terms = request.POST["search_string"]
 
+            # process pagination requests
+            pagination = {}
+            if "page_size" in request.POST:
+                pagination["size"] = int(request.POST["page_size"])
+                if "page_index" in request.POST:
+                    pagination["from_"] = int(request.POST["page_index"]) * pagination["size"]
+
             # field_ and filter_dictionary(s) which can be overridden by calling application
             # field_dictionary includes course if course_id provided
             field_dictionary, filter_dictionary = SearchFilterGenerator.generate_field_filters(
@@ -230,6 +237,7 @@ def do_search(request, course_id=None):
                 search_terms,
                 field_dictionary=field_dictionary,
                 filter_dictionary=filter_dictionary,
+                **pagination
             )
 
             # post-process the result
