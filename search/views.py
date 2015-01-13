@@ -1,4 +1,5 @@
 """ handle requests for courseware search http requests """
+from datetime import datetime
 import importlib
 import inspect
 import json
@@ -184,7 +185,7 @@ class SearchFilterGenerator(object):
     # pylint: disable=unused-argument, no-self-use
     def filter_dictionary(self, **kwargs):
         """ base implementation which filters via start_date """
-        return {"start_date": [None, "now"]}
+        return {"start_date": [None, datetime.now().isoformat()]}
 
     def field_dictionary(self, **kwargs):
         """ base implementation which add course if provided """
