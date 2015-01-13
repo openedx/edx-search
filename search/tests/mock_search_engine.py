@@ -6,65 +6,44 @@ from search.manager import SearchEngine
 from search.utils import ValueRange, DateRange
 
 
-def _null_conversion(value):
-    """ no-op function, just returns what you give it """
-    return value
-
-
-def contains_numbers(array_of_values):
-    """ True if anything value in the array is a number """
-    for test_value in array_of_values:
-        if isinstance(test_value, Number):
-            return True
-    return False
-
-
-def find_field(doc, field_name):
+def _find_field(doc, field_name):
     """ find the dictionary field corresponding to the . limited name """
-    field_chain = field_name.split('.', 1)
-    if len(field_chain) > 1:
-        return find_field(doc[field_chain[0]], field_chain[1]) if field_chain[0] in doc else None
+    if not isinstance(doc, dict):
+        return ValueError('Parameter `doc` should be a python dict object')
+
+    if not isinstance(field_name, basestring):
+        raise ValueError('Parameter `field_name` should be a string')
+
+    immediate_field, remaining_path = field_name.split('.', 1) if '.' in field_name else (field_name, None)
+    field_value = doc.get(immediate_field)
+
+    if isinstance(field_value, dict):
+        return _find_field(field_value, remaining_path)
     else:
-        return doc[field_chain[0]] if field_chain[0] in doc else None
+        return field_value
 
 
-def _filter_field_dictionary(documents_to_search, field_dictionary):
-    """ remove the documents for which the fields do not match """
-    filtered_documents = documents_to_search
-    for field_name in field_dictionary:
-        field_value = field_dictionary[field_name]
+def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
+    if not dictionary_object:
+        return documents_to_search
+
+    def value_matches(doc, field_name, field_value):
+        compare_value = _find_field(doc, field_name)
+        if compare_value is None:
+            return include_blanks
+
         if isinstance(field_value, ValueRange):
-            if field_value.lower:
-                filtered_documents = [d for d in filtered_documents if find_field(d, field_name) >= field_value.lower]
-            if field_value.upper:
-                filtered_documents = [d for d in filtered_documents if find_field(d, field_name) <= field_value.upper]
+            return (
+                (field_value.lower is None or compare_value >= field_value.lower)
+                and
+                (field_value.upper is None or compare_value <= field_value.upper)
+            )
         else:
-            filtered_documents = [d for d in filtered_documents if find_field(d, field_name) == field_value]
+            return compare_value == field_value
 
-    return filtered_documents
-
-
-def _filter_filter_dictionary(documents_to_search, filter_dictionary):
-    """ remove the documents for which the fields do not match iff the field is present """
     filtered_documents = documents_to_search
-    for field_name in filter_dictionary:
-        field_value = filter_dictionary[field_name]
-        if isinstance(field_value, ValueRange):
-            if field_value.lower:
-                filtered_documents = [d for d in filtered_documents if (
-                    find_field(d, field_name) is None or
-                    find_field(d, field_name) >= field_value.lower
-                )]
-            if field_value.upper:
-                filtered_documents = [d for d in filtered_documents if (
-                    find_field(d, field_name) is None or
-                    find_field(d, field_name) <= field_value.upper
-                )]
-        else:
-            filtered_documents = [d for d in filtered_documents if (
-                find_field(d, field_name) == field_value or
-                find_field(d, field_name) is None
-            )]
+    for field_name, field_value in dictionary_object.items():
+        filtered_documents = filter(lambda d: value_matches(d, field_name, field_value), filtered_documents)
 
     return filtered_documents
 
@@ -126,7 +105,7 @@ class MockSearchEngine(SearchEngine):
 
     def remove(self, doc_type, doc_id, **kwargs):
         _mock_index = MockSearchEngine._mock_elastic[self.index_name]
-        _mock_index[doc_type] = [d for d in _mock_index[doc_type] if "id" not in d or d["id"] != doc_id]
+        _mock_index[doc_type] = filter(lambda d: "id" not in d or d["id"] != doc_id, _mock_index[doc_type])
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
         documents_to_search = []
@@ -138,10 +117,10 @@ class MockSearchEngine(SearchEngine):
                 documents_to_search.extend(MockSearchEngine._mock_elastic[self.index_name][doc_type])
 
         if field_dictionary:
-            documents_to_search = _filter_field_dictionary(documents_to_search, field_dictionary)
+            documents_to_search = _filter_intersection(documents_to_search, field_dictionary)
 
         if filter_dictionary:
-            documents_to_search = _filter_filter_dictionary(documents_to_search, filter_dictionary)
+            documents_to_search = _filter_intersection(documents_to_search, filter_dictionary, True)
 
         if query_string:
             documents_to_search = _process_query_string(documents_to_search, query_string.split(" "))

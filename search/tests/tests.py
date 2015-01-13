@@ -290,7 +290,7 @@ class MockSearchTests(TestCase):
         self.assertEqual(response["total"], 0)
 
         response = self._searcher.search(
-            field_dictionary={"tags.shape": "square", "tags.color": "blue"}, search_fields=True)
+            field_dictionary={"tags.shape": "square", "tags.color": "blue"}, use_field_match=True)
         self.assertEqual(response["total"], 0)
 
     def test_extended_characters(self):
@@ -736,7 +736,7 @@ class SearchResultProcessorTests(TestCase):
             }
         }
         srp = SearchResultProcessor(test_result, u"الاستحسان")
-        test_string_compare = SearchResultProcessor.boldface_matches(test_string, u"الاستحسان")
+        test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
         self.assertTrue(u"note about <b>الاستحسان</b> and it is" in excerpt)
@@ -752,7 +752,7 @@ class SearchResultProcessorTests(TestCase):
             }
         }
         srp = SearchResultProcessor(test_result, u"الاستحسان")
-        test_string_compare = SearchResultProcessor.boldface_matches(test_string, u"الاستحسان")
+        test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
         self.assertTrue(u"should trim the <b>الاستحسان</b> characters around" in excerpt)

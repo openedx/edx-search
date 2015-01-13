@@ -1,10 +1,14 @@
 """ handle requests for courseware search http requests """
+import logging
 import json
 
 from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 
 from .api import perform_search
+
+# log appears to be standard name used for logger
+log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 def do_search(request, course_id=None):
@@ -42,6 +46,7 @@ def do_search(request, course_id=None):
         results = {
             "error": str(err)
         }
+        log.exception("Search view exception - %s", str(err))
 
     return HttpResponse(
         json.dumps(results),

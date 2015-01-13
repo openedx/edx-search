@@ -52,11 +52,14 @@ class SearchResultProcessor(object):
         return [SearchResultProcessor.shorten_string(m, words, length_hoped) for m in matches]
 
     @staticmethod
-    def boldface_matches(match_in, match_word):
-        """ boldface the matches within the excerpt """
+    def decorate_matches(match_in, match_word):
+        """ decorate the matches within the excerpt """
         matches = re.finditer(match_word, match_in, re.IGNORECASE)
         for matched_string in set([match.group() for match in matches]):
-            match_in = match_in.replace(matched_string, u"<b>{}</b>".format(matched_string))
+            match_in = match_in.replace(
+                matched_string,
+                getattr(settings, "SEARCH_MATCH_DECORATION", u"<b>{}</b>").format(matched_string)
+            )
         return match_in
 
     @staticmethod
@@ -135,7 +138,7 @@ class SearchResultProcessor(object):
         excerpt_text = '...'.join(matches)
 
         for match_word in match_words:
-            excerpt_text = SearchResultProcessor.boldface_matches(excerpt_text, match_word)
+            excerpt_text = SearchResultProcessor.decorate_matches(excerpt_text, match_word)
 
         return excerpt_text
 
