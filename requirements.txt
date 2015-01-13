@@ -1,2 +1,2 @@
-django>=1.4.12
-elasticsearch==1.2.0
+django==1.4.16
+elasticsearch<1.0.0

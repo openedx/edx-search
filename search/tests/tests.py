@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ Tests for search functionalty """
-import datetime
+from datetime import datetime
 import json
 
 from django.core.urlresolvers import resolve
@@ -11,9 +11,10 @@ from elasticsearch import Elasticsearch
 
 from search.manager import SearchEngine
 from search.elastic import ElasticSearchEngine
+from search.result_processor import SearchResultProcessor
+from search.utils import ValueRange, DateRange
 
-from .mock_search_engine import MockSearchEngine, _convert_to_date
-from search.views import SearchResultProcessor
+from .mock_search_engine import MockSearchEngine
 
 TEST_INDEX_NAME = "test_index"
 
@@ -371,22 +372,22 @@ class MockSearchTests(TestCase):
 
     def test_date_range(self):
         """ Make sure that date ranges can be searched """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": "2010-01-01"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": "2100-01-01"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": datetime(2010, 1, 1)})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": datetime(2100, 1, 1)})
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 2)
 
-        response = self.searcher.search(field_dictionary={"start_date": [None, "now"]})
+        response = self.searcher.search(field_dictionary={"start_date": DateRange(None, datetime.utcnow())})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(field_dictionary={"start_date": ["2099-01-01", None]})
+        response = self.searcher.search(field_dictionary={"start_date": DateRange(datetime(2099, 1, 1), None)})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(filter_dictionary={"start_date": [None, "now"]})
+        response = self.searcher.search(filter_dictionary={"start_date": DateRange(None, datetime.utcnow())})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(filter_dictionary={"start_date": ["2099-01-01", None]})
+        response = self.searcher.search(filter_dictionary={"start_date": DateRange(datetime(2099, 1, 1), None)})
         self.assertEqual(response["total"], 1)
 
     def test_numeric_range(self):
@@ -397,12 +398,12 @@ class MockSearchTests(TestCase):
 
         def test_age_range_field(begin, end, expect):
             """ repeated operations consolidated for tests """
-            response = self.searcher.search(field_dictionary={"age": [begin, end]})
+            response = self.searcher.search(field_dictionary={"age": ValueRange(begin, end)})
             self.assertEqual(response["total"], expect)
 
         def test_age_range_filter(begin, end, expect):
             """ repeated operations consolidated for tests """
-            response = self.searcher.search(filter_dictionary={"age": [begin, end]})
+            response = self.searcher.search(filter_dictionary={"age": ValueRange(begin, end)})
             self.assertEqual(response["total"], expect)
 
         response = self.searcher.search()
@@ -460,10 +461,10 @@ class MockSearchTests(TestCase):
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
 
-        response = self.searcher.search(field_dictionary={"age": [19, 29]})
+        response = self.searcher.search(field_dictionary={"age": ValueRange(19, 29)})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(filter_dictionary={"age": [19, 29]})
+        response = self.searcher.search(filter_dictionary={"age": ValueRange(19, 29)})
         self.assertEqual(response["total"], 2)
 
     def test_pagination(self):
@@ -552,28 +553,6 @@ class ElasticSearchTests(MockSearchTests):
 
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
     pass
-
-
-class MockSearchSpecifcTests(TestCase):
-
-    """ Test code specific to MockSearchEngine which cannot be tested from Elastic implementation """
-
-    def test_date_from_string(self):
-        """ Make sure that the string -> date conversion works as expected """
-        now_date = _convert_to_date("now")
-        this_date = datetime.datetime.utcnow()
-        self.assertEqual(now_date.year, this_date.year)
-        self.assertEqual(now_date.month, this_date.month)
-        self.assertEqual(now_date.day, this_date.day)
-        self.assertEqual(now_date.hour, this_date.hour)
-        self.assertEqual(now_date.minute, this_date.minute)
-
-        self.assertEqual(_convert_to_date(None), None)
-        self.assertEqual(_convert_to_date("BLAHSDLASDJASLD"), None)
-        self.assertEqual(_convert_to_date('2014-12-25'), datetime.datetime(2014, 12, 25))
-        self.assertEqual(_convert_to_date('2014-12-25T11:22:00Z'), datetime.datetime(2014, 12, 25, 11, 22, 0))
-        self.assertEqual(_convert_to_date('2014-12-25T23:22:00.000999Z'),
-                         datetime.datetime(2014, 12, 25, 23, 22, 0, 999))
 
 
 class SearchResultProcessorTests(TestCase):

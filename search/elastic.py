@@ -3,6 +3,7 @@ from django.conf import settings
 from elasticsearch import Elasticsearch, exceptions
 
 from search.manager import SearchEngine
+from search.utils import ValueRange
 
 
 def _translate_hits(es_response):
@@ -33,12 +34,12 @@ def _translate_hits(es_response):
 def _get_filter_field(field_name, field_value):
     """ Return field to apply into filter, if an array then use a range, otherwise look for a term match """
     filter_field = None
-    if isinstance(field_value, list) and len(field_value) == 2:
+    if isinstance(field_value, ValueRange):
         range_values = {}
-        if field_value[0]:
-            range_values.update({"gte": field_value[0]})
-        if field_value[1]:
-            range_values.update({"lte": field_value[1]})
+        if field_value.lower:
+            range_values.update({"gte": field_value.lower_string})
+        if field_value.upper:
+            range_values.update({"lte": field_value.upper_string})
         filter_field = {
             "range": {
                 field_name: range_values

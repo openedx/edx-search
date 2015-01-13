@@ -3,31 +3,7 @@ import copy
 import datetime
 from numbers import Number
 from search.manager import SearchEngine
-
-
-def _convert_to_date(json_date_string_value):
-    ''' converts json date string to date object '''
-    if json_date_string_value is None:
-        return None
-
-    if json_date_string_value == "now":
-        return datetime.datetime.utcnow()
-
-    try:
-        if "T" in json_date_string_value:
-            if "." in json_date_string_value:
-                format_string = "%Y-%m-%dT%H:%M:%S.%fZ"
-            else:
-                format_string = "%Y-%m-%dT%H:%M:%SZ"
-        else:
-            format_string = "%Y-%m-%d"
-
-        return datetime.datetime.strptime(
-            json_date_string_value,
-            format_string
-        )
-    except ValueError:
-        return None
+from search.utils import ValueRange, DateRange
 
 
 def _null_conversion(value):
@@ -57,14 +33,11 @@ def _filter_field_dictionary(documents_to_search, field_dictionary):
     filtered_documents = documents_to_search
     for field_name in field_dictionary:
         field_value = field_dictionary[field_name]
-        if isinstance(field_value, list) and len(field_value) == 2:
-            fn_conv = _null_conversion if contains_numbers(field_value) else _convert_to_date
-            if field_value[0]:
-                filtered_documents = [d for d in filtered_documents if fn_conv(
-                    find_field(d, field_name)) >= fn_conv(field_value[0])]
-            if field_value[1]:
-                filtered_documents = [d for d in filtered_documents if fn_conv(
-                    find_field(d, field_name)) <= fn_conv(field_value[1])]
+        if isinstance(field_value, ValueRange):
+            if field_value.lower:
+                filtered_documents = [d for d in filtered_documents if find_field(d, field_name) >= field_value.lower]
+            if field_value.upper:
+                filtered_documents = [d for d in filtered_documents if find_field(d, field_name) <= field_value.upper]
         else:
             filtered_documents = [d for d in filtered_documents if find_field(d, field_name) == field_value]
 
@@ -76,17 +49,16 @@ def _filter_filter_dictionary(documents_to_search, filter_dictionary):
     filtered_documents = documents_to_search
     for field_name in filter_dictionary:
         field_value = filter_dictionary[field_name]
-        if isinstance(field_value, list) and len(field_value) == 2:
-            fn_conv = _null_conversion if contains_numbers(field_value) else _convert_to_date
-            if field_value[0]:
+        if isinstance(field_value, ValueRange):
+            if field_value.lower:
                 filtered_documents = [d for d in filtered_documents if (
                     find_field(d, field_name) is None or
-                    fn_conv(find_field(d, field_name)) >= fn_conv(field_value[0])
+                    find_field(d, field_name) >= field_value.lower
                 )]
-            if field_value[1]:
+            if field_value.upper:
                 filtered_documents = [d for d in filtered_documents if (
                     find_field(d, field_name) is None or
-                    fn_conv(find_field(d, field_name)) <= fn_conv(field_value[1])
+                    find_field(d, field_name) <= field_value.upper
                 )]
         else:
             filtered_documents = [d for d in filtered_documents if (

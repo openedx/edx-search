@@ -1,5 +1,5 @@
 """
-Django settings for edx-search project.
+Django settings for edxsearch test project.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/1.6/topics/settings/
@@ -17,9 +17,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1mjg2%$#u($-g4'
+# This is just a container for running tests, it's okay to allow it to be
+# defaulted here if not present in environment settings
+import os
+SECRET_KEY = os.environ[
+    'SECRET_KEY'
+] if 'SECRET_KEY' in os.environ else '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1mjg2%$#u($-g4'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# This is just a container for running tests
 DEBUG = True
 
 TEMPLATE_DEBUG = True
