@@ -338,6 +338,19 @@ class MockSearchTests(TestCase):
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
+    def test_delete_item_not_present(self):
+        """ make sure that we get no error removing an item that does not exist """
+        test_string = "This is a test of the emergency broadcast system"
+        self.searcher.index("test_doc", {"id": "FAKE_ID", "content": {"name": "abc"}})
+        self.searcher.remove("test_doc", "FAKE_ID")
+
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 0)
+
+        self.searcher.remove("test_doc", "FAKE_ID")
+        response = self.searcher.search(test_string)
+        self.assertEqual(response["total"], 0)
+
     def test_filter_items(self):
         """ Make sure that filters work """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})

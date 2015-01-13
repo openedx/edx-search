@@ -195,6 +195,12 @@ class ElasticSearchEngine(SearchEngine):
 
     def remove(self, doc_type, doc_id, **kwargs):
         """ Implements call to remove the document from the index """
+
+        # let notfound not cause error
+        kwargs.update({
+            "ignore": [404]
+        })
+
         self._es.delete(
             index=self.index_name,
             doc_type=doc_type,
