@@ -62,12 +62,13 @@ def _get_filter_field(field_name, field_value):
     return filter_field
 
 
-def _process_field_dictionary_queries(field_dictionary):
+def _process_field_queries(field_dictionary):
     """
     We have a field_dictionary - we want to match the values for an elasticsearch "match" query
     This is only potentially useful when trying to tune certain search operations
     """
     def field_item(field):
+        """ format field match as "match" item for elasticsearch query """
         return {
             "match": {
                 field: field_dictionary[field]
@@ -77,20 +78,21 @@ def _process_field_dictionary_queries(field_dictionary):
     return [field_item(field) for field in field_dictionary]
 
 
-def _process_field_dictionary_filters(field_dictionary):
+def _process_field_filters(field_dictionary):
     """
     We have a field_dictionary - we match the values using a "term" filter in elasticsearch
     """
     return [_get_filter_field(field, field_value) for field, field_value in field_dictionary.items()]
 
 
-def _process_filter_dictionary(filter_dictionary):
+def _process_filters(filter_dictionary):
     """
     We have a filter_dictionary - this means that if the field is included
     and matches, then we can include, OR if the field is undefined, then we
     assume it is safe to include
     """
     def filter_item(field):
+        """ format elasticsearch filter to pass if value matches OR field is not included """
         return {
             "or": [
                 _get_filter_field(field, filter_dictionary[field]),
@@ -111,23 +113,53 @@ class ElasticSearchEngine(SearchEngine):
 
     @staticmethod
     def get_cache_item_name(index_name, doc_type):
-        return "elastic_search_mappings_{}".format(
+        """ name-formatter for cache_item_name """
+        return "elastic_search_mappings_{}_{}".format(
             index_name,
             doc_type
         )
 
     @classmethod
     def get_mappings(cls, index_name, doc_type):
+        """ fetch mapped-items structure from cache """
         return cache.get(cls.get_cache_item_name(index_name, doc_type), {})
 
     @classmethod
     def set_mappings(cls, index_name, doc_type, mappings):
+        """ set new mapped-items structure into cache """
         cache.set(cls.get_cache_item_name(index_name, doc_type), mappings)
 
     def _get_mappings(self, doc_type):
         """
         Interfaces with the elasticsearch mappings for the index
         prevents multiple loading of the same mappings from ES when called more than once
+
+        Mappings format in elasticsearch is as follows:
+        {
+           "doc_type": {
+              "properties": {
+                 "nested_property": {
+                    "properties": {
+                       "an_analysed_property": {
+                          "type": "string"
+                       },
+                       "another_analysed_property": {
+                          "type": "string"
+                       }
+                    }
+                 },
+                 "a_not_analysed_property": {
+                    "type": "string",
+                    "index": "not_analyzed"
+                 },
+                 "a_date_property": {
+                    "type": "date"
+                 }
+              }
+           }
+        }
+
+        We cache the properties of each doc_type, if they are not available, we'll load them again from Elasticsearch
         """
         doc_mappings = ElasticSearchEngine.get_mappings(self.index_name, doc_type)
         if not doc_mappings:
@@ -161,7 +193,7 @@ class ElasticSearchEngine(SearchEngine):
 
     def _check_mappings(self, doc_type, body):
         """
-        We desire to index content so that anything we want to be textually searchable (and therefore needing to be
+        We desire to index content so that anything we want to be textually searchable(and therefore needing to be
         analysed), but the other fields are designed to be filters, and only require an exact match. So, we want to
         set up the mappings for these fields as "not_analyzed" - this will allow our filters to work faster because
         they only have to work off exact matches
@@ -173,7 +205,36 @@ class ElasticSearchEngine(SearchEngine):
         field_properties = getattr(settings, "ELASTIC_FIELD_MAPPINGS", {})
 
         def field_property(field_name, field_value):
-            """ Prepares field as property syntax for providing correct mapping desired for field """
+            """
+            Prepares field as property syntax for providing correct mapping desired for field
+
+            Mappings format in elasticsearch is as follows:
+            {
+               "doc_type": {
+                  "properties": {
+                     "nested_property": {
+                        "properties": {
+                           "an_analysed_property": {
+                              "type": "string"
+                           },
+                           "another_analysed_property": {
+                              "type": "string"
+                           }
+                        }
+                     },
+                     "a_not_analysed_property": {
+                        "type": "string",
+                        "index": "not_analyzed"
+                     },
+                     "a_date_property": {
+                        "type": "date"
+                     }
+                  }
+               }
+            }
+
+            We can only add new ones, but the format is the same
+            """
             prop_val = None
             if field_name in field_properties:
                 prop_val = field_properties[field_name]
@@ -236,6 +297,8 @@ class ElasticSearchEngine(SearchEngine):
         log.debug("remove index for {doc_type} object with id {id_}".format(doc_type=doc_type, id_=doc_id))
 
         try:
+            # ignore is flagged as an unexpected-keyword-arg; ES python client documents that it can be used
+            # pylint: disable=unexpected-keyword-arg
             self._es.delete(
                 index=self.index_name,
                 doc_type=doc_type,
@@ -250,7 +313,59 @@ class ElasticSearchEngine(SearchEngine):
             raise ex
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, use_field_match=False, **kwargs):
-        """ Implements call to search the index for the desired content """
+        """
+        Implements call to search the index for the desired content.
+
+        Args:
+            query_string (str): the string of values upon which to search within the content of the objects within the
+            index
+
+            field_dictionary (dict): dictionary of values which _must_ exist and _must_ match
+            in order for the documents to be included in the results
+
+            filter_dictionary (dict): dictionary of values which _must_ match if the field exists
+            in order for the documents to be included in the results; documents for which the
+            field does not exist may be included in the results if they are not otherwise filtered out
+
+            use_field_match (bool): flag to indicate whether to use elastic filtering or elastic
+            matching for field matches - this is nothing but a potential performance tune for certain queries
+
+        Returns:
+            dict object with results in the desired format
+            {
+                "took": 3,
+                "total": 4,
+                "max_score": 2.0123,
+                "results": [
+                    {
+                        "score": 2.0123,
+                        "data": {
+                            ...
+                        }
+                    },
+                    {
+                        "score": 0.0983,
+                        "data": {
+                            ...
+                        }
+                    }
+                ]
+            }
+
+        Raises:
+            ElasticsearchException when there is a problem with the response from elasticsearch
+
+        Example usage:
+            .search(
+                "find the words within this string",
+                {
+                    "must_have_field": "mast_have_value for must_have_field"
+                },
+                {
+
+                }
+            )
+        """
 
         log.debug("searching index with %s", query_string)
 
@@ -268,12 +383,12 @@ class ElasticSearchEngine(SearchEngine):
 
         if field_dictionary:
             if use_field_match:
-                elastic_queries.extend(_process_field_dictionary_queries(field_dictionary))
+                elastic_queries.extend(_process_field_queries(field_dictionary))
             else:
-                elastic_filters.extend(_process_field_dictionary_filters(field_dictionary))
+                elastic_filters.extend(_process_field_filters(field_dictionary))
 
         if filter_dictionary:
-            elastic_filters.extend(_process_filter_dictionary(filter_dictionary))
+            elastic_filters.extend(_process_filters(filter_dictionary))
 
         query_segment = {
             "match_all": {}

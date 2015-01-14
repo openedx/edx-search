@@ -1,6 +1,8 @@
 """ overridable result processor object to allow additional properties to be exposed """
 import inspect
+from itertools import chain
 import re
+import textwrap
 
 from django.conf import settings
 
@@ -42,14 +44,29 @@ class SearchResultProcessor(object):
     @staticmethod
     def find_matches(strings, words, length_hoped):
         """ Used by default property excerpt """
-        matches = []
-        length_found = 0
-        for word in words:
-            length_found += sum([len(s) for s in strings if word.lower() in s.lower() and s not in matches])
-            matches.extend([s for s in strings if word.lower() in s.lower() and s not in matches])
-            if length_found >= length_hoped:
-                return [SearchResultProcessor.shorten_string(m, words, length_hoped) for m in matches]
-        return [SearchResultProcessor.shorten_string(m, words, length_hoped) for m in matches]
+        lower_words = [w.lower() for w in words]
+
+        def has_match(string):
+            """ Do any of the words match within the string """
+            lower_string = string.lower()
+            for test_word in lower_words:
+                if test_word in lower_string:
+                    return True
+            return False
+
+        shortened_strings = [textwrap.wrap(s) for s in strings]
+        short_string_list = list(chain.from_iterable(shortened_strings))
+        matches = [ms for ms in short_string_list if has_match(ms)]
+
+        cumulative_len = 0
+        break_at = None
+        for idx, match in enumerate(matches):
+            cumulative_len += len(match)
+            if cumulative_len >= length_hoped:
+                break_at = idx
+                break
+
+        return matches[0:break_at]
 
     @staticmethod
     def decorate_matches(match_in, match_word):
@@ -61,32 +78,6 @@ class SearchResultProcessor(object):
                 getattr(settings, "SEARCH_MATCH_DECORATION", u"<b>{}</b>").format(matched_string)
             )
         return match_in
-
-    @staticmethod
-    def shorten_string(string_in, words, length_hoped):
-        """ Used by default property excerpt - Make sure the excerpt is not too long"""
-        if len(string_in) <= length_hoped:
-            return string_in
-
-        word_at = -1
-        word_index = 0
-        while word_at < 0 and word_index < len(words):
-            word = words[word_index]
-            word_at = string_in.lower().find(word.lower())
-            word_index += 1
-
-        start_index = (word_at - length_hoped / 2)
-        if start_index < 0:
-            start_index = 0
-        end_index = (word_at + length_hoped / 2) + len(word) + 1
-        if end_index >= len(string_in):
-            end_index = None
-
-        return u"{}{}{}".format(
-            "" if start_index < 1 else ELLIPSIS,
-            string_in[start_index:end_index].strip(),
-            "" if end_index is None else ELLIPSIS,
-        )
 
     # disabling pylint violations because overriders will want to use these
     def should_remove(self, user):  # pylint: disable=unused-argument, no-self-use
@@ -135,7 +126,7 @@ class SearchResultProcessor(object):
             match_words,
             DESIRED_EXCERPT_LENGTH
         )
-        excerpt_text = '...'.join(matches)
+        excerpt_text = ELLIPSIS.join(matches)
 
         for match_word in match_words:
             excerpt_text = SearchResultProcessor.decorate_matches(excerpt_text, match_word)

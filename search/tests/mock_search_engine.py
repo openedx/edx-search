@@ -1,9 +1,7 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 import copy
-import datetime
-from numbers import Number
 from search.manager import SearchEngine
-from search.utils import ValueRange, DateRange
+from search.utils import ValueRange
 
 
 def _find_field(doc, field_name):
@@ -24,10 +22,17 @@ def _find_field(doc, field_name):
 
 
 def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
+    """
+    Filters out documents that do not match all of the field values within the dictionary_object
+    If include_blanks is True, then the document is considered a match if the field is not present
+    """
     if not dictionary_object:
         return documents_to_search
 
     def value_matches(doc, field_name, field_value):
+        """
+        Does the document's field match the desired value, or is the field not present if include_blanks is True
+        """
         compare_value = _find_field(doc, field_name)
         if compare_value is None:
             return include_blanks
@@ -43,7 +48,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
     filtered_documents = documents_to_search
     for field_name, field_value in dictionary_object.items():
-        filtered_documents = filter(lambda d: value_matches(d, field_name, field_value), filtered_documents)
+        filtered_documents = [d for d in filtered_documents if value_matches(d, field_name, field_value)]
 
     return filtered_documents
 
@@ -93,7 +98,8 @@ class MockSearchEngine(SearchEngine):
     def __init__(self, index=None):
         super(MockSearchEngine, self).__init__(index)
 
-    def index(self, doc_type, body, **kwargs):
+    def index(self, doc_type, body):
+        """ Add document of given type to the index """
         if self.index_name not in MockSearchEngine._mock_elastic:
             MockSearchEngine._mock_elastic[self.index_name] = {}
 
@@ -103,11 +109,14 @@ class MockSearchEngine(SearchEngine):
 
         _mock_index[doc_type].append(body)
 
-    def remove(self, doc_type, doc_id, **kwargs):
+    def remove(self, doc_type, doc_id):
+        """ Remove document of type with given id from the index """
         _mock_index = MockSearchEngine._mock_elastic[self.index_name]
-        _mock_index[doc_type] = filter(lambda d: "id" not in d or d["id"] != doc_id, _mock_index[doc_type])
+        # Simply redefine the set of documents where they have either no id or do not match the given id
+        _mock_index[doc_type] = [d for d in _mock_index[doc_type] if "id" not in d or d["id"] != doc_id]
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
+        """ Perform search upon documents within index """
         documents_to_search = []
         if "doc_type" in kwargs:
             if kwargs["doc_type"] in MockSearchEngine._mock_elastic[self.index_name]:

@@ -1,9 +1,11 @@
 """ Abstract SearchEngine with factory method """
-# pylint: disable=R0921
+# This will get called by tests, but pylint thinks that it is not used
+# pylint: disable=abstract-class-not-used
 from django.conf import settings
 
 
 class SearchEngine(object):
+
     """ Base abstract SearchEngine object """
 
     index_name = "courseware"

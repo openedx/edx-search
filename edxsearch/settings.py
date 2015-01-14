@@ -19,7 +19,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # SECURITY WARNING: keep the secret key used in production secret!
 # This is just a container for running tests, it's okay to allow it to be
 # defaulted here if not present in environment settings
-import os
 SECRET_KEY = os.environ[
     'SECRET_KEY'
 ] if 'SECRET_KEY' in os.environ else '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1mjg2%$#u($-g4'

@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Some of the subclasses that get used as settings-overrides will yield this pylint
+# error, but they do get used when included as part of the override_settings
+# pylint: disable=abstract-class-not-used
 """ Tests for search functionalty """
 from datetime import datetime
 import json
 
-from django.core.urlresolvers import resolve
+from django.core.urlresolvers import resolve, Resolver404
 from django.test import TestCase, Client
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
@@ -616,8 +619,9 @@ class SearchResultProcessorTests(TestCase):
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 2)
-        self.assertEqual(matches[0], strings[0])
-        self.assertEqual(matches[1], strings[2])
+        self.assertTrue(strings[0] in matches)
+        self.assertFalse(strings[1] in matches)
+        self.assertTrue(strings[2] in matches)
 
         words = ["hello", "there"]
         strings = [
@@ -627,8 +631,9 @@ class SearchResultProcessorTests(TestCase):
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 2)
-        self.assertEqual(matches[0], strings[0])
-        self.assertEqual(matches[1], strings[2])
+        self.assertTrue(strings[0] in matches)
+        self.assertFalse(strings[1] in matches)
+        self.assertTrue(strings[2] in matches)
 
         words = ["hello", "there"]
         strings = [
@@ -638,9 +643,9 @@ class SearchResultProcessorTests(TestCase):
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 3)
-        self.assertEqual(matches[0], strings[0])
-        self.assertEqual(matches[1], strings[2])
-        self.assertEqual(matches[2], strings[1])
+        self.assertTrue(strings[0] in matches)
+        self.assertTrue(strings[1] in matches)
+        self.assertTrue(strings[2] in matches)
 
         words = ["goodbye there", "goodbye", "there"]
         strings = [
@@ -649,10 +654,9 @@ class SearchResultProcessorTests(TestCase):
             "Sail away to say GOODBYE",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
-        self.assertEqual(len(matches), 3)
-        self.assertEqual(matches[0], strings[1])
-        self.assertEqual(matches[1], strings[0])
-        self.assertEqual(matches[2], strings[2])
+        self.assertTrue(strings[0] in matches)
+        self.assertTrue(strings[1] in matches)
+        self.assertTrue(strings[2] in matches)
 
         words = ["none of these are present"]
         strings = [
@@ -662,23 +666,6 @@ class SearchResultProcessorTests(TestCase):
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 0)
-
-    def test_shorten_string(self):
-        """ test that we appropriately shorten the string to the desired size """
-        words = ["hello", "there"]
-
-        test_string = "hello there"
-        shortened = SearchResultProcessor.shorten_string(test_string, words, 20)
-        self.assertEqual(shortened, test_string)
-        self.assertTrue(len(shortened) == len(test_string))
-
-        test_string = "this is too long hello there yes really long"
-        shortened = SearchResultProcessor.shorten_string(test_string, words, 20)
-        self.assertNotEqual(shortened, test_string)
-        self.assertTrue(len(shortened) < len(test_string))
-        shortened = SearchResultProcessor.shorten_string(test_string, words, 100)
-        self.assertEqual(shortened, test_string)
-        self.assertTrue(len(shortened) == len(test_string))
 
     def test_too_long_find_matches(self):
         """ make sure that we keep the expert snippets short enough """
@@ -721,7 +708,7 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
 
         srp = SearchResultProcessor(test_result, u"edx")
-        self.assertEqual(srp.excerpt, u"Here is a الاستحسان about <b>edx</b>...<b>edX</b> search a lot")
+        self.assertEqual(srp.excerpt, u"Here is a الاستحسان about <b>edx</b>&hellip;<b>edX</b> search a lot")
 
     def test_too_long_excerpt(self):
         """ test that we shorten an excerpt that is too long appropriately """
@@ -938,9 +925,8 @@ class MockSearchUrlTest(TestCase):
         resolver = resolve('/')
         self.assertEqual(resolver.view_name, 'do_search')
 
-        resolver = resolve('/blah')
-        self.assertEqual(resolver.view_name, 'do_search')
-        self.assertEqual(resolver.kwargs['course_id'], 'blah')
+        with self.assertRaises(Resolver404):
+            resolver = resolve('/blah')
 
         resolver = resolve('/edX/DemoX/Demo_Course')
         self.assertEqual(resolver.view_name, 'do_search')
@@ -991,7 +977,7 @@ class MockSearchUrlTest(TestCase):
         self.searcher.index(
             "test_doc",
             {
-                "course": "ABC",
+                "course": "ABC/DEF/GHI",
                 "id": "FAKE_ID_1",
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
@@ -1001,7 +987,7 @@ class MockSearchUrlTest(TestCase):
         self.searcher.index(
             "test_doc",
             {
-                "course": "ABC",
+                "course": "ABC/DEF/GHI",
                 "id": "FAKE_ID_2",
                 "content": {
                     "text": "Little Darling, it's been a year since you've been gone"
@@ -1011,7 +997,7 @@ class MockSearchUrlTest(TestCase):
         self.searcher.index(
             "test_doc",
             {
-                "course": "XYZ",
+                "course": "LMN/OPQ/RST",
                 "id": "FAKE_ID_3",
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
@@ -1023,19 +1009,19 @@ class MockSearchUrlTest(TestCase):
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
 
-        code, results = _post_request({"search_string": "Darling"}, "ABC")
+        code, results = _post_request({"search_string": "Darling"}, "ABC/DEF/GHI")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
-        code, results = _post_request({"search_string": "winter"}, "ABC")
+        code, results = _post_request({"search_string": "winter"}, "ABC/DEF/GHI")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" not in result_ids)
 
-        code, results = _post_request({"search_string": "winter"}, "XYZ")
+        code, results = _post_request({"search_string": "winter"}, "LMN/OPQ/RST")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
