@@ -1,6 +1,6 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 import copy
-from search.manager import SearchEngine
+from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
 

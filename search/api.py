@@ -2,7 +2,7 @@
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
-from .manager import SearchEngine
+from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 
 

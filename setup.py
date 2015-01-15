@@ -8,7 +8,7 @@ setup(
     version='0.1.0',
     description='Search and Index routines for index access',
     author='edX',
-    url='https://github.com/edx-solutions/edx-search',
+    url='https://github.com/edx/edx-search',
     license='AGPL',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -21,5 +21,8 @@ setup(
     ],
     packages=['search'],
     dependency_links=[],
-    install_requires=[]
+    install_requires=[
+        "django==1.4.16",
+        "elasticsearch<1.0.0"
+    ]
 )

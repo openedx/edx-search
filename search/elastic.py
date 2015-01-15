@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 
-from search.manager import SearchEngine
+from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
 # log appears to be standard name used for logger

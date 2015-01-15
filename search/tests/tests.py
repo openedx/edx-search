@@ -12,7 +12,7 @@ from django.test import TestCase, Client
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
-from search.manager import SearchEngine
+from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine
 from search.result_processor import SearchResultProcessor
 from search.utils import ValueRange, DateRange
@@ -48,7 +48,7 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
         super(ForceRefreshElasticSearchEngine, self).remove(doc_type, doc_id, **kwargs)
 
 
-@override_settings(SEARCH_ENGINE=MockSearchEngine)
+@override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 class MockSearchTests(TestCase):
 
@@ -551,7 +551,7 @@ class MockSearchTests(TestCase):
 
 
 # Uncomment below in order to test against installed Elastic Search installation
-@override_settings(SEARCH_ENGINE=ForceRefreshElasticSearchEngine)
+@override_settings(SEARCH_ENGINE="ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
 
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
@@ -895,7 +895,7 @@ def _post_request(body, course_id=None):
     return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
 
 
-@override_settings(SEARCH_ENGINE=MockSearchEngine)
+@override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class MockSearchUrlTest(TestCase):
@@ -1126,7 +1126,7 @@ class ErroringSearchEngine(MockSearchEngine):
         raise StandardError(BAD_REQUEST_ERROR)
 
 
-@override_settings(SEARCH_ENGINE=ErroringSearchEngine)
+@override_settings(SEARCH_ENGINE="ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase):

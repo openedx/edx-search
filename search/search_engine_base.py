@@ -3,6 +3,7 @@
 # pylint: disable=abstract-class-not-used
 from django.conf import settings
 
+from .utils import _load_class
 
 class SearchEngine(object):
 
@@ -39,5 +40,5 @@ class SearchEngine(object):
         """
         Returns the desired implementor (defined in settings)
         """
-        search_engine_class = getattr(settings, "SEARCH_ENGINE", None)
+        search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
         return search_engine_class(index=index) if search_engine_class else None
