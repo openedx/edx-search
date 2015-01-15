@@ -5,6 +5,9 @@ from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 
+class NoSearchEngine(Exception):
+    pass
+
 
 def perform_search(
         search_terms,
@@ -21,6 +24,9 @@ def perform_search(
     )
 
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
+    if not searcher:
+        raise NoSearchEngine("No search engine specified in settings.SEARCH_ENGINE")
+
     results = searcher.search_string(
         search_terms,
         field_dictionary=field_dictionary,
