@@ -551,10 +551,17 @@ class MockSearchTests(TestCase):
 
 
 # Uncomment below in order to test against installed Elastic Search installation
-@override_settings(SEARCH_ENGINE="ForceRefreshElasticSearchEngine")
+@override_settings(SEARCH_ENGINE="search.tests.tests.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
 
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
+    pass
+
+
+@override_settings(MOCK_SEARCH_BACKING_FILE="testfile.pkl")
+class FileBackedMockSearchTests(MockSearchTests):
+
+    """ Override that runs the same tests with file-backed MockSearchEngine """
     pass
 
 
@@ -1126,7 +1133,7 @@ class ErroringSearchEngine(MockSearchEngine):
         raise StandardError(BAD_REQUEST_ERROR)
 
 
-@override_settings(SEARCH_ENGINE="ErroringSearchEngine")
+@override_settings(SEARCH_ENGINE="search.tests.tests.ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase):

@@ -5,7 +5,9 @@ from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 
+
 class NoSearchEngine(Exception):
+    """ NoSearchEngine exception to be thrown if no search engine is specified """
     pass
 
 

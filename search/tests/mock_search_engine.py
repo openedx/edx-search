@@ -1,7 +1,13 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 import copy
+import pickle
+import os
+
+from django.conf import settings
+from django.utils import timezone
+
 from search.search_engine_base import SearchEngine
-from search.utils import ValueRange
+from search.utils import ValueRange, DateRange
 
 
 def _find_field(doc, field_name):
@@ -37,6 +43,10 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
         if compare_value is None:
             return include_blanks
 
+        if isinstance(field_value, DateRange):
+            if timezone.is_aware(compare_value):
+                compare_value = timezone.make_naive(compare_value, timezone.utc)
+
         if isinstance(field_value, ValueRange):
             return (
                 (field_value.lower is None or compare_value >= field_value.lower)
@@ -66,7 +76,9 @@ def _process_query_string(documents_to_search, search_strings):
 
     documents_to_keep = []
     for search_string in search_strings:
-        documents_to_keep.extend([d for d in documents_to_search if has_string(d["content"], search_string)])
+        documents_to_keep.extend(
+            [d for d in documents_to_search if "content" in d and has_string(d["content"], search_string)]
+        )
 
     return documents_to_keep
 
@@ -77,6 +89,27 @@ class MockSearchEngine(SearchEngine):
     Mock implementation of SearchEngine for test purposes
     """
     _mock_elastic = {}
+
+    @staticmethod
+    def _backing_file():
+        """ return path to test file to use for backing purposes """
+        return getattr(settings, "MOCK_SEARCH_BACKING_FILE", None)
+
+    @classmethod
+    def _write_to_file(cls):
+        """ write the index dict to the backing file """
+        file_name = cls._backing_file()
+        if file_name:
+            with open(file_name, "w+") as dict_file:
+                pickle.dump(cls._mock_elastic, dict_file)
+
+    @classmethod
+    def _load_from_file(cls):
+        """ load the index dict from the contents of the backing file """
+        file_name = cls._backing_file()
+        if file_name and os.path.exists(file_name):
+            with open(file_name, "r") as dict_file:
+                cls._mock_elastic = pickle.load(dict_file)
 
     @staticmethod
     def _paginate_results(size, from_, raw_results):
@@ -91,39 +124,70 @@ class MockSearchEngine(SearchEngine):
         return results
 
     @classmethod
+    def load_index(cls, index_name):
+        """ load the index, if necessary from the backed file """
+        cls._load_from_file()
+        if index_name not in cls._mock_elastic:
+            cls._mock_elastic[index_name] = {}
+            cls._write_to_file()
+
+        return cls._mock_elastic[index_name]
+
+    @classmethod
+    def load_doc_type(cls, index_name, doc_type):
+        """ load the documents of type doc_type, if necessary loading from the backed file """
+        index = cls.load_index(index_name)
+        if doc_type not in index:
+            index[doc_type] = []
+            cls._write_to_file()
+
+        return index[doc_type]
+
+    @classmethod
+    def add_document(cls, index_name, doc_type, body):
+        """ add document of specific type to index """
+        cls.load_doc_type(index_name, doc_type).append(body)
+        cls._write_to_file()
+
+    @classmethod
+    def remove_document(cls, index_name, doc_type, doc_id):
+        """ remove document by id of specific type to index """
+        index = cls.load_index(index_name)
+        if doc_type not in index:
+            return
+
+        index[doc_type] = [d for d in index[doc_type] if "id" not in d or d["id"] != doc_id]
+        cls._write_to_file()
+
+    @classmethod
     def destroy(cls):
         """ Clean out the dictionary for test resets """
         cls._mock_elastic = {}
+        file_name = cls._backing_file()
+        if file_name and os.path.exists(file_name):
+            os.remove(file_name)
 
     def __init__(self, index=None):
         super(MockSearchEngine, self).__init__(index)
+        MockSearchEngine.load_index(self.index_name)
 
     def index(self, doc_type, body):
         """ Add document of given type to the index """
-        if self.index_name not in MockSearchEngine._mock_elastic:
-            MockSearchEngine._mock_elastic[self.index_name] = {}
-
-        _mock_index = MockSearchEngine._mock_elastic[self.index_name]
-        if doc_type not in _mock_index:
-            _mock_index[doc_type] = []
-
-        _mock_index[doc_type].append(body)
+        MockSearchEngine.add_document(self.index_name, doc_type, body)
 
     def remove(self, doc_type, doc_id):
         """ Remove document of type with given id from the index """
-        _mock_index = MockSearchEngine._mock_elastic[self.index_name]
-        # Simply redefine the set of documents where they have either no id or do not match the given id
-        _mock_index[doc_type] = [d for d in _mock_index[doc_type] if "id" not in d or d["id"] != doc_id]
+        MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
         """ Perform search upon documents within index """
         documents_to_search = []
         if "doc_type" in kwargs:
-            if kwargs["doc_type"] in MockSearchEngine._mock_elastic[self.index_name]:
-                documents_to_search = MockSearchEngine._mock_elastic[self.index_name][kwargs["doc_type"]]
+            documents_to_search = MockSearchEngine.load_doc_type(self.index_name, kwargs["doc_type"])
         else:
-            for doc_type in MockSearchEngine._mock_elastic[self.index_name]:
-                documents_to_search.extend(MockSearchEngine._mock_elastic[self.index_name][doc_type])
+            index = MockSearchEngine.load_index(self.index_name)
+            for doc_type in index:
+                documents_to_search.extend(index[doc_type])
 
         if field_dictionary:
             documents_to_search = _filter_intersection(documents_to_search, field_dictionary)
