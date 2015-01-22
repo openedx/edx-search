@@ -187,7 +187,7 @@ class ElasticSearchEngine(SearchEngine):
 
     def __init__(self, index=None):
         super(ElasticSearchEngine, self).__init__(index)
-        self._es = Elasticsearch()
+        self._es = getattr(settings, "ELASTIC_SEARCH_IMPL", Elasticsearch)()
         if not self._es.indices.exists(index=self.index_name):
             self._es.indices.create(index=self.index_name)
 
@@ -274,7 +274,7 @@ class ElasticSearchEngine(SearchEngine):
         """
         id_ = body['id'] if 'id' in body else None
 
-        log.debug("indexing {doc_type} object with id {id_}".format(doc_type=doc_type, id_=id_))
+        log.debug("indexing %s object with id %s", doc_type, id_)
 
         self._check_mappings(doc_type, body)
 
@@ -294,7 +294,7 @@ class ElasticSearchEngine(SearchEngine):
     def remove(self, doc_type, doc_id, **kwargs):
         """ Implements call to remove the document from the index """
 
-        log.debug("remove index for {doc_type} object with id {id_}".format(doc_type=doc_type, id_=doc_id))
+        log.debug("remove index for %s object with id %s", doc_type, doc_id)
 
         try:
             # ignore is flagged as an unexpected-keyword-arg; ES python client documents that it can be used

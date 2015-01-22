@@ -13,7 +13,7 @@ from search.utils import ValueRange, DateRange
 def _find_field(doc, field_name):
     """ find the dictionary field corresponding to the . limited name """
     if not isinstance(doc, dict):
-        return ValueError('Parameter `doc` should be a python dict object')
+        raise ValueError('Parameter `doc` should be a python dict object')
 
     if not isinstance(field_name, basestring):
         raise ValueError('Parameter `field_name` should be a string')
@@ -89,16 +89,53 @@ class MockSearchEngine(SearchEngine):
     Mock implementation of SearchEngine for test purposes
     """
     _mock_elastic = {}
-
-    @staticmethod
-    def _backing_file():
-        """ return path to test file to use for backing purposes """
-        return getattr(settings, "MOCK_SEARCH_BACKING_FILE", None)
+    _disabled = False
+    _file_name_override = None
 
     @classmethod
-    def _write_to_file(cls):
-        """ write the index dict to the backing file """
+    def create_test_file(cls, file_name=None, index_content=None):
+        """ creates test file from settings """
+        if index_content:
+            cls._mock_elastic = index_content
+        else:
+            cls._mock_elastic = {}
+        if file_name:
+            cls._file_name_override = file_name
+        cls._write_to_file(create_if_missing=True)
+
+    @classmethod
+    def destroy_test_file(cls):
+        """ creates test file from settings """
         file_name = cls._backing_file()
+        if os.path.exists(file_name):
+            os.remove(file_name)
+
+        cls._file_name_override = None
+        cls.destroy()
+        cls.__disabled = False
+
+    @classmethod
+    def _backing_file(cls, create_if_missing=False):
+        """ return path to test file to use for backing purposes """
+        backing_file_name = getattr(settings, "MOCK_SEARCH_BACKING_FILE", None)
+        if cls._file_name_override:
+            backing_file_name = cls._file_name_override
+
+        if not backing_file_name:
+            cls._disabled = False
+            return None
+
+        if create_if_missing or os.path.exists(backing_file_name):
+            cls._disabled = False
+            return backing_file_name
+
+        cls._disabled = True
+        return None
+
+    @classmethod
+    def _write_to_file(cls, create_if_missing=False):
+        """ write the index dict to the backing file """
+        file_name = cls._backing_file(create_if_missing)
         if file_name:
             with open(file_name, "w+") as dict_file:
                 pickle.dump(cls._mock_elastic, dict_file)
@@ -163,9 +200,7 @@ class MockSearchEngine(SearchEngine):
     def destroy(cls):
         """ Clean out the dictionary for test resets """
         cls._mock_elastic = {}
-        file_name = cls._backing_file()
-        if file_name and os.path.exists(file_name):
-            os.remove(file_name)
+        cls._write_to_file()
 
     def __init__(self, index=None):
         super(MockSearchEngine, self).__init__(index)
@@ -173,14 +208,26 @@ class MockSearchEngine(SearchEngine):
 
     def index(self, doc_type, body):
         """ Add document of given type to the index """
+        if MockSearchEngine._disabled:
+            return None
         MockSearchEngine.add_document(self.index_name, doc_type, body)
 
     def remove(self, doc_type, doc_id):
         """ Remove document of type with given id from the index """
+        if MockSearchEngine._disabled:
+            return None
         MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
         """ Perform search upon documents within index """
+        if MockSearchEngine._disabled:
+            return {
+                "took": 10,
+                "total": 0,
+                "max_score": 0,
+                "results": []
+            }
+
         documents_to_search = []
         if "doc_type" in kwargs:
             documents_to_search = MockSearchEngine.load_doc_type(self.index_name, kwargs["doc_type"])

@@ -6,18 +6,22 @@
 """ Tests for search functionalty """
 from datetime import datetime
 import json
+import pickle
+import os
 
+from django.conf import settings
 from django.core.urlresolvers import resolve, Resolver404
 from django.test import TestCase, Client
 from django.test.utils import override_settings
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, exceptions
 
 from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine
 from search.result_processor import SearchResultProcessor
 from search.utils import ValueRange, DateRange
+from search.api import perform_search, NoSearchEngine
 
-from .mock_search_engine import MockSearchEngine
+from .mock_search_engine import MockSearchEngine, _find_field, _filter_intersection
 
 TEST_INDEX_NAME = "test_index"
 
@@ -29,7 +33,6 @@ TEST_INDEX_NAME = "test_index"
 
 
 class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
-
     """
     Override of ElasticSearchEngine that forces the update of the index,
     so that tests can relaibly search right afterward
@@ -50,8 +53,8 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
 
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
+@override_settings(MOCK_SEARCH_BACKING_FILE=None)
 class MockSearchTests(TestCase):
-
     """ Test operation of search activities """
     _searcher = None
 
@@ -550,23 +553,193 @@ class MockSearchTests(TestCase):
         self.assertTrue("FAKE_ID_3" in result_ids)
 
 
+@override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
+@override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
+class MockSpecificSearchTests(TestCase):
+    """ For testing pieces of the Mock Engine that have no equivalent in Elastic """
+
+    def test_find_field_arguments(self):
+        """ test that field argument validity is observed """
+        field_value = _find_field(
+            {
+                "name": "Come and listen to my story"
+            },
+            "name"
+        )
+        self.assertEqual(field_value, "Come and listen to my story")
+
+        field_value = _find_field(
+            {
+                "name": {
+                    "first": "Martyn",
+                    "last": "James"
+                }
+            },
+            "name.first"
+        )
+        self.assertEqual(field_value, "Martyn")
+
+        field_value = _find_field(
+            {
+                "name": {
+                    "first": "Monica",
+                    "last": {
+                        "one": "Parker",
+                        "two": "James"
+                    }
+                }
+            },
+            "name.last.two"
+        )
+        self.assertEqual(field_value, "James")
+
+        with self.assertRaises(ValueError):
+            field_value = _find_field(
+                {
+                    "name": "Come and listen to my story"
+                },
+                123
+            )
+
+        with self.assertRaises(ValueError):
+            field_value = _find_field(123, "name")
+
+    def test_filter_optimization(self):
+        """ Make sure that intersection optimizes return when no filter dictionary is provided """
+        test_docs = [{"A": {"X": 1, "Y": 2, "Z": 3}}, {"B": {"X": 9, "Y": 8, "Z": 7}}]
+        self.assertTrue(_filter_intersection(test_docs, None), test_docs)
+
+
 # Uncomment below in order to test against installed Elastic Search installation
+# pylint: disable=too-few-public-methods
 @override_settings(SEARCH_ENGINE="search.tests.tests.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
-
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
     pass
 
 
 @override_settings(MOCK_SEARCH_BACKING_FILE="testfile.pkl")
 class FileBackedMockSearchTests(MockSearchTests):
-
     """ Override that runs the same tests with file-backed MockSearchEngine """
-    pass
+
+    def setUp(self):
+        MockSearchEngine.create_test_file()
+        self._searcher = None
+
+    def tearDown(self):
+        MockSearchEngine.destroy_test_file()
+        self._searcher = None
+
+    def test_file_reopen(self):
+        """ make sure that the file contents can be reopened and the data therein is reflected as expected """
+        test_object = {
+            "content": {
+                "name": "John Lester",
+            },
+            "course_id": "A/B/C",
+            "abc": "xyz"
+        }
+        self.searcher.index("test_doc", test_object)
+
+        # fake it out to destory a different file, leaving this one in place
+        # will force reload from the original file
+        settings.MOCK_SEARCH_BACKING_FILE = "fakeout_destroy.pkl"
+        MockSearchEngine.destroy()
+
+        # now search should fail
+        response = self.searcher.search(query_string="John Lester")
+        self.assertEqual(response["total"], 0)
+
+        # go back to existing file for the reload
+        settings.MOCK_SEARCH_BACKING_FILE = "testfile.pkl"
+
+        # now search should be successful
+        response = self.searcher.search(query_string="John Lester")
+        self.assertEqual(response["total"], 1)
+
+    def test_file_value_formats(self):
+        """ test the format of values that write/read from the file """
+        this_moment = datetime.utcnow()
+        test_object = {
+            "content": {
+                "name": "How did 11 of 12 balls get deflated during the game"
+            },
+            "my_date_value": this_moment,
+            "my_integer_value": 172,
+            "my_float_value": 57.654,
+            "my_string_value": "If the officials just blew it, would they come out and admit it?"
+        }
+
+        self.searcher.index("test_doc", test_object)
+
+        # now search should be successful
+        response = self.searcher.search(query_string="deflated")
+        self.assertEqual(response["total"], 1)
+
+        # and values should be what we desire
+        returned_result = response["results"][0]["data"]
+        self.assertEqual(returned_result["my_date_value"], this_moment)
+        self.assertEqual(returned_result["my_integer_value"], 172)
+        self.assertEqual(returned_result["my_float_value"], 57.654)
+        self.assertEqual(
+            returned_result["my_string_value"],
+            "If the officials just blew it, would they come out and admit it?"
+        )
+
+    def test_disabled_index(self):
+        """
+        Make sure that searchengine operations are shut down when mock engine has a filename, but file does
+        not exist - this is helpful for test scenarios where we essentially want to not slow anything down
+        """
+        this_moment = datetime.utcnow()
+        test_object = {
+            "id": "FAKE_ID",
+            "content": {
+                "name": "How did 11 of 12 balls get deflated during the game"
+            },
+            "my_date_value": this_moment,
+            "my_integer_value": 172,
+            "my_float_value": 57.654,
+            "my_string_value": "If the officials just blew it, would they come out and admit it?"
+        }
+
+        self.searcher.index("test_doc", test_object)
+        response = self.searcher.search(query_string="deflated")
+        self.assertEqual(response["total"], 1)
+
+        # copy content, and then erase file so that backed file is not present and work is disabled
+        initial_file_content = None
+        with open("testfile.pkl", "r") as dict_file:
+            initial_file_content = pickle.load(dict_file)
+        os.remove("testfile.pkl")
+
+        response = self.searcher.search(query_string="ABC")
+        self.assertEqual(response["total"], 0)
+
+        self.searcher.index("test_doc", {"content": {"name": "ABC"}})
+        # now search should be unsuccessful because file does not exist
+        response = self.searcher.search(query_string="ABC")
+        self.assertEqual(response["total"], 0)
+
+        # remove it, and then we'll reload file and it still should be there
+        self.searcher.remove("test_doc", "FAKE_ID")
+
+        MockSearchEngine.create_test_file("fakefile.pkl", initial_file_content)
+
+        # now search should be successful because file did exist in file
+        response = self.searcher.search(query_string="deflated")
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.remove("not_a_test_doc", "FAKE_ID")
+        response = self.searcher.search(query_string="deflated")
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.remove("test_doc", "FAKE_ID")
+        response = self.searcher.search(query_string="deflated")
+        self.assertEqual(response["total"], 0)
 
 
 class SearchResultProcessorTests(TestCase):
-
     """ Tests to check SearchResultProcessor is working as desired """
 
     def test_strings_in_dictionary(self):
@@ -851,7 +1024,6 @@ class SearchResultProcessorTests(TestCase):
 
 
 class OverrideSearchResultProcessor(SearchResultProcessor):
-
     """
     Override the SearchResultProcessor so that we get the additional (inferred) properties
     and can identify results that should be removed due to access restriction
@@ -869,7 +1041,6 @@ class OverrideSearchResultProcessor(SearchResultProcessor):
 
 @override_settings(SEARCH_RESULT_PROCESSOR="search.tests.tests.OverrideSearchResultProcessor")
 class TestOverrideSearchResultProcessor(TestCase):
-
     """ test the correct processing of results using the SEARCH_RESULT_PROCESSOR specified class """
 
     def test_additional_property(self):
@@ -906,7 +1077,6 @@ def _post_request(body, course_id=None):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class MockSearchUrlTest(TestCase):
-
     """
     Make sure that requests to the url get routed to the correct view handler
     """
@@ -947,7 +1117,9 @@ class MockSearchUrlTest(TestCase):
                 "id": "FAKE_ID_1",
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
-                }
+                },
+                "test_date": datetime(2015, 1, 1),
+                "test_string": "ABC, It's easy as 123"
             }
         )
         self.searcher.index(
@@ -978,6 +1150,9 @@ class MockSearchUrlTest(TestCase):
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids)
+
+        self.assertTrue(results["results"][0]["data"]["test_date"], datetime(2015, 1, 1).isoformat())
+        self.assertTrue(results["results"][0]["data"]["test_string"], "ABC, It's easy as 123")
 
     def test_course_search_url(self):
         """ test searching using the course url """
@@ -1121,23 +1296,93 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids)
 
+    def test_page_size_too_large(self):
+        """ test searching with too-large page_size """
+        self.searcher.index(
+            "test_doc",
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            }
+        )
 
-BAD_REQUEST_ERROR = "There is a problem here"
+        code, results = _post_request({"search_string": "Little Darling", "page_size": 101})
+        self.assertEqual(code, 500)
+        self.assertTrue("error" in results)
 
 
 class ErroringSearchEngine(MockSearchEngine):
-
     """ Override to generate search engine error to test """
 
     def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
-        raise StandardError(BAD_REQUEST_ERROR)
+        raise StandardError("There is a problem here")
+
+
+class ErroringElasticImpl(Elasticsearch):
+    """ Elasticsearch implementation that throws exceptions"""
+
+    # pylint: disable=unused-argument
+    def index(self, **kwargs):
+        """ this operation will fail """
+        raise exceptions.ElasticsearchException("This index operation failed")
+
+    # pylint: disable=unused-argument
+    def delete(self, **kwargs):
+        """ this operation will definitely fail """
+        raise exceptions.ElasticsearchException("This delete operation failed")
+
+    # pylint: disable=unused-argument
+    def search(self, **kwargs):
+        """ this will definitely fail """
+        raise exceptions.ElasticsearchException("This search operation failed")
+
+
+@override_settings(SEARCH_ENGINE="search.tests.tests.ForceRefreshElasticSearchEngine")
+@override_settings(ELASTIC_SEARCH_IMPL=ErroringElasticImpl)
+class ErroringElasticTests(TestCase):
+    """ testing handling of elastic exceptions when they happen """
+    _searcher = None
+
+    @property
+    def searcher(self):
+        """ cached instance of search engine """
+        if self._searcher is None:
+            self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        return self._searcher
+
+    def test_index_failure(self):
+        """ the index operation should fail """
+        with self.assertRaises(exceptions.ElasticsearchException):
+            self.searcher.index("test_doc", {"name": "abc test"})
+
+    def test_search_failure(self):
+        """ the search operation should fail """
+        with self.assertRaises(exceptions.ElasticsearchException):
+            self.searcher.search("abc test")
+
+    def test_remove_failure(self):
+        """ the remove operation should fail """
+        with self.assertRaises(exceptions.ElasticsearchException):
+            self.searcher.remove("test_doc", "test_id")
+
+
+@override_settings(SEARCH_ENGINE=None)
+class TestNone(TestCase):
+    """ Tests correct skipping of operation when no search engine is defined """
+
+    def test_perform_search(self):
+        """ search opertaion should yeild an exception with no search engine """
+        with self.assertRaises(NoSearchEngine):
+            perform_search("abc test")
 
 
 @override_settings(SEARCH_ENGINE="search.tests.tests.ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase):
-
     """ Make sure that we can error message when there is a problem """
     _searcher = None
 
@@ -1172,4 +1417,4 @@ class BadSearchTest(TestCase):
 
         code, results = _post_request({"search_string": "sun"})
         self.assertTrue(code > 499)
-        self.assertEqual(results["error"], BAD_REQUEST_ERROR)
+        self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
