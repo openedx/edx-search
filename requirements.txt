@@ -1,2 +1,2 @@
 django==1.4.16
-elasticsearch<1.0.0
+elasticsearch==0.4.5
