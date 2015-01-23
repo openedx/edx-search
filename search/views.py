@@ -37,6 +37,26 @@ class InvalidPageSize(ValueError):
 def do_search(request, course_id=None):
     """
     Search view for http requests
+
+    Args:
+        request (required) - django request object
+        course_id (optional) - course_id within which to restrict search
+
+    Returns:
+        http json response with the following fields
+            "took" - how many seconds the operation took
+            "total" - how many results were found
+            "max_score" - maximum score from these resutls
+            "results" - json array of result documents
+
+            or
+
+            "error" - displayable information about an error that occured on the server
+
+    POST Params:
+        "search_string" (required) - text upon which to search
+        "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
+        "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
     """
     results = {
         "error": _("Nothing to search")

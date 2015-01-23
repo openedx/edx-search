@@ -858,24 +858,6 @@ class SearchResultProcessorTests(TestCase):
         matches = SearchResultProcessor.find_matches(strings, words, 100)
         self.assertEqual(len(matches), 1)
 
-    def test_url(self):
-        """ test generation of url from id of the result """
-        test_result = {
-            "course": "testmetestme",
-            "id": "herestheid"
-        }
-        srp = SearchResultProcessor(test_result, "fake search pattern")
-        self.assertEqual(srp.url, "/courses/testmetestme/jump_to/herestheid")
-
-        srp = SearchResultProcessor({"course": "testmetestme"}, "fake search pattern")
-        self.assertEqual(srp.url, None)
-
-        srp = SearchResultProcessor({"id": "herestheid"}, "fake search pattern")
-        self.assertEqual(srp.url, None)
-
-        srp = SearchResultProcessor({"something_else": "altogether"}, "fake search pattern")
-        self.assertEqual(srp.url, None)
-
     def test_excerpt(self):
         """ test that we return an excerpt """
         test_result = {
@@ -1033,6 +1015,19 @@ class OverrideSearchResultProcessor(SearchResultProcessor):
     def additional_property(self):
         """ additional property that should appear within processed results """
         return "Should have an extra value"
+
+    @property
+    def url(self):
+        """
+        Property to display the url for the given location, useful for allowing navigation
+        """
+        if "course" not in self._results_fields or "id" not in self._results_fields:
+            return None
+
+        return u"/courses/{course_id}/jump_to/{location}".format(
+            course_id=self._results_fields["course"],
+            location=self._results_fields["id"],
+        )
 
     def should_remove(self, user):
         """ remove items when url is None """

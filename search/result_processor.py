@@ -132,16 +132,3 @@ class SearchResultProcessor(object):
             excerpt_text = SearchResultProcessor.decorate_matches(excerpt_text, match_word)
 
         return excerpt_text
-
-    @property
-    def url(self):
-        """
-        Property to display the url for the given location, useful for allowing navigation
-        """
-        if "course" not in self._results_fields or "id" not in self._results_fields:
-            return None
-
-        return u"/courses/{course_id}/jump_to/{location}".format(
-            course_id=self._results_fields["course"],
-            location=self._results_fields["id"],
-        )
