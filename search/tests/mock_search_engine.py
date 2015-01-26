@@ -1,13 +1,33 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 import copy
-import pickle
+from datetime import datetime
+import json
 import os
 
 from django.conf import settings
-from django.utils import timezone
+from django.core.serializers.json import DjangoJSONEncoder
 
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, DateRange
+
+
+def json_date_to_datetime(json_date_string_value):
+    ''' converts json date string to date object '''
+    if "T" in json_date_string_value:
+        if "." in json_date_string_value:
+            format_string = "%Y-%m-%dT%H:%M:%S.%f"
+        else:
+            format_string = "%Y-%m-%dT%H:%M:%S"
+        if json_date_string_value.endswith("Z"):
+            format_string += "Z"
+
+    else:
+        format_string = "%Y-%m-%d"
+
+    return datetime.strptime(
+        json_date_string_value,
+        format_string
+    )
 
 
 def _find_field(doc, field_name):
@@ -43,9 +63,10 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
         if compare_value is None:
             return include_blanks
 
-        if isinstance(field_value, DateRange):
-            if timezone.is_aware(compare_value):
-                compare_value = timezone.make_naive(compare_value, timezone.utc)
+        # if we have a string that we are trying to process as a date object
+        if (isinstance(compare_value, basestring) and
+                (isinstance(field_value, DateRange) or isinstance(field_value, datetime))):
+            compare_value = json_date_to_datetime(compare_value)
 
         if isinstance(field_value, ValueRange):
             return (
@@ -138,7 +159,7 @@ class MockSearchEngine(SearchEngine):
         file_name = cls._backing_file(create_if_missing)
         if file_name:
             with open(file_name, "w+") as dict_file:
-                pickle.dump(cls._mock_elastic, dict_file)
+                json.dump(cls._mock_elastic, dict_file, cls=DjangoJSONEncoder)
 
     @classmethod
     def _load_from_file(cls):
@@ -146,7 +167,7 @@ class MockSearchEngine(SearchEngine):
         file_name = cls._backing_file()
         if file_name and os.path.exists(file_name):
             with open(file_name, "r") as dict_file:
-                cls._mock_elastic = pickle.load(dict_file)
+                cls._mock_elastic = json.load(dict_file)
 
     @staticmethod
     def _paginate_results(size, from_, raw_results):

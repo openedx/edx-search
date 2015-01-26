@@ -3,10 +3,10 @@
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
 # pylint: disable=abstract-class-not-used
+# pylint: disable=too-few-public-methods
 """ Tests for search functionalty """
 from datetime import datetime
 import json
-import pickle
 import os
 
 from django.conf import settings
@@ -21,7 +21,7 @@ from search.result_processor import SearchResultProcessor
 from search.utils import ValueRange, DateRange
 from search.api import perform_search, NoSearchEngine
 
-from .mock_search_engine import MockSearchEngine, _find_field, _filter_intersection
+from .mock_search_engine import MockSearchEngine, _find_field, _filter_intersection, json_date_to_datetime
 
 TEST_INDEX_NAME = "test_index"
 
@@ -609,9 +609,26 @@ class MockSpecificSearchTests(TestCase):
         test_docs = [{"A": {"X": 1, "Y": 2, "Z": 3}}, {"B": {"X": 9, "Y": 8, "Z": 7}}]
         self.assertTrue(_filter_intersection(test_docs, None), test_docs)
 
+    def test_datetime_conversion(self):
+        """ tests json_date_to_datetime with different formats """
+        json_date = "2015-01-31"
+        self.assertTrue(json_date_to_datetime(json_date), datetime(2015, 1, 31))
+
+        json_datetime = "2015-01-31T07:30:28"
+        self.assertTrue(json_date_to_datetime(json_datetime), datetime(2015, 1, 31, 7, 30, 28))
+
+        json_datetime = "2015-01-31T07:30:28.65785"
+        self.assertTrue(json_date_to_datetime(json_datetime), datetime(2015, 1, 31, 7, 30, 28, 65785))
+
+        json_datetime = "2015-01-31T07:30:28Z"
+        self.assertTrue(json_date_to_datetime(json_datetime), datetime(2015, 1, 31, 7, 30, 28))
+
+        json_datetime = "2015-01-31T07:30:28.65785Z"
+        self.assertTrue(json_date_to_datetime(json_datetime), datetime(2015, 1, 31, 7, 30, 28, 65785))
 
 # Uncomment below in order to test against installed Elastic Search installation
-# pylint: disable=too-few-public-methods
+
+
 @override_settings(SEARCH_ENGINE="search.tests.tests.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
@@ -659,7 +676,9 @@ class FileBackedMockSearchTests(MockSearchTests):
 
     def test_file_value_formats(self):
         """ test the format of values that write/read from the file """
-        this_moment = datetime.utcnow()
+        # json serialization removes microseconds part of the datetime object, so
+        # we strip it at the beginning to allow equality comparison to be correct
+        this_moment = datetime.utcnow().replace(microsecond=0)
         test_object = {
             "content": {
                 "name": "How did 11 of 12 balls get deflated during the game"
@@ -678,7 +697,7 @@ class FileBackedMockSearchTests(MockSearchTests):
 
         # and values should be what we desire
         returned_result = response["results"][0]["data"]
-        self.assertEqual(returned_result["my_date_value"], this_moment)
+        self.assertEqual(json_date_to_datetime(returned_result["my_date_value"]), this_moment)
         self.assertEqual(returned_result["my_integer_value"], 172)
         self.assertEqual(returned_result["my_float_value"], 57.654)
         self.assertEqual(
@@ -710,7 +729,7 @@ class FileBackedMockSearchTests(MockSearchTests):
         # copy content, and then erase file so that backed file is not present and work is disabled
         initial_file_content = None
         with open("testfile.pkl", "r") as dict_file:
-            initial_file_content = pickle.load(dict_file)
+            initial_file_content = json.load(dict_file)
         os.remove("testfile.pkl")
 
         response = self.searcher.search(query_string="ABC")
@@ -1022,7 +1041,7 @@ class OverrideSearchResultProcessor(SearchResultProcessor):
         Property to display the url for the given location, useful for allowing navigation
         """
         if "course" not in self._results_fields or "id" not in self._results_fields:
-            return None
+            raise ValueError("expect this error when not providing a course and/or id")
 
         return u"/courses/{course_id}/jump_to/{location}".format(
             course_id=self._results_fields["course"],
@@ -1031,7 +1050,7 @@ class OverrideSearchResultProcessor(SearchResultProcessor):
 
     def should_remove(self, user):
         """ remove items when url is None """
-        return self.url is None
+        return "remove_me" in self._results_fields
 
 
 @override_settings(SEARCH_RESULT_PROCESSOR="search.tests.tests.OverrideSearchResultProcessor")
@@ -1053,8 +1072,18 @@ class TestOverrideSearchResultProcessor(TestCase):
     def test_removal(self):
         """ make sure that the override of should remove let's the application prevent access to a result """
         test_result = {
-            "not_course": "testmetestme",
-            "id": "herestheid"
+            "course": "remove_course",
+            "id": "remove_id",
+            "remove_me": True
+        }
+        new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
+        self.assertIsNone(new_result)
+
+    def test_property_error(self):
+        """ result should be removed from list if there is an error in the handler properties """
+        test_result = {
+            "not_course": "asdasda",
+            "not_id": "rthrthretht"
         }
         new_result = SearchResultProcessor.process_result(test_result, "fake search pattern", None)
         self.assertIsNone(new_result)

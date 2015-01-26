@@ -3,9 +3,9 @@
 # pylint: disable=too-few-public-methods
 import logging
 import json
-import datetime
 
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
@@ -14,18 +14,6 @@ from .api import perform_search
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    """ encode datetimes into json appropriately """
-
-    def default(self, obj):  # pylint: disable=method-hidden
-        """ override default encoding """
-        if isinstance(obj, datetime.datetime):
-            encoded_object = obj.isoformat()
-        else:
-            encoded_object = super(DateTimeEncoder, self).default(self, obj)
-        return encoded_object
 
 
 class InvalidPageSize(ValueError):
@@ -106,7 +94,7 @@ def do_search(request, course_id=None):
         )
 
     return HttpResponse(
-        json.dumps(results, cls=DateTimeEncoder),
+        json.dumps(results, cls=DjangoJSONEncoder),
         content_type='application/json',
         status=status_code
     )

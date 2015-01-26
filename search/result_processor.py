@@ -1,15 +1,21 @@
 """ overridable result processor object to allow additional properties to be exposed """
 import inspect
 from itertools import chain
+import json
+import logging
 import re
 import textwrap
 
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 
 from .utils import _load_class
 
 DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = "&hellip;"
+
+# log appears to be standard name used for logger
+log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class SearchResultProcessor(object):
@@ -105,7 +111,13 @@ class SearchResultProcessor(object):
         srp = result_processor(dictionary, match_phrase)
         if srp.should_remove(user):
             return None
-        srp.add_properties()
+        try:
+            srp.add_properties()
+        # protect around any problems introduced by subclasses within their properties
+        except Exception as ex:  # pylint: disable=broad-except
+            log.exception("error processing properties for %s - %s: will remove from results",
+                          json.dumps(dictionary, cls=DjangoJSONEncoder), ex.message)
+            return None
         return dictionary
 
     @property
