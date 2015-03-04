@@ -16,11 +16,6 @@ from .api import perform_search
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-class InvalidPageSize(ValueError):
-    """ Exception for invalid page size value passed in """
-    pass
-
-
 @require_POST
 def do_search(request, course_id=None):
     """
@@ -51,8 +46,11 @@ def do_search(request, course_id=None):
     }
     status_code = 500
 
-    search_terms = request.POST["search_string"]
+    search_terms = request.POST.get("search_string", None)
     try:
+        if not search_terms:
+            raise ValueError(_('No search term provided for search'))
+
         # process pagination requests
         size = 20
         from_ = 0
@@ -61,7 +59,7 @@ def do_search(request, course_id=None):
             max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", 100)
             # The parens below are superfluous, but make it much clearer to the reader what is going on
             if not (0 < size <= max_page_size):  # pylint: disable=superfluous-parens
-                raise InvalidPageSize(_('Invalid page size of {page_size}').format(page_size=size))
+                raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))
 
             if "page_index" in request.POST:
                 from_ = int(request.POST["page_index"]) * size
@@ -76,7 +74,7 @@ def do_search(request, course_id=None):
 
         status_code = 200
 
-    except InvalidPageSize as invalid_err:
+    except ValueError as invalid_err:
         results = {
             "error": unicode(invalid_err)
         }
@@ -88,10 +86,10 @@ def do_search(request, course_id=None):
             "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_terms)
         }
         log.exception(
-            'Search view exception when searching for %s for user %s: %s',
+            'Search view exception when searching for %s for user %s: %r',
             search_terms,
             request.user.id,
-            unicode(err)
+            err
         )
 
     return HttpResponse(
