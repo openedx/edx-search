@@ -70,8 +70,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
         if isinstance(field_value, ValueRange):
             return (
-                (field_value.lower is None or compare_value >= field_value.lower)
-                and
+                (field_value.lower is None or compare_value >= field_value.lower) and
                 (field_value.upper is None or compare_value <= field_value.upper)
             )
         else:
