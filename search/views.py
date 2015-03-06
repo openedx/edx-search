@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
+from eventtracking import tracker
 from .api import perform_search
 
 # log appears to be standard name used for logger
@@ -52,9 +53,11 @@ def do_search(request, course_id=None):
     status_code = 500
 
     search_terms = request.POST["search_string"]
+
     try:
         # process pagination requests
         size = 20
+        page = 0
         from_ = 0
         if "page_size" in request.POST:
             size = int(request.POST["page_size"])
@@ -64,7 +67,18 @@ def do_search(request, course_id=None):
                 raise InvalidPageSize(_('Invalid page size of {page_size}').format(page_size=size))
 
             if "page_index" in request.POST:
-                from_ = int(request.POST["page_index"]) * size
+                page = int(request.POST["page_index"])
+                from_ = page * size
+
+        #Analytics - log search request
+        tracker.emit(
+                    'edx.course.search.initiated',
+                    {
+                        "search_term": search_terms,
+                        "page_size": size,
+                        "page_number": page,
+                    }
+                )
 
         results = perform_search(
             search_terms,
@@ -75,6 +89,17 @@ def do_search(request, course_id=None):
         )
 
         status_code = 200
+
+        #Analytics - log search results before sending to browser
+        tracker.emit(
+                    'edx.course.search.results_displayed',
+                    {
+                        "search_term": search_terms,
+                        "page_size": size,
+                        "page_number": page,
+                        "results_count": results["total"],
+                    }
+                )
 
     except InvalidPageSize as invalid_err:
         results = {
