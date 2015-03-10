@@ -15,7 +15,7 @@ from django.test.utils import override_settings
 from elasticsearch import Elasticsearch, exceptions
 
 from search.search_engine_base import SearchEngine
-from search.elastic import ElasticSearchEngine
+from search.elastic import ElasticSearchEngine, RESERVED_CHARACTERS
 from search.result_processor import SearchResultProcessor
 from search.utils import ValueRange, DateRange
 from search.api import perform_search, NoSearchEngine
@@ -629,7 +629,25 @@ class MockSpecificSearchTests(TestCase):
 @override_settings(SEARCH_ENGINE="search.tests.tests.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
-    pass
+
+    def test_reserved_characters(self):
+        """ Make sure that we handle when reserved characters were passed into query_string """
+        test_string = "What the ! is this?"
+        self.searcher.index("test_doc", {"content": {"name": test_string}})
+
+        response = self.searcher.search_string(test_string)
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search_string("something else !")
+        self.assertEqual(response["total"], 0)
+
+        response = self.searcher.search_string("something ! else")
+        self.assertEqual(response["total"], 0)
+
+        for char in RESERVED_CHARACTERS:
+            # previously these would throw exceptions
+            response = self.searcher.search_string(char)
+            self.assertEqual(response["total"], 0)
 
 
 @override_settings(MOCK_SEARCH_BACKING_FILE="./testfile.pkl")
@@ -1230,6 +1248,16 @@ class MockSearchUrlTest(TestCase):
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)
+
+    def test_empty_search_string(self):
+        """ test when search string is provided as empty or null (None) """
+        code, results = _post_request({"search_string": ""})
+        self.assertTrue(code > 499)
+        self.assertEqual(results["error"], "No search term provided for search")
+
+        code, results = _post_request({"no_search_string_provided": ""})
+        self.assertTrue(code > 499)
+        self.assertEqual(results["error"], "No search term provided for search")
 
     def test_pagination(self):
         """ test searching using the course url """

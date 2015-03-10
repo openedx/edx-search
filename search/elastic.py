@@ -12,6 +12,12 @@ from search.utils import ValueRange
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+# These are characters that may have special meaning within Elasticsearch.
+# We _may_ want to use these for their special uses for certain queries,
+# but for analysed fields these kinds of characters are removed anyway, so
+# we can safely remove them from analysed matches
+RESERVED_CHARACTERS = "+-=><!(){}[]^\"~*:\\/&|?"
+
 
 def _translate_hits(es_response):
     """ Provide resultset in our desired format from elasticsearch results """
@@ -377,7 +383,7 @@ class ElasticSearchEngine(SearchEngine):
             elastic_queries.append({
                 "query_string": {
                     "fields": ["content.*"],
-                    "query": query_string
+                    "query": query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
                 }
             })
 
