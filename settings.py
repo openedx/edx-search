@@ -39,6 +39,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'track',
+    'eventtracking.django',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -48,6 +50,11 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Adds user tags to tracking events
+    # Must go before TrackMiddleware, to get the context set up
+    'openedx.core.djangoapps.user_api.middleware.UserTagsEventContextMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'track.middleware.TrackMiddleware',
 )
 
 ROOT_URLCONF = 'search.urls'
@@ -83,3 +90,37 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+############################## EVENT TRACKING #################################
+
+TRACK_MAX_EVENT = 50000
+
+TRACKING_BACKENDS = {
+    'logger': {
+        'ENGINE': 'track.backends.logger.LoggerBackend',
+        'OPTIONS': {
+            'name': 'tracking'
+        }
+    }
+}
+
+# We're already logging events, and we don't want to capture user
+# names/passwords.  Heartbeat events are likely not interesting.
+TRACKING_IGNORE_URL_PATTERNS = [r'^/event', r'^/login', r'^/heartbeat']
+
+EVENT_TRACKING_ENABLED = True
+EVENT_TRACKING_BACKENDS = {
+    'logger': {
+        'ENGINE': 'eventtracking.backends.logger.LoggerBackend',
+        'OPTIONS': {
+            'name': 'tracking',
+            'max_event_size': TRACK_MAX_EVENT,
+        }
+    }
+}
+EVENT_TRACKING_PROCESSORS = [
+    {
+        'ENGINE': 'track.shim.LegacyFieldMappingProcessor'
+    }
+]

@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
-from eventtracking import tracker
+from eventtracking import tracker as track
 from .api import perform_search
 
 # log appears to be standard name used for logger
@@ -46,6 +46,7 @@ def do_search(request, course_id=None):
         "search_string" (required) - text upon which to search
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
+        "cohort_id" (optional) - for which cohort should results be filtered
     """
     results = {
         "error": _("Nothing to search")
@@ -71,7 +72,7 @@ def do_search(request, course_id=None):
                 from_ = page * size
 
         #Analytics - log search request
-        tracker.emit(
+        track.emit(
                     'edx.course.search.initiated',
                     {
                         "search_term": search_terms,
@@ -91,7 +92,7 @@ def do_search(request, course_id=None):
         status_code = 200
 
         #Analytics - log search results before sending to browser
-        tracker.emit(
+        track.emit(
                     'edx.course.search.results_displayed',
                     {
                         "search_term": search_terms,
