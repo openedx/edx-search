@@ -9,7 +9,7 @@ env:
 
 before_install:
   - export DJANGO_SETTINGS_MODULE=settings
-  - wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.deb
+  - wget --no-check-certificate https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.deb
   - sudo service elasticsearch stop
   - sudo dpkg -i --force-confnew elasticsearch-0.90.13.deb
   - sudo service elasticsearch start

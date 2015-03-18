@@ -1,6 +1,5 @@
 """ Abstract SearchEngine with factory method """
 # This will get called by tests, but pylint thinks that it is not used
-# pylint: disable=abstract-class-not-used
 from django.conf import settings
 
 from .utils import _load_class
