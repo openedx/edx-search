@@ -2,6 +2,8 @@ Django==1.7.3
 pymongo==2.4.1
 pytz
 elasticsearch==0.4.5
+mock-django==0.6.6
+mock==1.0.1
 
 # Our libraries:
 -e git+https://github.com/nosedjango/nosedjango.git@ed7d7f9aa969252ff799ec159f828eaa8c1cbc5a#egg=nosedjango-dev

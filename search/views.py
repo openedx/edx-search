@@ -41,7 +41,6 @@ def do_search(request, course_id=None):
         "search_string" (required) - text upon which to search
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
-        "cohort_id" (optional) - for which cohort should results be filtered
     """
     results = {
         "error": _("Nothing to search")
