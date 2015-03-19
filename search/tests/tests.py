@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
-# pylint: disable=abstract-class-not-used
 # pylint: disable=too-few-public-methods
 """ Tests for search functionalty """
 from datetime import datetime
@@ -21,6 +20,7 @@ from search.utils import ValueRange, DateRange
 from search.api import perform_search, NoSearchEngine
 
 from .mock_search_engine import MockSearchEngine, _find_field, _filter_intersection, json_date_to_datetime
+from mock import patch, call
 
 TEST_INDEX_NAME = "test_index"
 
@@ -1122,9 +1122,16 @@ class MockSearchUrlTest(TestCase):
     """
     _searcher = None
 
+    def _reset_mocked_tracker(self):
+        """ reset mocked tracker and clear logged emits """
+        self.mock_tracker.reset_mock()
+
     def setUp(self):
         MockSearchEngine.destroy()
         self._searcher = None
+        patcher = patch('search.views.track')
+        self.mock_tracker = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         MockSearchEngine.destroy()
@@ -1136,6 +1143,37 @@ class MockSearchUrlTest(TestCase):
         if self._searcher is None:
             self._searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         return self._searcher
+
+    def assert_no_events_were_emitted(self):
+        """Ensures no events were emitted since the last event related assertion"""
+        self.assertFalse(self.mock_tracker.emit.called)  # pylint: disable=maybe-no-member
+
+    def assert_search_initiated_event(self, search_term, size, page):
+        """Ensures an search initiated event was emitted"""
+        initiated_search_call = self.mock_tracker.emit.mock_calls[0]  # pylint: disable=maybe-no-member
+        expected_result = call('edx.course.search.initiated', {
+            "search_term": unicode(search_term),
+            "page_size": size,
+            "page_number": page,
+        })
+        self.assertEqual(expected_result, initiated_search_call)
+
+    def assert_results_returned_event(self, search_term, size, page, total):
+        """Ensures an results returned event was emitted"""
+        returned_results_call = self.mock_tracker.emit.mock_calls[1]  # pylint: disable=maybe-no-member
+        expected_result = call('edx.course.search.results_displayed', {
+            "search_term": unicode(search_term),
+            "page_size": size,
+            "page_number": page,
+            "results_count": total,
+        })
+        self.assertEqual(expected_result, returned_results_call)
+
+    def assert_initiated_return_events(self, search_term, size, page, total):
+        """Asserts search initiated and results returned events were emitted"""
+        self.assertEqual(self.mock_tracker.emit.call_count, 2)  # pylint: disable=maybe-no-member
+        self.assert_search_initiated_event(search_term, size, page)
+        self.assert_results_returned_event(search_term, size, page, total)
 
     def test_url_resolution(self):
         """ make sure that the url is resolved as expected """
@@ -1173,11 +1211,19 @@ class MockSearchUrlTest(TestCase):
         )
         self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
 
+        # Test no events called  yet after setup
+        self.assert_no_events_were_emitted()
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "sun"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids and "FAKE_ID_2" in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("sun", 20, 0, 2)
+        self._reset_mocked_tracker()
 
         code, results = _post_request({"search_string": "Darling"})
         self.assertTrue(code < 300 and code > 199)
@@ -1185,11 +1231,19 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Darling", 20, 0, 2)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "winter"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("winter", 20, 0, 1)
+        self._reset_mocked_tracker()
 
         self.assertTrue(results["results"][0]["data"]["test_date"], datetime(2015, 1, 1).isoformat())
         self.assertTrue(results["results"][0]["data"]["test_string"], "ABC, It's easy as 123")
@@ -1227,9 +1281,17 @@ class MockSearchUrlTest(TestCase):
             }
         )
 
+        # Test no events called  yet after setup
+        self.assert_no_events_were_emitted()
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 20, 0, 3)
+        self._reset_mocked_tracker()
 
         code, results = _post_request({"search_string": "Darling"}, "ABC/DEF/GHI")
         self.assertTrue(code < 300 and code > 199)
@@ -1237,17 +1299,29 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Darling", 20, 0, 2)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "winter"}, "ABC/DEF/GHI")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" not in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("winter", 20, 0, 1)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "winter"}, "LMN/OPQ/RST")
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("winter", 20, 0, 1)
+        self._reset_mocked_tracker()
 
     def test_empty_search_string(self):
         """ test when search string is provided as empty or null (None) """
@@ -1259,7 +1333,7 @@ class MockSearchUrlTest(TestCase):
         self.assertTrue(code > 499)
         self.assertEqual(results["error"], "No search term provided for search")
 
-    def test_pagination(self):
+    def test_pagination(self):  # pylint: disable=too-many-statements
         """ test searching using the course url """
         self.searcher.index(
             "test_doc",
@@ -1292,10 +1366,18 @@ class MockSearchUrlTest(TestCase):
             }
         )
 
+        # Test no events called  yet after setup
+        self.assert_no_events_were_emitted()
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling"})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 3)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 20, 0, 3)
+        self._reset_mocked_tracker()
 
         code, results = _post_request({"search_string": "Little Darling", "page_size": 1})
         self.assertTrue(code < 300 and code > 199)
@@ -1304,12 +1386,20 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 1, 0, 3)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 0})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 1, 0, 3)
+        self._reset_mocked_tracker()
 
         code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 1})
         self.assertTrue(code < 300 and code > 199)
@@ -1318,12 +1408,20 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_2" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 1, 1, 3)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 2})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 1, 2, 3)
+        self._reset_mocked_tracker()
 
         code, results = _post_request({"search_string": "Little Darling", "page_size": 2})
         self.assertTrue(code < 300 and code > 199)
@@ -1332,6 +1430,10 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 2, 0, 3)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 0})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
@@ -1339,12 +1441,20 @@ class MockSearchUrlTest(TestCase):
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
 
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 2, 0, 3)
+        self._reset_mocked_tracker()
+
         code, results = _post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 1})
         self.assertTrue(code < 300 and code > 199)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids)
+
+        # Test initiate search and return results were called - and clear mocked tracker
+        self.assert_initiated_return_events("Little Darling", 2, 1, 3)
+        self._reset_mocked_tracker()
 
     def test_page_size_too_large(self):
         """ test searching with too-large page_size """
