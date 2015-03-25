@@ -23,7 +23,7 @@ class SearchEngine(object):
         """ This operation is called to remove a document of given type from the search index """
         raise NotImplementedError
 
-    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
+    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, exclude_ids=None, **kwargs):
         """ This operation is called to search for matching documents within the search index """
         raise NotImplementedError
 
