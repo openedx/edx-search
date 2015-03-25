@@ -111,6 +111,11 @@ def _process_query_string(documents_to_search, search_strings):
     return documents_to_keep
 
 
+def _process_exclude_ids(documents_to_search, exclude_ids):
+    """ remove results that have ids present in the given list """
+    return [document for document in documents_to_search if document["id"] not in exclude_ids]
+
+
 class MockSearchEngine(SearchEngine):
 
     """
@@ -246,7 +251,7 @@ class MockSearchEngine(SearchEngine):
             return None
         MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
 
-    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
+    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, exclude_ids=None, **kwargs):
         """ Perform search upon documents within index """
         if MockSearchEngine._disabled:
             return {
@@ -273,23 +278,31 @@ class MockSearchEngine(SearchEngine):
         if query_string:
             documents_to_search = _process_query_string(documents_to_search, query_string.split(" "))
 
-        # Finally, find duplicates and give them a higher score
-        search_results = []
-        max_score = 0
-        while len(documents_to_search) > 0:
-            current_doc = documents_to_search[0]
-            score = len([d for d in documents_to_search if d == current_doc])
-            if score > max_score:
-                max_score = score
-            documents_to_search = [d for d in documents_to_search if d != current_doc]
+        if exclude_ids:
+            documents_to_search = _process_exclude_ids(documents_to_search, exclude_ids)
 
-            data = copy.copy(current_doc)
-            search_results.append(
-                {
-                    "score": score,
-                    "data": data,
-                }
-            )
+        # Finally, find duplicates and give them a higher score
+        def score_documents(documents_to_search):
+            """ Apply scoring to documents that have multiple matches """
+            search_results = []
+            max_score = 0
+            while documents_to_search:
+                current_doc = documents_to_search[0]
+                score = len([d for d in documents_to_search if d == current_doc])
+                if score > max_score:
+                    max_score = score
+                documents_to_search = [d for d in documents_to_search if d != current_doc]
+
+                data = copy.copy(current_doc)
+                search_results.append(
+                    {
+                        "score": score,
+                        "data": data,
+                    }
+                )
+            return search_results, max_score
+
+        search_results, max_score = score_documents(documents_to_search)
 
         results = MockSearchEngine._paginate_results(
             kwargs["size"] if "size" in kwargs else None,

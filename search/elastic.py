@@ -113,6 +113,17 @@ def _process_filters(filter_dictionary):
     return [filter_item(field) for field in filter_dictionary]
 
 
+def _process_exclude_ids(exclude_ids):
+    """ We have a list of ids to exclude from the resultset """
+    return {
+        "not": {
+            "filter": {
+                "or": [{"term": {"_id": exclude_id}} for exclude_id in exclude_ids]
+            }
+        }
+    }
+
+
 class ElasticSearchEngine(SearchEngine):
 
     """ ElasticSearch implementation of SearchEngine abstraction """
@@ -258,7 +269,7 @@ class ElasticSearchEngine(SearchEngine):
         new_properties = {
             field: field_property(field, value)
             for field, value in body.items()
-            if (field not in exclude_fields) and (field not in self._get_mappings(doc_type))
+            if (field not in exclude_fields) and (field not in self._get_mappings(doc_type).get('properties', {}))
         }
 
         if new_properties:
@@ -318,7 +329,13 @@ class ElasticSearchEngine(SearchEngine):
             log.exception("error while deleting document from index - %s", ex.message)
             raise ex
 
-    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, use_field_match=False, **kwargs):
+    def search(self,
+               query_string=None,
+               field_dictionary=None,
+               filter_dictionary=None,
+               exclude_ids=None,
+               use_field_match=False,
+               **kwargs):  # pylint: disable=too-many-arguments
         """
         Implements call to search the index for the desired content.
 
@@ -332,6 +349,9 @@ class ElasticSearchEngine(SearchEngine):
             filter_dictionary (dict): dictionary of values which _must_ match if the field exists
             in order for the documents to be included in the results; documents for which the
             field does not exist may be included in the results if they are not otherwise filtered out
+
+            exclude_ids (list): list of id values to exclude from the results - useful for finding maches that aren't
+            "one of these"
 
             use_field_match (bool): flag to indicate whether to use elastic filtering or elastic
             matching for field matches - this is nothing but a potential performance tune for certain queries
@@ -395,6 +415,9 @@ class ElasticSearchEngine(SearchEngine):
 
         if filter_dictionary:
             elastic_filters.extend(_process_filters(filter_dictionary))
+
+        if exclude_ids:
+            elastic_filters.append(_process_exclude_ids(exclude_ids))
 
         query_segment = {
             "match_all": {}
