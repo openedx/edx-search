@@ -1,5 +1,7 @@
 [MESSAGES CONTROL]
 disable=too-many-lines
+# https://bitbucket.org/logilab/pylint/issue/214/the-duplicate-code-r0801-cant-be-disabled
+disable=duplicate-code
 
 [FORMAT]
 max-line-length=120
