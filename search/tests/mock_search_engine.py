@@ -4,6 +4,7 @@ from datetime import datetime
 import json
 import collections
 import os
+import pytz
 
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
@@ -70,9 +71,23 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return include_blanks
 
         # if we have a string that we are trying to process as a date object
-        if (isinstance(compare_value, basestring) and
-                (isinstance(field_value, DateRange) or isinstance(field_value, datetime))):
-            compare_value = json_date_to_datetime(compare_value)
+        if isinstance(field_value, DateRange) or isinstance(field_value, datetime):
+            if isinstance(compare_value, basestring):
+                compare_value = json_date_to_datetime(compare_value)
+
+            field_has_tz_info = False
+            if isinstance(field_value, DateRange):
+                if field_value.lower and field_value.lower.tzinfo is not None:
+                    field_has_tz_info = True
+                if field_value.upper and field_value.upper.tzinfo is not None:
+                    field_has_tz_info = True
+            else:
+                field_has_tz_info = field_value.tzinfo is not None
+
+            if not field_has_tz_info:
+                compare_value = compare_value.replace(tzinfo=None)
+            elif compare_value.tzinfo is None:
+                compare_value = compare_value.replace(tzinfo=pytz.UTC)
 
         if isinstance(field_value, ValueRange):
             return (
