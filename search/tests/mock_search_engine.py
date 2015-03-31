@@ -2,6 +2,7 @@
 import copy
 from datetime import datetime
 import json
+import collections
 import os
 
 from django.conf import settings
@@ -47,6 +48,11 @@ def _find_field(doc, field_name):
         return field_value
 
 
+def _is_iterable(item):
+    """ Checks if an item is iterable (list, tuple, generator), but not string """
+    return isinstance(item, collections.Iterable) and not isinstance(item, basestring)
+
+
 def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
     """
     Filters out documents that do not match all of the field values within the dictionary_object
@@ -73,6 +79,8 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
                 (field_value.lower is None or compare_value >= field_value.lower) and
                 (field_value.upper is None or compare_value <= field_value.upper)
             )
+        elif _is_iterable(compare_value) and not _is_iterable(field_value):
+            return any((item == field_value for item in compare_value))
         else:
             return compare_value == field_value
 

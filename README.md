@@ -87,6 +87,12 @@ search_result = search_engine.search(field_dictionary=match_field_dict)
 
 _Notice the . notation for querying fields that are nested within the indexed object_
 
+**Important notice:** searching in multivalue fields (i.e. a lists) have a special semantics - if search term is a
+scalar value (i.e. string, number, etc.), search uses "contains in" predicate, so all documents containing specified
+search value as one of the elements of multivalue field are included in result set. If search term is vector value (i.e. 
+list, tuple, dictionary, etc.), search will result in undefined behavior, specific to underlying search engine; thus
+using iterable as filter field value is discouraged. 
+
 #### Search results
 The `search_result` object returned from a call to `search` is a python dict object that contains the following fields:
 ```
@@ -167,6 +173,8 @@ already_started = {
 # Check for results that have started, or don't specifiy a start_date
 search_result = search_engine.search(filter_dictionary=already_started)
 ```
+
+**Important notice:** same concerns about searching in multivalue fields apply here.
 
 ### Searches using a combination of these criteria
 All of these criteria can be combined to present results that are desired. Consider a search that wants to return objects that:
