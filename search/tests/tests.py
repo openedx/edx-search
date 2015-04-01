@@ -183,7 +183,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             "content": {
                 "name": "You may find me in a coffee shop",
             },
-            "course_id": "A/B/C",
+            "course": "A/B/C",
             "abc": "xyz",
         }
         self.searcher.index("test_doc", test_object)
@@ -191,19 +191,19 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(query_string="find me")
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_fields({"course_id": "A/B/C"})
+        response = self.searcher.search_fields({"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(query_string="find me", field_dictionary={"course_id": "X/Y/Z"})
+        response = self.searcher.search(query_string="find me", field_dictionary={"course": "X/Y/Z"})
         self.assertEqual(response["total"], 0)
 
-        response = self.searcher.search(query_string="find me", field_dictionary={"course_id": "A/B/C"})
+        response = self.searcher.search(query_string="find me", field_dictionary={"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_string("find me", field_dictionary={"course_id": "A/B/C"})
+        response = self.searcher.search_string("find me", field_dictionary={"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_fields({"course_id": "A/B/C"}, query_string="find me")
+        response = self.searcher.search_fields({"course": "A/B/C"}, query_string="find me")
         self.assertEqual(response["total"], 1)
 
     def test_search_tags(self):
@@ -545,6 +545,55 @@ class MockSearchTests(TestCase, SearcherMixin):
         result_ids = [r["data"]["id"] for r in response["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids)
 
+    def test_exclude_ids(self):
+        """ Test that ids that would normally be present in the resultset will not be present if in the exclude list """
+        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_1"})
+        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_2"})
+        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_3"})
+        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_11"})
+        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_12"})
+        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_13"})
+
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 6)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertIn("FAKE_ID_1", result_ids)
+        self.assertIn("FAKE_ID_2", result_ids)
+        self.assertIn("FAKE_ID_3", result_ids)
+        self.assertIn("FAKE_ID_11", result_ids)
+        self.assertIn("FAKE_ID_12", result_ids)
+        self.assertIn("FAKE_ID_13", result_ids)
+
+        response = self.searcher.search(exclude_ids=["FAKE_ID_1", "FAKE_ID_2", "FAKE_ID_11", "FAKE_ID_12"])
+        self.assertEqual(response["total"], 2)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertNotIn("FAKE_ID_1", result_ids)
+        self.assertNotIn("FAKE_ID_2", result_ids)
+        self.assertIn("FAKE_ID_3", result_ids)
+        self.assertNotIn("FAKE_ID_11", result_ids)
+        self.assertNotIn("FAKE_ID_12", result_ids)
+        self.assertIn("FAKE_ID_13", result_ids)
+
+        response = self.searcher.search(field_dictionary={"course": "ABC"})
+        self.assertEqual(response["total"], 3)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertIn("FAKE_ID_1", result_ids)
+        self.assertIn("FAKE_ID_2", result_ids)
+        self.assertIn("FAKE_ID_3", result_ids)
+        self.assertNotIn("FAKE_ID_11", result_ids)
+        self.assertNotIn("FAKE_ID_12", result_ids)
+        self.assertNotIn("FAKE_ID_13", result_ids)
+
+        response = self.searcher.search(field_dictionary={"course": "ABC"}, exclude_ids=["FAKE_ID_3", "FAKE_ID_2"])
+        self.assertEqual(response["total"], 1)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertIn("FAKE_ID_1", result_ids)
+        self.assertNotIn("FAKE_ID_2", result_ids)
+        self.assertNotIn("FAKE_ID_3", result_ids)
+        self.assertNotIn("FAKE_ID_11", result_ids)
+        self.assertNotIn("FAKE_ID_12", result_ids)
+        self.assertNotIn("FAKE_ID_13", result_ids)
+
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
@@ -698,6 +747,7 @@ class FileBackedMockSearchTests(MockSearchTests):
 @override_settings(ELASTIC_SEARCH_IMPL=ErroringElasticImpl)
 class ErroringElasticTests(TestCase, SearcherMixin):
     """ testing handling of elastic exceptions when they happen """
+
     def test_index_failure(self):
         """ the index operation should fail """
         with self.assertRaises(exceptions.ElasticsearchException):
