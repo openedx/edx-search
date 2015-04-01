@@ -7,7 +7,7 @@ from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 
 from search.search_engine_base import SearchEngine
-from search.utils import ValueRange
+from search.utils import ValueRange, _is_iterable
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -57,6 +57,12 @@ def _get_filter_field(field_name, field_value):
         filter_field = {
             "range": {
                 field_name: range_values
+            }
+        }
+    elif _is_iterable(field_value):
+        filter_field = {
+            "terms": {
+                field_name: field_value
             }
         }
     else:

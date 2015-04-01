@@ -1,5 +1,6 @@
 """ Utility classes to support others """
 import importlib
+import collections
 
 
 def _load_class(class_path, default):
@@ -15,6 +16,11 @@ def _load_class(class_path, default):
     ) if len(component) > 1 else default
 
     return result_processor
+
+
+def _is_iterable(item):
+    """ Checks if an item is iterable (list, tuple, generator), but not string """
+    return isinstance(item, collections.Iterable) and not isinstance(item, basestring)
 
 
 class ValueRange(object):

@@ -292,6 +292,31 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(field_dictionary={"array": "c"})
         self.assertEqual(response["total"], 2)
 
+    def test_search_any(self):
+        """ match any field value in a list """
+        test_object1 = {
+            "name": "John Lester",
+            "course": "A/B/C"
+        }
+        test_object2 = {
+            "name": "Anthony Rizzo",
+            "course": "C/D/E"
+        }
+        self.searcher.index("test_doc", test_object1)
+        self.searcher.index("test_doc", test_object2)
+
+        response = self.searcher.search(field_dictionary={"course": ["x", "y"]})
+        self.assertEqual(response["total"], 0)
+
+        response = self.searcher.search(field_dictionary={"course": ["C/D/E"]})
+        self.assertEqual(response["total"], 1)
+        self.assertEqual(response["results"][0]["data"], test_object2)
+
+        response = self.searcher.search(field_dictionary={"course": ["A/B/C", "C/D/E", "x"]})
+        self.assertEqual(response["total"], 2)
+        self.assertIn(response["results"][0]["data"], [test_object1, test_object2])
+        self.assertIn(response["results"][1]["data"], [test_object1, test_object2])
+
     def test_extended_characters(self):
         """ Make sure that extended character searches work """
         test_string = u"قضايـا هامـة"
