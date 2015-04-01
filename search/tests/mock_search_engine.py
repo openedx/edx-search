@@ -77,10 +77,10 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
             field_has_tz_info = False
             if isinstance(field_value, DateRange):
-                if field_value.lower and field_value.lower.tzinfo is not None:
-                    field_has_tz_info = True
-                if field_value.upper and field_value.upper.tzinfo is not None:
-                    field_has_tz_info = True
+                field_has_tz_info = (
+                    (field_value.lower and field_value.lower.tzinfo is not None) or
+                    (field_value.upper and field_value.upper.tzinfo is not None)
+                )
             else:
                 field_has_tz_info = field_value.tzinfo is not None
 
