@@ -183,7 +183,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             "content": {
                 "name": "You may find me in a coffee shop",
             },
-            "course_id": "A/B/C",
+            "course": "A/B/C",
             "abc": "xyz",
         }
         self.searcher.index("test_doc", test_object)
@@ -191,19 +191,19 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(query_string="find me")
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_fields({"course_id": "A/B/C"})
+        response = self.searcher.search_fields({"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search(query_string="find me", field_dictionary={"course_id": "X/Y/Z"})
+        response = self.searcher.search(query_string="find me", field_dictionary={"course": "X/Y/Z"})
         self.assertEqual(response["total"], 0)
 
-        response = self.searcher.search(query_string="find me", field_dictionary={"course_id": "A/B/C"})
+        response = self.searcher.search(query_string="find me", field_dictionary={"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_string("find me", field_dictionary={"course_id": "A/B/C"})
+        response = self.searcher.search_string("find me", field_dictionary={"course": "A/B/C"})
         self.assertEqual(response["total"], 1)
 
-        response = self.searcher.search_fields({"course_id": "A/B/C"}, query_string="find me")
+        response = self.searcher.search_fields({"course": "A/B/C"}, query_string="find me")
         self.assertEqual(response["total"], 1)
 
     def test_search_tags(self):
@@ -747,6 +747,7 @@ class FileBackedMockSearchTests(MockSearchTests):
 @override_settings(ELASTIC_SEARCH_IMPL=ErroringElasticImpl)
 class ErroringElasticTests(TestCase, SearcherMixin):
     """ testing handling of elastic exceptions when they happen """
+
     def test_index_failure(self):
         """ the index operation should fail """
         with self.assertRaises(exceptions.ElasticsearchException):
