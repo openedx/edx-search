@@ -369,9 +369,8 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
-class BadSearchTest(TestCase):
+class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
-    _searcher = None
 
     def setUp(self):
         MockSearchEngine.destroy()
@@ -406,11 +405,13 @@ class BadSearchTest(TestCase):
         self.assertTrue(code > 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
 
+        with self.assertRaises(StandardError):
+            searcher.search(query_string="test search")
+
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
-class BadIndexTest(TestCase):
+class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
-    _searcher = None
 
     def setUp(self):
         MockSearchEngine.destroy()

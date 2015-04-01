@@ -1,15 +1,20 @@
 """ Tests for MockSearchEngine specific features """
+import pytz
+
 from datetime import datetime
 from django.test import TestCase
 from django.test.utils import override_settings
 from search.tests.mock_search_engine import _find_field, _filter_intersection, json_date_to_datetime
-
+from search.tests.utils import SearcherMixin
+from search.utils import DateRange
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods
+
+
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
-class MockSpecificSearchTests(TestCase):
+class MockSpecificSearchTests(TestCase, SearcherMixin):
     """ For testing pieces of the Mock Engine that have no equivalent in Elastic """
 
     def test_find_field_arguments(self):
@@ -79,3 +84,43 @@ class MockSpecificSearchTests(TestCase):
 
         json_datetime = "2015-01-31T07:30:28.65785Z"
         self.assertTrue(json_date_to_datetime(json_datetime), datetime(2015, 1, 31, 7, 30, 28, 65785))
+
+    def test_timezone_conversion(self):
+        """
+        Tests internal operation of mock when range values have timezone, and query objects do not, and vice versa
+        """
+        # first where index has no timezones, and query has
+        low_date = datetime(2010, 1, 1)
+        high_date = datetime(2100, 1, 1)
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date})
+
+        response = self.searcher.search(field_dictionary={"start_date": low_date.replace(tzinfo=pytz.UTC)})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(
+            field_dictionary={"start_date": DateRange(None, datetime.utcnow().replace(tzinfo=pytz.UTC))}
+        )
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(
+            field_dictionary={"start_date": DateRange(datetime(2099, 1, 1).replace(tzinfo=pytz.UTC), None)}
+        )
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.destroy()
+        self.searcher.index(
+            "test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date.replace(tzinfo=pytz.UTC)}
+        )
+        self.searcher.index(
+            "test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date.replace(tzinfo=pytz.UTC)}
+        )
+
+        response = self.searcher.search(field_dictionary={"start_date": low_date})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(field_dictionary={"start_date": DateRange(None, datetime.utcnow())})
+        self.assertEqual(response["total"], 1)
+
+        response = self.searcher.search(field_dictionary={"start_date": DateRange(datetime(2099, 1, 1), None)})
+        self.assertEqual(response["total"], 1)
