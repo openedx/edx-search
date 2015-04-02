@@ -12,7 +12,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from .utils import _load_class
 
 DESIRED_EXCERPT_LENGTH = 100
-ELLIPSIS = "&hellip;"
+ELLIPSIS = '<span class="search-results-ellipsis"></span>'
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
