@@ -20,6 +20,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     """
     Make sure that requests to the url get routed to the correct view handler
     """
+
     def _reset_mocked_tracker(self):
         """ reset mocked tracker and clear logged emits """
         self.mock_tracker.reset_mock()
@@ -368,9 +369,8 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
-class BadSearchTest(TestCase):
+class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
-    _searcher = None
 
     def setUp(self):
         MockSearchEngine.destroy()
@@ -404,3 +404,23 @@ class BadSearchTest(TestCase):
         code, results = post_request({"search_string": "sun"})
         self.assertTrue(code > 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
+
+        with self.assertRaises(StandardError):
+            searcher.search(query_string="test search")
+
+
+@override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
+class BadIndexTest(TestCase, SearcherMixin):
+    """ Make sure that we can error message when there is a problem """
+
+    def setUp(self):
+        MockSearchEngine.destroy()
+
+    def tearDown(self):
+        MockSearchEngine.destroy()
+
+    def test_search_from_url(self):
+        """ ensure that we get the error back when the backend fails """
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        with self.assertRaises(StandardError):
+            searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
