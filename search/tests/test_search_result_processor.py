@@ -138,7 +138,10 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
 
         srp = SearchResultProcessor(test_result, u"edx")
-        self.assertEqual(srp.excerpt, u"Here is a الاستحسان about <b>edx</b>&hellip;<b>edX</b> search a lot")
+        self.assertEqual(
+            srp.excerpt,
+            u'Here is a الاستحسان about <b>edx</b><span class="search-results-ellipsis"></span><b>edX</b> search a lot'
+        )
 
     def test_too_long_excerpt(self):
         """ test that we shorten an excerpt that is too long appropriately """
