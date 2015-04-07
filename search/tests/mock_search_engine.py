@@ -2,7 +2,6 @@
 import copy
 from datetime import datetime
 import json
-import collections
 import os
 import pytz
 
@@ -10,7 +9,7 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 from search.search_engine_base import SearchEngine
-from search.utils import ValueRange, DateRange
+from search.utils import ValueRange, DateRange, _is_iterable
 
 
 def json_date_to_datetime(json_date_string_value):
@@ -47,11 +46,6 @@ def _find_field(doc, field_name):
         return _find_field(field_value, remaining_path)
     else:
         return field_value
-
-
-def _is_iterable(item):
-    """ Checks if an item is iterable (list, tuple, generator), but not string """
-    return isinstance(item, collections.Iterable) and not isinstance(item, basestring)
 
 
 def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
@@ -96,6 +90,9 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             )
         elif _is_iterable(compare_value) and not _is_iterable(field_value):
             return any((item == field_value for item in compare_value))
+
+        elif _is_iterable(field_value) and not _is_iterable(compare_value):
+            return any((item == compare_value for item in field_value))
         else:
             return compare_value == field_value
 
