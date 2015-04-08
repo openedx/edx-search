@@ -16,7 +16,7 @@ from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine, RESERVED_CHARACTERS
 from search.tests.utils import ErroringElasticImpl, SearcherMixin, TEST_INDEX_NAME
 from search.utils import ValueRange, DateRange
-from search.api import perform_search, NoSearchEngine
+from search.api import perform_search, NoSearchEngineError
 
 from .mock_search_engine import MockSearchEngine, json_date_to_datetime
 
@@ -814,5 +814,5 @@ class TestNone(TestCase):
 
     def test_perform_search(self):
         """ search opertaion should yeild an exception with no search engine """
-        with self.assertRaises(NoSearchEngine):
+        with self.assertRaises(NoSearchEngineError):
             perform_search("abc test")

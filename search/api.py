@@ -1,18 +1,21 @@
 """ search business logic implementations """
+from datetime import datetime
+
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
+from .utils import DateRange
 
 
-class NoSearchEngine(Exception):
-    """ NoSearchEngine exception to be thrown if no search engine is specified """
+class NoSearchEngineError(Exception):
+    """ NoSearchEngineError exception to be thrown if no search engine is specified """
     pass
 
 
 def perform_search(
-        search_terms,
+        search_term,
         user=None,
         size=10,
         from_=0,
@@ -27,21 +30,44 @@ def perform_search(
 
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
-        raise NoSearchEngine("No search engine specified in settings.SEARCH_ENGINE")
+        raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
 
     results = searcher.search_string(
-        search_terms,
+        search_term,
         field_dictionary=field_dictionary,
         filter_dictionary=filter_dictionary,
         size=size,
         from_=from_,
+        doc_type="courseware_content",
     )
 
     # post-process the result
     for result in results["results"]:
-        result["data"] = SearchResultProcessor.process_result(result["data"], search_terms, user)
+        result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
 
     results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
     results["results"] = [r for r in results["results"] if r["data"] is not None]
+
+    return results
+
+
+def course_discovery_search(search_term=None, size=20, from_=0):  # , **kwargs):
+    """
+    Course Discovery activities against the search engine index of course details
+    """
+    searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
+    if not searcher:
+        raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
+
+    results = searcher.search(
+        query_string=search_term,
+        doc_type="course_info",
+        size=size,
+        from_=from_,
+        # only show when enrollment start IS provided and is before now
+        field_dictionary={"enrollment_start": DateRange(None, datetime.utcnow())},
+        # show if no enrollment end is provided and has not yet been reached
+        filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
+    )
 
     return results
