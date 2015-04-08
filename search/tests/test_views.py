@@ -82,7 +82,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def test_search_from_url(self):
         """ test searching using the url """
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "id": "FAKE_ID_1",
                 "content": {
@@ -93,7 +93,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
             }
         )
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "id": "FAKE_ID_2",
                 "content": {
@@ -101,7 +101,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
                 }
             }
         )
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+        self.searcher.index("courseware_content", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
 
         # Test no events called  yet after setup
         self.assert_no_events_were_emitted()
@@ -143,7 +143,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def test_course_search_url(self):
         """ test searching using the course url """
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "ABC/DEF/GHI",
                 "id": "FAKE_ID_1",
@@ -153,7 +153,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
             }
         )
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "ABC/DEF/GHI",
                 "id": "FAKE_ID_2",
@@ -163,7 +163,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
             }
         )
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "LMN/OPQ/RST",
                 "id": "FAKE_ID_3",
@@ -228,7 +228,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def test_pagination(self):  # pylint: disable=too-many-statements
         """ test searching using the course url """
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "ABC",
                 "id": "FAKE_ID_1",
@@ -238,7 +238,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
             }
         )
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "ABC",
                 "id": "FAKE_ID_2",
@@ -248,7 +248,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
             }
         )
         self.searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "course": "XYZ",
                 "id": "FAKE_ID_3",
@@ -382,7 +382,7 @@ class BadSearchTest(TestCase, SearcherMixin):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "id": "FAKE_ID_1",
                 "content": {
@@ -391,7 +391,7 @@ class BadSearchTest(TestCase, SearcherMixin):
             }
         )
         searcher.index(
-            "test_doc",
+            "courseware_content",
             {
                 "id": "FAKE_ID_2",
                 "content": {
@@ -423,4 +423,4 @@ class BadIndexTest(TestCase, SearcherMixin):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(StandardError):
-            searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+            searcher.index("courseware_content", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})

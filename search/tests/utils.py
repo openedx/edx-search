@@ -18,6 +18,14 @@ def post_request(body, course_id=None):
     return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
 
 
+def post_discovery_request(body):
+    """ Helper method to post the request and process the response """
+    address = '/course_discovery/'
+    response = Client().post(address, body)
+
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+
+
 # pylint: disable=too-few-public-methods
 class SearcherMixin(object):
     """ Mixin to provide searcher for the tests """

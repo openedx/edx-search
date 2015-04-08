@@ -110,7 +110,7 @@ def _process_query_string(documents_to_search, search_strings):
         for name in dictionary_object:
             if isinstance(dictionary_object[name], dict):
                 return has_string(dictionary_object[name], search_string)
-            elif search_string in dictionary_object[name]:
+            elif search_string.lower() in dictionary_object[name].lower():
                 return True
         return False
 
