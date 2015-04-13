@@ -41,6 +41,7 @@ def do_search(request, course_id=None):
         "search_string" (required) - text upon which to search
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
+        "cohort_id" (optional) - for which cohort should results be filtered
     """
     results = {
         "error": _("Nothing to search")
@@ -57,6 +58,7 @@ def do_search(request, course_id=None):
         size = 20
         page = 0
         from_ = 0
+        cohort_id = None
         if "page_size" in request.POST:
             size = int(request.POST["page_size"])
             max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", 100)
@@ -78,12 +80,16 @@ def do_search(request, course_id=None):
             }
         )
 
+        if "cohort_id" in request.POST:
+            cohort_id = request.POST["cohort_id"]
+
         results = perform_search(
             search_terms,
             user=request.user,
             size=size,
             from_=from_,
             course_id=course_id,
+            cohort_id=cohort_id
         )
 
         status_code = 200

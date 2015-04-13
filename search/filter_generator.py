@@ -24,6 +24,8 @@ class SearchFilterGenerator(object):
         field_dictionary = {}
         if "course_id" in kwargs and kwargs["course_id"]:
             field_dictionary["course"] = kwargs["course_id"]
+        if "cohort_id" in kwargs and kwargs["cohort_id"]:
+            field_dictionary["cohort_id"] = kwargs["cohort_id"]
 
         return field_dictionary
 
