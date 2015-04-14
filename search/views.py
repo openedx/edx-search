@@ -16,6 +16,8 @@ from .api import perform_search, course_discovery_search
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+DEFAULT_FILTER_FIELDS = ["org", "modes"]
+
 
 def _process_pagination_values(request):
     """ process pagination requests from request parameter """
@@ -35,6 +37,16 @@ def _process_pagination_values(request):
     return size, from_, page
 
 
+def _process_field_values(request):
+    """ Create separate dictionary of supported filter values provided """
+    supported_filter_fields = getattr(settings, "COURSE_DISCOVERY_FILTERS", DEFAULT_FILTER_FIELDS)
+    return {
+        field_key: request.POST[field_key]
+        for field_key in request.POST
+        if field_key in supported_filter_fields
+    }
+
+
 @require_POST
 def do_search(request, course_id=None):
     """
@@ -48,7 +60,7 @@ def do_search(request, course_id=None):
         http json response with the following fields
             "took" - how many seconds the operation took
             "total" - how many results were found
-            "max_score" - maximum score from these resutls
+            "max_score" - maximum score from these results
             "results" - json array of result documents
 
             or
@@ -162,6 +174,7 @@ def course_discovery(request):
 
     try:
         size, from_, page = _process_pagination_values(request)
+        field_dictionary = _process_field_values(request)
 
         # Analytics - log search request
         track.emit(
@@ -174,9 +187,10 @@ def course_discovery(request):
         )
 
         results = course_discovery_search(
-            search_term,
+            search_term=search_term,
             size=size,
             from_=from_,
+            field_dictionary=field_dictionary,
         )
 
         # Analytics - log search results before sending to browser
