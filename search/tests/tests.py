@@ -394,6 +394,25 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
 
+    def test_filter_where_null(self):
+        """
+        Make sure that filtering with `None` value finds only fields where item
+        is not present or where explicitly None
+        """
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"})
+
+        response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
+        self.assertEqual(response["total"], 2)
+
+        response = self.searcher.search(filter_dictionary={"filter_field": None})
+        self.assertEqual(response["total"], 1)
+
+        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "test_value": "4", "filter_field": None})
+        response = self.searcher.search(filter_dictionary={"filter_field": None})
+        self.assertEqual(response["total"], 2)
+
     def test_date_range(self):
         """ Make sure that date ranges can be searched """
         self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": datetime(2010, 1, 1)})
