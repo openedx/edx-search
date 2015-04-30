@@ -26,10 +26,10 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         super(DiscoveryUrlTest, self).setUp()
         DemoCourse.reset_count()
         DemoCourse.get_and_index(
-            self.searcher, {"content": {"short_description": "Find this one with the right parameter"}}
+            self.searcher, {"org": "OrgA", "content": {"short_description": "Find this one with the right parameter"}}
         )
         DemoCourse.get_and_index(
-            self.searcher, {"content": {"short_description": "Find this one with another parameter"}}
+            self.searcher, {"org": "OrgB", "content": {"short_description": "Find this one with another parameter"}}
         )
         DemoCourse.get_and_index(
             self.searcher, {"content": {"short_description": "Find this one somehow"}}
@@ -113,6 +113,22 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_3", result_ids)
+
+    def test_field_matching(self):
+        """ test that requests can specify field matches """
+        code, results = post_discovery_request({"org": "OrgA"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 1)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertIn(DemoCourse.DEMO_COURSE_ID + "_1", result_ids)
+
+        code, results = post_discovery_request({"org": "OrgB"})
+        self.assertTrue(code < 300 and code > 199)
+        self.assertEqual(results["total"], 1)
+        self.assertEqual(len(results["results"]), 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
 
     def test_page_size_too_large(self):
         """ test searching with too-large page_size """
