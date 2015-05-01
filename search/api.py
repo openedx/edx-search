@@ -21,9 +21,9 @@ def perform_search(
         from_=0,
         course_id=None):
     """ Call the search engine with the appropriate parameters """
-    # field_ and filter_dictionary(s) which can be overridden by calling application
+    # field_, filter_ and exclude_dictionary(s) can be overridden by calling application
     # field_dictionary includes course if course_id provided
-    field_dictionary, filter_dictionary = SearchFilterGenerator.generate_field_filters(
+    (field_dictionary, filter_dictionary, exclude_dictionary) = SearchFilterGenerator.generate_field_filters(
         user=user,
         course_id=course_id,
     )
@@ -36,6 +36,7 @@ def perform_search(
         search_term,
         field_dictionary=field_dictionary,
         filter_dictionary=filter_dictionary,
+        exclude_dictionary=exclude_dictionary,
         size=size,
         from_=from_,
         doc_type="courseware_content",
@@ -55,14 +56,19 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     """
     Course Discovery activities against the search engine index of course details
     """
+    # We'll ignore the course-enrollemnt informaiton in field and filter
+    # dictionary, and use our own logic upon enrollment dates for these
+    use_search_fields = ["org"]
+    (search_fields, _, exclude_dictionary) = SearchFilterGenerator.generate_field_filters()
+    use_field_dictionary = {}
+    use_field_dictionary.update({field: search_fields[field] for field in search_fields if field in use_search_fields})
+    if field_dictionary:
+        use_field_dictionary.update(field_dictionary)
+    use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
+
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
-
-    use_field_dictionary = {}
-    if field_dictionary:
-        use_field_dictionary.update(field_dictionary)
-    use_field_dictionary.update({"enrollment_start": DateRange(None, datetime.utcnow())})
 
     results = searcher.search(
         query_string=search_term,
@@ -73,6 +79,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         field_dictionary=use_field_dictionary,
         # show if no enrollment end is provided and has not yet been reached
         filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
+        exclude_dictionary=exclude_dictionary,
     )
 
     return results

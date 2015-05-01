@@ -126,12 +126,19 @@ def _process_filters(filter_dictionary):
     return [filter_item(field) for field in filter_dictionary]
 
 
-def _process_exclude_ids(exclude_ids):
+def _process_exclude_dictionary(exclude_dictionary):
     """ We have a list of ids to exclude from the resultset """
+    not_properties = []
+    for exclude_property in exclude_dictionary:
+        exclude_values = exclude_dictionary[exclude_property]
+        if not isinstance(exclude_values, list):
+            exclude_values = [exclude_values]
+        not_properties.extend([{"term": {exclude_property: exclude_value}} for exclude_value in exclude_values])
+
     return {
         "not": {
             "filter": {
-                "or": [{"term": {"_id": exclude_id}} for exclude_id in exclude_ids]
+                "or": not_properties
             }
         }
     }
@@ -346,6 +353,7 @@ class ElasticSearchEngine(SearchEngine):
                query_string=None,
                field_dictionary=None,
                filter_dictionary=None,
+               exclude_dictionary=None,
                exclude_ids=None,
                use_field_match=False,
                **kwargs):  # pylint: disable=too-many-arguments
@@ -353,21 +361,28 @@ class ElasticSearchEngine(SearchEngine):
         Implements call to search the index for the desired content.
 
         Args:
-            query_string (str): the string of values upon which to search within the content of the objects within the
-            index
+            query_string (str): the string of values upon which to search within the
+            content of the objects within the index
 
-            field_dictionary (dict): dictionary of values which _must_ exist and _must_ match
-            in order for the documents to be included in the results
+            field_dictionary (dict): dictionary of values which _must_ exist and
+            _must_ match in order for the documents to be included in the results
 
-            filter_dictionary (dict): dictionary of values which _must_ match if the field exists
-            in order for the documents to be included in the results; documents for which the
-            field does not exist may be included in the results if they are not otherwise filtered out
+            filter_dictionary (dict): dictionary of values which _must_ match if the
+            field exists in order for the documents to be included in the results;
+            documents for which the field does not exist may be included in the
+            results if they are not otherwise filtered out
 
-            exclude_ids (list): list of id values to exclude from the results - useful for finding maches that aren't
-            "one of these"
+            exclude_dictionary(dict): dictionary of values all of which which must
+            not match in order for the documents to be included in the results;
+            documents which have any of these fields and for which the value matches
+            one of the specified values shall be filtered out of the result set
 
-            use_field_match (bool): flag to indicate whether to use elastic filtering or elastic
-            matching for field matches - this is nothing but a potential performance tune for certain queries
+            use_field_match (bool): flag to indicate whether to use elastic
+            filtering or elastic matching for field matches - this is nothing but a
+            potential performance tune for certain queries
+
+            (deprecated) exclude_ids (list): list of id values to exclude from the results -
+            useful for finding maches that aren't "one of these"
 
         Returns:
             dict object with results in the desired format
@@ -429,8 +444,16 @@ class ElasticSearchEngine(SearchEngine):
         if filter_dictionary:
             elastic_filters.extend(_process_filters(filter_dictionary))
 
+        # Support deprecated argument of exclude_ids
         if exclude_ids:
-            elastic_filters.append(_process_exclude_ids(exclude_ids))
+            if not exclude_dictionary:
+                exclude_dictionary = {}
+            if "_id" not in exclude_dictionary:
+                exclude_dictionary["_id"] = []
+            exclude_dictionary["_id"].extend(exclude_ids)
+
+        if exclude_dictionary:
+            elastic_filters.append(_process_exclude_dictionary(exclude_dictionary))
 
         query_segment = {
             "match_all": {}
