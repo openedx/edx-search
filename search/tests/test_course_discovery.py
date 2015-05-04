@@ -52,7 +52,8 @@ class DemoCourse(object):
         course_copy.update({"id": "{}_{}".format(course_copy["id"], cls.demo_course_count), })
         if remove_fields:
             for remove_field in remove_fields:
-                del course_copy[remove_field]
+                if remove_field in course_copy:
+                    del course_copy[remove_field]
         return course_copy
 
     @classmethod
@@ -169,6 +170,39 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         DemoCourse.index(self.searcher, additional_course)
 
         results = course_discovery_search()
+        self.assertEqual(results["total"], 1)
+
+    def test_discovery_field_matching(self):
+        """ Test that field specifications only show those results with the desired field values """
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgA"})
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgB"})
+
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 2)
+
+        results = course_discovery_search(field_dictionary={"org": "OrgA"})
+        self.assertEqual(results["total"], 1)
+        self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
+
+        results = course_discovery_search(field_dictionary={"org": "OrgB"})
+        self.assertEqual(results["total"], 1)
+        self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
+
+    def test_multivalue_field_matching(self):
+        """
+        Test that field specifications only show those results with the desired
+        field values - even when there is an array of possible values
+        """
+        DemoCourse.get_and_index(self.searcher, {"modes": ["honor", "verified"]})
+        DemoCourse.get_and_index(self.searcher, {"modes": ["honor"]})
+
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 2)
+
+        results = course_discovery_search(field_dictionary={"modes": "honor"})
+        self.assertEqual(results["total"], 2)
+
+        results = course_discovery_search(field_dictionary={"modes": "verified"})
         self.assertEqual(results["total"], 1)
 
 

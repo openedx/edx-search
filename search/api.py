@@ -51,7 +51,7 @@ def perform_search(
     return results
 
 
-def course_discovery_search(search_term=None, size=20, from_=0):  # , **kwargs):
+def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None):
     """
     Course Discovery activities against the search engine index of course details
     """
@@ -59,13 +59,18 @@ def course_discovery_search(search_term=None, size=20, from_=0):  # , **kwargs):
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
 
+    use_field_dictionary = {}
+    if field_dictionary:
+        use_field_dictionary.update(field_dictionary)
+    use_field_dictionary.update({"enrollment_start": DateRange(None, datetime.utcnow())})
+
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
         size=size,
         from_=from_,
         # only show when enrollment start IS provided and is before now
-        field_dictionary={"enrollment_start": DateRange(None, datetime.utcnow())},
+        field_dictionary=use_field_dictionary,
         # show if no enrollment end is provided and has not yet been reached
         filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
     )
