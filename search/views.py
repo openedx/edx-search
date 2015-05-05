@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
 from .api import perform_search, course_discovery_search
+from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -72,6 +73,10 @@ def do_search(request, course_id=None):
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
     """
+
+    # Setup search environment
+    SearchInitializer.set_search_enviroment(request=request, course_id=course_id)
+
     results = {
         "error": _("Nothing to search")
     }
@@ -100,7 +105,7 @@ def do_search(request, course_id=None):
             user=request.user,
             size=size,
             from_=from_,
-            course_id=course_id,
+            course_id=course_id
         )
 
         status_code = 200
