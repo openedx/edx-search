@@ -28,6 +28,16 @@ class SearchFilterGenerator(object):
         return field_dictionary
 
     @classmethod
+    def check_user_is_staff(cls, request, course_id):
+        """ empty base implementation. Can be used to set masquerade object. """
+        generator = _load_class(getattr(settings, "SEARCH_FILTER_GENERATOR", None), cls)()
+        generator._check_user_is_staff(request, course_id)
+
+    def _check_user_is_staff(self, request, course_id):
+        """ empty base implementation. Can be used to set masquerade object. """
+        return False
+
+    @classmethod
     def generate_field_filters(cls, **kwargs):
         """
         Called from within search handler
