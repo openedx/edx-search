@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
 from .api import perform_search, course_discovery_search
+from .filter_generator import SearchFilterGenerator
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
@@ -83,12 +84,16 @@ def do_search(request, course_id=None):
             }
         )
 
+        # Check if user is staff member
+        is_staff = SearchFilterGenerator.check_user_is_staff(request, course_id)
+
         results = perform_search(
             search_term,
             user=request.user,
             size=size,
             from_=from_,
             course_id=course_id,
+            is_staff=is_staff
         )
 
         status_code = 200

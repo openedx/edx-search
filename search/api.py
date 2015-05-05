@@ -19,13 +19,15 @@ def perform_search(
         user=None,
         size=10,
         from_=0,
-        course_id=None):
+        course_id=None,
+        is_staff=False):
     """ Call the search engine with the appropriate parameters """
     # field_ and filter_dictionary(s) which can be overridden by calling application
     # field_dictionary includes course if course_id provided
     field_dictionary, filter_dictionary = SearchFilterGenerator.generate_field_filters(
         user=user,
         course_id=course_id,
+        is_staff=is_staff
     )
 
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
