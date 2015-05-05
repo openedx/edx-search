@@ -101,6 +101,7 @@ def do_search(request, course_id=None):
             size=size,
             from_=from_,
             course_id=course_id,
+            request=request,
         )
 
         status_code = 200
