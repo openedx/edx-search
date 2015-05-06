@@ -11,13 +11,11 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-from .api import perform_search, course_discovery_search
+from .api import perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
-
-DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 
 
 def _process_pagination_values(request):
@@ -40,11 +38,10 @@ def _process_pagination_values(request):
 
 def _process_field_values(request):
     """ Create separate dictionary of supported filter values provided """
-    supported_filter_fields = getattr(settings, "COURSE_DISCOVERY_FILTERS", DEFAULT_FILTER_FIELDS)
     return {
         field_key: request.POST[field_key]
         for field_key in request.POST
-        if field_key in supported_filter_fields
+        if field_key in course_discovery_filter_fields()
     }
 
 

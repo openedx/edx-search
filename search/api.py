@@ -8,6 +8,19 @@ from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 from .utils import DateRange
 
+# Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
+DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
+
+
+def course_discovery_filter_fields():
+    """ look up the desired list of course discovery filter fields """
+    return getattr(settings, "COURSE_DISCOVERY_FILTERS", DEFAULT_FILTER_FIELDS)
+
+
+def course_discovery_facets():
+    """ Discovery facets to include, by default we specify each filter field with unspecified size attribute """
+    return getattr(settings, "COURSE_DISCOVERY_FACETS", {field: {} for field in course_discovery_filter_fields()})
+
 
 class NoSearchEngineError(Exception):
     """ NoSearchEngineError exception to be thrown if no search engine is specified """
@@ -80,6 +93,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         # show if no enrollment end is provided and has not yet been reached
         filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
         exclude_dictionary=exclude_dictionary,
+        facet_terms=course_discovery_facets(),
     )
 
     return results

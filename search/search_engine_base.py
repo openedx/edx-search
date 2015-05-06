@@ -28,7 +28,8 @@ class SearchEngine(object):
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               **kwargs):
+               facet_terms=None,
+               **kwargs):  # pylint: disable=too-many-arguments
         """ This operation is called to search for matching documents within the search index """
         raise NotImplementedError
 
