@@ -34,6 +34,15 @@ def _translate_hits(es_response):
 
         return translated_result
 
+    def translate_facet(result):
+        """ Any conversion from ES facet syntax into our search engine sytax """
+        terms = {term["term"]: term["count"] for term in result["terms"]}
+        return {
+            "terms": terms,
+            "total": result["total"],
+            "other": result["other"],
+        }
+
     results = [translate_result(hit) for hit in es_response["hits"]["hits"]]
     response = {
         "took": es_response["took"],
@@ -41,6 +50,9 @@ def _translate_hits(es_response):
         "max_score": es_response["hits"]["max_score"],
         "results": results,
     }
+
+    if "facets" in es_response:
+        response["facets"] = {facet: translate_facet(es_response["facets"][facet]) for facet in es_response["facets"]}
 
     return response
 
@@ -142,6 +154,22 @@ def _process_exclude_dictionary(exclude_dictionary):
             }
         }
     }
+
+
+def _process_facet_terms(facet_terms):
+    """ We have a list of terms with which we return facets """
+    elastic_facets = {}
+    for facet in facet_terms:
+        facet_term = {"field": facet}
+        if facet_terms[facet]:
+            for facet_option in facet_terms[facet]:
+                facet_term[facet_option] = facet_terms[facet][facet_option]
+
+        elastic_facets[facet] = {
+            "terms": facet_term
+        }
+
+    return elastic_facets
 
 
 class ElasticSearchEngine(SearchEngine):
@@ -349,14 +377,31 @@ class ElasticSearchEngine(SearchEngine):
             log.exception("error while deleting document from index - %s", ex.message)
             raise ex
 
+    # A few disabled pylint violations here:
+    # This procedure takes each of the possible input parameters and builds the query with each argument
+    # I tried doing this in separate steps, but IMO it makes it more difficult to follow instead of less
+    # So, reasoning:
+    #
+    #   too-many-arguments: We have all these different parameters to which we
+    #       wish to pay attention, it makes more sense to have them listed here
+    #       instead of burying them within kwargs
+    #
+    #   too-many-locals: I think this counts all the arguments as well, but
+    #       there are some local variables used herein that are there for transient
+    #       purposes and actually promote the ease of understanding
+    #
+    #   too-many-branches: There's a lot of logic on the 'if I have this
+    #       optional argument then...'. Reasoning goes back to its easier to read
+    #       the (somewhat linear) flow rather than to jump up to other locations in code
     def search(self,
                query_string=None,
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
+               facet_terms=None,
                exclude_ids=None,
                use_field_match=False,
-               **kwargs):  # pylint: disable=too-many-arguments
+               **kwargs):  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
         """
         Implements call to search the index for the desired content.
 
@@ -376,6 +421,18 @@ class ElasticSearchEngine(SearchEngine):
             not match in order for the documents to be included in the results;
             documents which have any of these fields and for which the value matches
             one of the specified values shall be filtered out of the result set
+
+            facet_terms (dict): dictionary of terms to include within search
+            facets list - key is the term desired to facet upon, and the value is a
+            dictionary of extended information to include. Supported right now is a
+            size specification for a cap upon how many facet results to return (can
+            be an empty dictionary to use default size for underlying engine):
+
+            e.g.
+            {
+                "org": {"size": 10},  # only show top 10 organizations
+                "modes": {}
+            }
 
             use_field_match (bool): flag to indicate whether to use elastic
             filtering or elastic matching for field matches - this is nothing but a
@@ -403,7 +460,25 @@ class ElasticSearchEngine(SearchEngine):
                             ...
                         }
                     }
-                ]
+                ],
+                "facets": {
+                    "org": {
+                        "total": total_count,
+                        "other": 1,
+                        "terms": {
+                            "MITx": 25,
+                            "HarvardX": 18
+                        }
+                    },
+                    "modes": {
+                        "total": modes_count,
+                        "other": 15,
+                        "terms": {
+                            "honor": 58,
+                            "verified": 44,
+                        }
+                    }
+                }
             }
 
         Raises:
@@ -479,10 +554,16 @@ class ElasticSearchEngine(SearchEngine):
                 }
             }
 
+        body = {"query": query}
+        if facet_terms:
+            facet_query = _process_facet_terms(facet_terms)
+            if facet_query:
+                body["facets"] = facet_query
+
         try:
             es_response = self._es.search(
                 index=self.index_name,
-                body={"query": query},
+                body=body,
                 **kwargs
             )
         except exceptions.ElasticsearchException as ex:

@@ -5,21 +5,18 @@
 # pylint: disable=too-few-public-methods
 """ Tests for search functionalty """
 from datetime import datetime
-import json
-import os
 
 from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
-from elasticsearch import Elasticsearch, exceptions
+from elasticsearch import Elasticsearch
 
 from search.search_engine_base import SearchEngine
-from search.elastic import ElasticSearchEngine, RESERVED_CHARACTERS
-from search.tests.utils import ErroringElasticImpl, SearcherMixin, TEST_INDEX_NAME
+from search.elastic import ElasticSearchEngine
+from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from search.utils import ValueRange, DateRange
-from search.api import perform_search, NoSearchEngineError
 
-from .mock_search_engine import MockSearchEngine, json_date_to_datetime
+from .mock_search_engine import MockSearchEngine
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -743,181 +740,83 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertNotIn("FAKE_ID_4", result_ids)
         self.assertIn("FAKE_ID_5", result_ids)
 
+    def _index_for_facets(self):
+        """ Prepare index for facet tests """
+        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "subject": "mathematics", "org": "edX"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "subject": "mathematics", "org": "MIT"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "subject": "physics", "org": "MIT"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "subject": "history", "org": "Harvard"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_5", "subject": "mathematics", "org": "Harvard"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_6", "subject": "physics", "org": "Harvard"})
+        self.searcher.index("test_doc", {"id": "FAKE_ID_7", "no_subject": "not_a_subject", "org": "Harvard"})
 
-@override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
-class ElasticSearchTests(MockSearchTests):
-    """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
+    def test_faceted_search(self):
+        """ Test that faceting works well """
+        self._index_for_facets()
 
-    def test_reserved_characters(self):
-        """ Make sure that we handle when reserved characters were passed into query_string """
-        test_string = "What the ! is this?"
-        self.searcher.index("test_doc", {"content": {"name": test_string}})
+        response = self.searcher.search()
+        self.assertEqual(response["total"], 7)
+        self.assertNotIn("facets", response)
 
-        response = self.searcher.search_string(test_string)
-        self.assertEqual(response["total"], 1)
-
-        response = self.searcher.search_string("something else !")
-        self.assertEqual(response["total"], 0)
-
-        response = self.searcher.search_string("something ! else")
-        self.assertEqual(response["total"], 0)
-
-        for char in RESERVED_CHARACTERS:
-            # previously these would throw exceptions
-            response = self.searcher.search_string(char)
-            self.assertEqual(response["total"], 0)
-
-
-@override_settings(MOCK_SEARCH_BACKING_FILE="./testfile.pkl")
-class FileBackedMockSearchTests(MockSearchTests):
-    """ Override that runs the same tests with file-backed MockSearchEngine """
-
-    def setUp(self):
-        MockSearchEngine.create_test_file()
-        self._searcher = None
-
-    def tearDown(self):
-        MockSearchEngine.destroy_test_file()
-        self._searcher = None
-
-    # Commenting test for now - it runs locally, but not on travis system
-    # def test_file_reopen(self):
-    #     """ make sure that the file contents can be reopened and the data therein is reflected as expected """
-    #     test_object = {
-    #         "content": {
-    #             "name": "John Lester",
-    #         },
-    #         "course_id": "A/B/C",
-    #         "abc": "xyz"
-    #     }
-    #     self.searcher.index("test_doc", test_object)
-
-    # fake it out to destory a different file, leaving this one in place
-    # will force reload from the original file
-    #     settings.MOCK_SEARCH_BACKING_FILE = "./fakeout_destroy.pkl"
-    #     MockSearchEngine.destroy()
-
-    # now search should fail
-    #     response = self.searcher.search(query_string="John Lester")
-    #     self.assertEqual(response["total"], 0)
-
-    # go back to existing file for the reload
-    #     settings.MOCK_SEARCH_BACKING_FILE = "./testfile.pkl"
-
-    # now search should be successful
-    #     response = self.searcher.search(query_string="John Lester")
-    #     self.assertEqual(response["total"], 1)
-
-    def test_file_value_formats(self):
-        """ test the format of values that write/read from the file """
-        # json serialization removes microseconds part of the datetime object, so
-        # we strip it at the beginning to allow equality comparison to be correct
-        this_moment = datetime.utcnow().replace(microsecond=0)
-        test_object = {
-            "content": {
-                "name": "How did 11 of 12 balls get deflated during the game"
-            },
-            "my_date_value": this_moment,
-            "my_integer_value": 172,
-            "my_float_value": 57.654,
-            "my_string_value": "If the officials just blew it, would they come out and admit it?"
+        facet_terms = {
+            "subject": {},
+            "org": {}
         }
+        response = self.searcher.search(facet_terms=facet_terms)
+        self.assertEqual(response["total"], 7)
+        self.assertIn("facets", response)
+        facet_results = response["facets"]
 
-        self.searcher.index("test_doc", test_object)
+        self.assertEqual(facet_results["subject"]["total"], 6)
+        subject_term_counts = facet_results["subject"]["terms"]
+        self.assertEqual(subject_term_counts["mathematics"], 3)
+        self.assertEqual(subject_term_counts["history"], 1)
+        self.assertEqual(subject_term_counts["physics"], 2)
 
-        # now search should be successful
-        response = self.searcher.search(query_string="deflated")
-        self.assertEqual(response["total"], 1)
+        self.assertEqual(facet_results["org"]["total"], 7)
+        org_term_counts = facet_results["org"]["terms"]
+        self.assertEqual(org_term_counts["edX"], 1)
+        self.assertEqual(org_term_counts["MIT"], 2)
+        self.assertEqual(org_term_counts["Harvard"], 4)
 
-        # and values should be what we desire
-        returned_result = response["results"][0]["data"]
-        self.assertEqual(json_date_to_datetime(returned_result["my_date_value"]), this_moment)
-        self.assertEqual(returned_result["my_integer_value"], 172)
-        self.assertEqual(returned_result["my_float_value"], 57.654)
-        self.assertEqual(
-            returned_result["my_string_value"],
-            "If the officials just blew it, would they come out and admit it?"
-        )
+    def test_filtered_faceted_search(self):
+        """ Test that faceting works well alongside filtered results """
+        self._index_for_facets()
 
-    def test_disabled_index(self):
-        """
-        Make sure that searchengine operations are shut down when mock engine has a filename, but file does
-        not exist - this is helpful for test scenarios where we essentially want to not slow anything down
-        """
-        this_moment = datetime.utcnow()
-        test_object = {
-            "id": "FAKE_ID",
-            "content": {
-                "name": "How did 11 of 12 balls get deflated during the game"
-            },
-            "my_date_value": this_moment,
-            "my_integer_value": 172,
-            "my_float_value": 57.654,
-            "my_string_value": "If the officials just blew it, would they come out and admit it?"
+        facet_terms = {
+            "subject": {},
+            "org": {}
         }
+        response = self.searcher.search(field_dictionary={"org": "Harvard"}, facet_terms=facet_terms)
+        self.assertEqual(response["total"], 4)
+        self.assertIn("facets", response)
+        facet_results = response["facets"]
 
-        self.searcher.index("test_doc", test_object)
-        response = self.searcher.search(query_string="deflated")
-        self.assertEqual(response["total"], 1)
+        self.assertEqual(facet_results["subject"]["total"], 3)
+        subject_term_counts = facet_results["subject"]["terms"]
+        self.assertEqual(subject_term_counts["mathematics"], 1)
+        self.assertEqual(subject_term_counts["history"], 1)
+        self.assertEqual(subject_term_counts["physics"], 1)
 
-        # copy content, and then erase file so that backed file is not present and work is disabled
-        initial_file_content = None
-        with open("testfile.pkl", "r") as dict_file:
-            initial_file_content = json.load(dict_file)
-        os.remove("testfile.pkl")
+        self.assertEqual(facet_results["org"]["total"], 4)
+        org_term_counts = facet_results["org"]["terms"]
+        self.assertNotIn("edX", org_term_counts)
+        self.assertNotIn("MIT", org_term_counts)
+        self.assertEqual(org_term_counts["Harvard"], 4)
 
-        response = self.searcher.search(query_string="ABC")
-        self.assertEqual(response["total"], 0)
+        response = self.searcher.search(field_dictionary={"subject": ["physics", "history"]}, facet_terms=facet_terms)
+        self.assertEqual(response["total"], 3)
+        self.assertIn("facets", response)
+        facet_results = response["facets"]
 
-        self.searcher.index("test_doc", {"content": {"name": "ABC"}})
-        # now search should be unsuccessful because file does not exist
-        response = self.searcher.search(query_string="ABC")
-        self.assertEqual(response["total"], 0)
+        self.assertEqual(facet_results["subject"]["total"], 3)
+        subject_term_counts = facet_results["subject"]["terms"]
+        self.assertNotIn("mathematics", subject_term_counts)
+        self.assertEqual(subject_term_counts["history"], 1)
+        self.assertEqual(subject_term_counts["physics"], 2)
 
-        # remove it, and then we'll reload file and it still should be there
-        self.searcher.remove("test_doc", "FAKE_ID")
-
-        MockSearchEngine.create_test_file("fakefile.pkl", initial_file_content)
-
-        # now search should be successful because file did exist in file
-        response = self.searcher.search(query_string="deflated")
-        self.assertEqual(response["total"], 1)
-
-        self.searcher.remove("not_a_test_doc", "FAKE_ID")
-        response = self.searcher.search(query_string="deflated")
-        self.assertEqual(response["total"], 1)
-
-        self.searcher.remove("test_doc", "FAKE_ID")
-        response = self.searcher.search(query_string="deflated")
-        self.assertEqual(response["total"], 0)
-
-
-@override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
-@override_settings(ELASTIC_SEARCH_IMPL=ErroringElasticImpl)
-class ErroringElasticTests(TestCase, SearcherMixin):
-    """ testing handling of elastic exceptions when they happen """
-
-    def test_index_failure(self):
-        """ the index operation should fail """
-        with self.assertRaises(exceptions.ElasticsearchException):
-            self.searcher.index("test_doc", {"name": "abc test"})
-
-    def test_search_failure(self):
-        """ the search operation should fail """
-        with self.assertRaises(exceptions.ElasticsearchException):
-            self.searcher.search("abc test")
-
-    def test_remove_failure(self):
-        """ the remove operation should fail """
-        with self.assertRaises(exceptions.ElasticsearchException):
-            self.searcher.remove("test_doc", "test_id")
-
-
-@override_settings(SEARCH_ENGINE=None)
-class TestNone(TestCase):
-    """ Tests correct skipping of operation when no search engine is defined """
-
-    def test_perform_search(self):
-        """ search opertaion should yeild an exception with no search engine """
-        with self.assertRaises(NoSearchEngineError):
-            perform_search("abc test")
+        self.assertEqual(facet_results["org"]["total"], 3)
+        org_term_counts = facet_results["org"]["terms"]
+        self.assertNotIn("edX", org_term_counts)
+        self.assertEqual(org_term_counts["MIT"], 1)
+        self.assertEqual(org_term_counts["Harvard"], 2)
