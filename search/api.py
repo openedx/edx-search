@@ -14,18 +14,21 @@ class NoSearchEngineError(Exception):
     pass
 
 
+# pylint: disable=too-many-arguments
 def perform_search(
         search_term,
         user=None,
         size=10,
         from_=0,
-        course_id=None):
+        course_id=None,
+        request=None):
     """ Call the search engine with the appropriate parameters """
     # field_ and filter_dictionary(s) which can be overridden by calling application
     # field_dictionary includes course if course_id provided
     field_dictionary, filter_dictionary = SearchFilterGenerator.generate_field_filters(
         user=user,
         course_id=course_id,
+        request=request,
     )
 
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
