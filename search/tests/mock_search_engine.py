@@ -123,9 +123,18 @@ def _process_query_string(documents_to_search, search_strings):
     return documents_to_keep
 
 
-def _process_exclude_ids(documents_to_search, exclude_ids):
-    """ remove results that have ids present in the given list """
-    return [document for document in documents_to_search if document["id"] not in exclude_ids]
+def _process_exclude_dictionary(documents_to_search, exclude_dictionary):
+    """ remove results that have fields that match in the exclude_dictionary """
+    for exclude_property in exclude_dictionary:
+        exclude_values = exclude_dictionary[exclude_property]
+        if not isinstance(exclude_values, list):
+            exclude_values = [exclude_values]
+        documents_to_search = [
+            document
+            for document in documents_to_search
+            if document.get(exclude_property) not in exclude_values
+        ]
+    return documents_to_search
 
 
 class MockSearchEngine(SearchEngine):
@@ -263,7 +272,12 @@ class MockSearchEngine(SearchEngine):
             return None
         MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
 
-    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, exclude_ids=None, **kwargs):
+    def search(self,
+               query_string=None,
+               field_dictionary=None,
+               filter_dictionary=None,
+               exclude_dictionary=None,
+               **kwargs):
         """ Perform search upon documents within index """
         if MockSearchEngine._disabled:
             return {
@@ -290,8 +304,16 @@ class MockSearchEngine(SearchEngine):
         if query_string:
             documents_to_search = _process_query_string(documents_to_search, query_string.split(" "))
 
-        if exclude_ids:
-            documents_to_search = _process_exclude_ids(documents_to_search, exclude_ids)
+        # Support deprecated argument of exclude_ids
+        if "exclude_ids" in kwargs:
+            if not exclude_dictionary:
+                exclude_dictionary = {}
+            if "id" not in exclude_dictionary:
+                exclude_dictionary["id"] = []
+            exclude_dictionary["id"].extend(kwargs["exclude_ids"])
+
+        if exclude_dictionary:
+            documents_to_search = _process_exclude_dictionary(documents_to_search, exclude_dictionary)
 
         # Finally, find duplicates and give them a higher score
         def score_documents(documents_to_search):
