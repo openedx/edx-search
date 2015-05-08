@@ -205,6 +205,82 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         results = course_discovery_search(field_dictionary={"modes": "verified"})
         self.assertEqual(results["total"], 1)
 
+    def test_faceting(self):
+        """ Test that facet results are incorporated  (org and modes are default facets) """
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor", "verified"]})
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor"]})
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgB", "modes": ["honor"]})
+        DemoCourse.get_and_index(self.searcher, {"org": "OrgB", "modes": ["verified"]})
+        DemoCourse.get_and_index(self.searcher, {"modes": ["other"]})
+
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 5)
+        self.assertIn("facets", results)
+
+        self.assertIn("org", results["facets"])
+        self.assertEqual(results["facets"]["org"]["total"], 4)
+        self.assertEqual(results["facets"]["org"]["terms"]["OrgA"], 2)
+        self.assertEqual(results["facets"]["org"]["terms"]["OrgB"], 2)
+
+        self.assertIn("modes", results["facets"])
+        self.assertEqual(results["facets"]["modes"]["total"], 6)
+        self.assertEqual(results["facets"]["modes"]["terms"]["honor"], 3)
+        self.assertEqual(results["facets"]["modes"]["terms"]["verified"], 2)
+        self.assertEqual(results["facets"]["modes"]["terms"]["other"], 1)
+
+    @override_settings(COURSE_DISCOVERY_FILTERS=["test_name", "modes"])
+    def test_faceting_filters(self):
+        """ Test that facet under consideration can be specified by virtue of filters being overriden """
+        DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 1", "modes": ["honor", "verified"]})
+        DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 1", "modes": ["honor"]})
+        DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 2", "modes": ["honor"]})
+        DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 2", "modes": ["verified"]})
+        DemoCourse.get_and_index(self.searcher, {"modes": ["other"]})
+
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 5)
+        self.assertIn("facets", results)
+
+        self.assertNotIn("org", results["facets"])
+
+        self.assertIn("modes", results["facets"])
+        self.assertEqual(results["facets"]["modes"]["total"], 6)
+        self.assertEqual(results["facets"]["modes"]["terms"]["honor"], 3)
+        self.assertEqual(results["facets"]["modes"]["terms"]["verified"], 2)
+        self.assertEqual(results["facets"]["modes"]["terms"]["other"], 1)
+
+        self.assertIn("test_name", results["facets"])
+        self.assertEqual(results["facets"]["test_name"]["total"], 4)
+        self.assertEqual(results["facets"]["test_name"]["terms"]["Test Name 1"], 2)
+        self.assertEqual(results["facets"]["test_name"]["terms"]["Test Name 2"], 2)
+
+    @override_settings(COURSE_DISCOVERY_FACETS={"subject": {}, "lang": {}})
+    def test_faceting_override(self):
+        """ Test that facet under consideration can be specified with custom setting """
+        DemoCourse.get_and_index(self.searcher, {"subject": "Mathematics", "lang": ["en", "fr"]})
+        DemoCourse.get_and_index(self.searcher, {"subject": "Mathematics", "lang": ["en"]})
+        DemoCourse.get_and_index(self.searcher, {"subject": "History", "lang": ["en"]})
+        DemoCourse.get_and_index(self.searcher, {"subject": "History", "lang": ["fr"]})
+        DemoCourse.get_and_index(self.searcher, {"lang": ["de"]})
+
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 5)
+        self.assertIn("facets", results)
+
+        self.assertNotIn("org", results["facets"])
+        self.assertNotIn("modes", results["facets"])
+
+        self.assertIn("subject", results["facets"])
+        self.assertEqual(results["facets"]["subject"]["total"], 4)
+        self.assertEqual(results["facets"]["subject"]["terms"]["Mathematics"], 2)
+        self.assertEqual(results["facets"]["subject"]["terms"]["History"], 2)
+
+        self.assertIn("lang", results["facets"])
+        self.assertEqual(results["facets"]["lang"]["total"], 6)
+        self.assertEqual(results["facets"]["lang"]["terms"]["en"], 3)
+        self.assertEqual(results["facets"]["lang"]["terms"]["fr"], 2)
+        self.assertEqual(results["facets"]["lang"]["terms"]["de"], 1)
+
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):

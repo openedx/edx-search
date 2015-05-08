@@ -110,7 +110,7 @@ def _process_query_string(documents_to_search, search_strings):
         for name in dictionary_object:
             if isinstance(dictionary_object[name], dict):
                 return has_string(dictionary_object[name], search_string)
-            elif search_string.lower() in dictionary_object[name].lower():
+            elif dictionary_object[name] and search_string.lower() in dictionary_object[name].lower():
                 return True
         return False
 
@@ -135,6 +135,42 @@ def _process_exclude_dictionary(documents_to_search, exclude_dictionary):
             if document.get(exclude_property) not in exclude_values
         ]
     return documents_to_search
+
+
+def _process_facet_terms(documents, facet_terms):
+    """ build the facets counts from the documents kept """
+    facets = {}
+
+    def process_facet(facet):
+        """ Find the values for this facet """
+        faceted_documents = [facet_document for facet_document in documents if facet in facet_document]
+        terms = {}
+
+        def add_facet_value(facet_value):
+            """ adds the discovered value to the counts for the selected facet """
+            if isinstance(facet_value, list):
+                for individual_value in facet_value:
+                    add_facet_value(individual_value)
+            else:
+                if facet_value not in terms:
+                    terms[facet_value] = 0
+                terms[facet_value] += 1
+
+        for document in faceted_documents:
+            add_facet_value(document[facet])
+
+        total = sum([terms[term] for term in terms])
+
+        return total, terms
+
+    for facet in facet_terms:
+        total, terms = process_facet(facet)
+        facets[facet] = {
+            "total": total,
+            "terms": terms,
+        }
+
+    return facets
 
 
 class MockSearchEngine(SearchEngine):
@@ -277,7 +313,8 @@ class MockSearchEngine(SearchEngine):
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               **kwargs):
+               facet_terms=None,
+               **kwargs):  # pylint: disable=too-many-arguments
         """ Perform search upon documents within index """
         if MockSearchEngine._disabled:
             return {
@@ -343,9 +380,15 @@ class MockSearchEngine(SearchEngine):
             kwargs["from_"] if "from_" in kwargs else None,
             sorted(search_results, key=lambda k: k["score"])
         )
-        return {
+
+        response = {
             "took": 10,
             "total": len(search_results),
             "max_score": max_score,
             "results": results
         }
+
+        if facet_terms:
+            response["facets"] = _process_facet_terms(documents_to_search, facet_terms)
+
+        return response
