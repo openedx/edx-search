@@ -10,7 +10,7 @@ from search.tests.utils import post_discovery_request
 # pylint: disable=too-many-public-methods
 
 
-@override_settings(ELASTIC_FIELD_MAPPINGS={
+@override_settings(ELASTIC_FIELD_MAPPINGS={  # pylint: disable=too-many-ancestors
     "start_date": {"type": "date"},
     "enrollment_start": {"type": "date"},
     "enrollment_end": {"type": "date"}

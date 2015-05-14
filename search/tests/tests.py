@@ -3,6 +3,7 @@
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
 # pylint: disable=too-few-public-methods
+# pylint: disable=too-many-ancestors
 """ Tests for search functionalty """
 from datetime import datetime
 import json
