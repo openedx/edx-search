@@ -17,7 +17,7 @@ from .initializer import SearchInitializer
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
-DEFAULT_FILTER_FIELDS = ["org", "modes"]
+DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 
 
 def _process_pagination_values(request):
