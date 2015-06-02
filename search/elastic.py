@@ -135,6 +135,9 @@ def _process_exclude_dictionary(exclude_dictionary):
             exclude_values = [exclude_values]
         not_properties.extend([{"term": {exclude_property: exclude_value}} for exclude_value in exclude_values])
 
+    if not not_properties:
+        return {}
+
     return {
         "not": {
             "filter": {

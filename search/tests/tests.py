@@ -744,6 +744,23 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertNotIn("FAKE_ID_4", result_ids)
         self.assertIn("FAKE_ID_5", result_ids)
 
+    def test_exclude_filter_empty(self):
+        """ Test that search works when exclude filter is an empty list """
+        self.searcher.index("test_doc", {"course": "ABC", "org": "edX", "id": "FAKE_ID_1"})
+        self.searcher.index("test_doc", {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"})
+        self.searcher.index("test_doc", {"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"})
+        self.searcher.index("test_doc", {"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"})
+        self.searcher.index("test_doc", {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"})
+
+        response = self.searcher.search(exclude_dictionary={"org": []})
+        self.assertEqual(response["total"], 5)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertIn("FAKE_ID_1", result_ids)
+        self.assertIn("FAKE_ID_2", result_ids)
+        self.assertIn("FAKE_ID_3", result_ids)
+        self.assertIn("FAKE_ID_4", result_ids)
+        self.assertIn("FAKE_ID_5", result_ids)
+
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
