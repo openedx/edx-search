@@ -773,6 +773,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertNotIn("FAKE_ID_4", result_ids)
         self.assertIn("FAKE_ID_5", result_ids)
 
+
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
     """ Override that runs the same tests for ElasticSearchEngine instead of MockSearchEngine """
