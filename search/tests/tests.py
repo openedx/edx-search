@@ -761,6 +761,17 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertIn("FAKE_ID_4", result_ids)
         self.assertIn("FAKE_ID_5", result_ids)
 
+        response = self.searcher.search(
+            field_dictionary={"course": ["XYZ", "LMN", "DEF"]},
+            exclude_dictionary={"org": []}
+        )
+        self.assertEqual(response["total"], 3)
+        result_ids = [r["data"]["id"] for r in response["results"]]
+        self.assertNotIn("FAKE_ID_1", result_ids)
+        self.assertIn("FAKE_ID_2", result_ids)
+        self.assertIn("FAKE_ID_3", result_ids)
+        self.assertNotIn("FAKE_ID_4", result_ids)
+        self.assertIn("FAKE_ID_5", result_ids)
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 class ElasticSearchTests(MockSearchTests):
