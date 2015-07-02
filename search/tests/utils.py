@@ -47,17 +47,17 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
     so that tests can relaibly search right afterward
     """
 
-    def index(self, doc_type, body, **kwargs):
+    def index(self, doc_type, sources, **kwargs):
         kwargs.update({
             "refresh": True
         })
-        super(ForceRefreshElasticSearchEngine, self).index(doc_type, body, **kwargs)
+        super(ForceRefreshElasticSearchEngine, self).index(doc_type, sources, **kwargs)
 
-    def remove(self, doc_type, doc_id, **kwargs):
+    def remove(self, doc_type, doc_ids, **kwargs):
         kwargs.update({
             "refresh": True
         })
-        super(ForceRefreshElasticSearchEngine, self).remove(doc_type, doc_id, **kwargs)
+        super(ForceRefreshElasticSearchEngine, self).remove(doc_type, doc_ids, **kwargs)
 
 
 class ErroringSearchEngine(MockSearchEngine):
@@ -70,22 +70,12 @@ class ErroringSearchEngine(MockSearchEngine):
 class ErroringIndexEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
-    def index(self, doc_type, body, **kwargs):  # pylint: disable=unused-argument
+    def index(self, doc_type, sources, **kwargs):  # pylint: disable=unused-argument
         raise StandardError("There is a problem here")
 
 
 class ErroringElasticImpl(Elasticsearch):
     """ Elasticsearch implementation that throws exceptions"""
-
-    # pylint: disable=unused-argument
-    def index(self, **kwargs):
-        """ this operation will fail """
-        raise exceptions.ElasticsearchException("This index operation failed")
-
-    # pylint: disable=unused-argument
-    def delete(self, **kwargs):
-        """ this operation will definitely fail """
-        raise exceptions.ElasticsearchException("This delete operation failed")
 
     # pylint: disable=unused-argument
     def search(self, **kwargs):

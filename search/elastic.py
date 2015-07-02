@@ -5,6 +5,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
+from elasticsearch.helpers import bulk
 
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
@@ -341,46 +342,64 @@ class ElasticSearchEngine(SearchEngine):
             )
             self._clear_mapping(doc_type)
 
-    def index(self, doc_type, body, **kwargs):
+    def index(self, doc_type, sources, **kwargs):
         """
-        Implements call to add document to the ES index
+        Implements call to add documents to the ES index
         Note the call to _check_mappings which will setup fields with the desired mappings
         """
-        id_ = body['id'] if 'id' in body else None
-
-        log.debug("indexing %s object with id %s", doc_type, id_)
-
-        self._check_mappings(doc_type, body)
 
         try:
-            self._es.index(
-                index=self.index_name,
-                doc_type=doc_type,
-                body=body,
-                id=id_,
-                ** kwargs
+            actions = []
+            for source in sources:
+                self._check_mappings(doc_type, source)
+                id_ = source['id'] if 'id' in source else None
+                log.debug("indexing %s object with id %s", doc_type, id_)
+                action = {
+                    "_index": self.index_name,
+                    "_type": doc_type,
+                    "_id": id_,
+                    "_source": source
+                }
+                actions.append(action)
+            response = bulk(
+                self._es,
+                actions,
+                stats_only=True,
+                **kwargs
             )
+            if response[1]:
+                raise exceptions.ElasticsearchException
         except exceptions.ElasticsearchException as ex:
             # log information and re-raise
             log.exception("error while indexing - %s", ex.message)
             raise ex
 
-    def remove(self, doc_type, doc_id, **kwargs):
-        """ Implements call to remove the document from the index """
-
-        log.debug("remove index for %s object with id %s", doc_type, doc_id)
+    def remove(self, doc_type, doc_ids, **kwargs):
+        """ Implements call to remove the documents from the index """
 
         try:
             # ignore is flagged as an unexpected-keyword-arg; ES python client documents that it can be used
             # pylint: disable=unexpected-keyword-arg
-            self._es.delete(
-                index=self.index_name,
-                doc_type=doc_type,
-                id=doc_id,
+            actions = []
+            for doc_id in doc_ids:
+                log.debug("remove index for %s object with id %s", doc_type, doc_id)
+                action = {
+                    '_op_type': 'delete',
+                    "_index": self.index_name,
+                    "_type": doc_type,
+                    "_id": doc_id
+                }
+                actions.append(action)
+            response = bulk(
+                self._es,
+                actions,
+                stats_only=True,
                 # let notfound not cause error
                 ignore=[404],
                 **kwargs
             )
+            if response[1]:
+                raise exceptions.ElasticsearchException
         except exceptions.ElasticsearchException as ex:
             # log information and re-raise
             log.exception("error while deleting document from index - %s", ex.message)
