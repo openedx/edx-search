@@ -173,6 +173,18 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         results = course_discovery_search()
         self.assertEqual(results["total"], 1)
 
+    @override_settings(SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING=True)
+    def test_enroll_date_skipped(self):
+        """
+        Test feature flag to skip enrollment start date filtering for course search
+        """
+        DemoCourse.get_and_index(self.searcher, {"enrollment_start": datetime(2014, 1, 1)})
+        DemoCourse.get_and_index(self.searcher, {"enrollment_start": None})
+        DemoCourse.get_and_index(self.searcher, {"enrollment_start": datetime(2114, 1, 1)})
+        DemoCourse.get_and_index(self.searcher, {}, ["enrollment_start"])
+        results = course_discovery_search()
+        self.assertEqual(results["total"], 4)
+
     def test_discovery_field_matching(self):
         """ Test that field specifications only show those results with the desired field values """
         DemoCourse.get_and_index(self.searcher, {"org": "OrgA"})
