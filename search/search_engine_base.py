@@ -15,12 +15,12 @@ class SearchEngine(object):
         if index:
             self.index_name = index
 
-    def index(self, doc_type, body, **kwargs):
-        """ This operation is called to add a document of given type to the search index """
+    def index(self, doc_type, sources, **kwargs):
+        """ This operation is called to add a documents of given type to the search index """
         raise NotImplementedError
 
-    def remove(self, doc_type, doc_id, **kwargs):
-        """ This operation is called to remove a document of given type from the search index """
+    def remove(self, doc_type, doc_ids, **kwargs):
+        """ This operation is called to remove a documents of given type from the search index """
         raise NotImplementedError
 
     def search(self,

@@ -83,25 +83,29 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """ test searching using the url """
         self.searcher.index(
             "courseware_content",
-            {
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
-                },
-                "test_date": datetime(2015, 1, 1),
-                "test_string": "ABC, It's easy as 123"
-            }
+            [
+                {
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    },
+                    "test_date": datetime(2015, 1, 1),
+                    "test_string": "ABC, It's easy as 123"
+                }
+            ]
         )
         self.searcher.index(
             "courseware_content",
-            {
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling, it's been a year since sun been gone"
+            [
+                {
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "Little Darling, it's been a year since sun been gone"
+                    }
                 }
-            }
+            ]
         )
-        self.searcher.index("courseware_content", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+        self.searcher.index("courseware_content", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
 
         # Test no events called  yet after setup
         self.assert_no_events_were_emitted()
@@ -144,33 +148,39 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """ test searching using the course url """
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "ABC/DEF/GHI",
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "ABC/DEF/GHI",
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling, it's been a year since you've been gone"
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "Little Darling, it's been a year since you've been gone"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "LMN/OPQ/RST",
-                "id": "FAKE_ID_3",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "LMN/OPQ/RST",
+                    "id": "FAKE_ID_3",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
 
         # Test no events called  yet after setup
@@ -229,33 +239,39 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """ test searching using the course url """
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "ABC",
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "ABC",
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "ABC",
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling Little Darling, it's been a year since you've been gone"
+            [
+                {
+                    "course": "ABC",
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "Little Darling Little Darling, it's been a year since you've been gone"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "courseware_content",
-            {
-                "course": "XYZ",
-                "id": "FAKE_ID_3",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "XYZ",
+                    "id": "FAKE_ID_3",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
 
         # Test no events called  yet after setup
@@ -352,13 +368,15 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """ test searching with too-large page_size """
         self.searcher.index(
             "test_doc",
-            {
-                "course": "ABC/DEF/GHI",
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 101})
@@ -383,23 +401,27 @@ class BadSearchTest(TestCase, SearcherMixin):
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         searcher.index(
             "courseware_content",
-            {
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
         searcher.index(
             "courseware_content",
-            {
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling, it's been a year since sun been gone"
+            [
+                {
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "Little Darling, it's been a year since sun been gone"
+                    }
                 }
-            }
+            ]
         )
-        searcher.index("test_doc", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+        searcher.index("test_doc", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
 
         code, results = post_request({"search_string": "sun"})
         self.assertTrue(code > 499)
@@ -423,4 +445,4 @@ class BadIndexTest(TestCase, SearcherMixin):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(StandardError):
-            searcher.index("courseware_content", {"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}})
+            searcher.index("courseware_content", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
