@@ -77,7 +77,8 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     use_field_dictionary.update({field: search_fields[field] for field in search_fields if field in use_search_fields})
     if field_dictionary:
         use_field_dictionary.update(field_dictionary)
-    use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
+    if not getattr(settings, "SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING", False):
+        use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
 
     searcher = SearchEngine.get_search_engine(getattr(settings, "COURSEWARE_INDEX_NAME", "courseware_index"))
     if not searcher:
