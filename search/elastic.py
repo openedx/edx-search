@@ -367,6 +367,8 @@ class ElasticSearchEngine(SearchEngine):
                 stats_only=True,
                 **kwargs
             )
+            # bulk() returns a tuple with summary information
+            # number of successfully executed actions and number of errors if stats_only is set to True.
             if response[1]:
                 raise exceptions.ElasticsearchException
         except exceptions.ElasticsearchException as ex:
@@ -398,6 +400,8 @@ class ElasticSearchEngine(SearchEngine):
                 ignore=[404],
                 **kwargs
             )
+            # bulk() returns a tuple with summary information
+            # number of successfully executed actions and number of errors if stats_only is set to True.
             if response[1]:
                 raise exceptions.ElasticsearchException
         except exceptions.ElasticsearchException as ex:
