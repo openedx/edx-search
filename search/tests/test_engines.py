@@ -180,10 +180,16 @@ class FileBackedMockSearchTests(MockSearchTests):
 class ErroringElasticTests(TestCase, SearcherMixin):
     """ testing handling of elastic exceptions when they happen """
 
-    def test_index_failure(self):
+    def test_index_failure_bulk(self):
         """ the index operation should fail """
-        with patch('search.elastic.bulk', return_value=[0, 1]):
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException]]):
             with self.assertRaises(exceptions.ElasticsearchException):
+                self.searcher.index("test_doc", [{"name": "abc test"}])
+
+    def test_index_failure_general(self):
+        """ the index operation should fail """
+        with patch('search.elastic.bulk', side_effect=Exception()):
+            with self.assertRaises(Exception):
                 self.searcher.index("test_doc", [{"name": "abc test"}])
 
     def test_search_failure(self):
@@ -191,10 +197,16 @@ class ErroringElasticTests(TestCase, SearcherMixin):
         with self.assertRaises(exceptions.ElasticsearchException):
             self.searcher.search("abc test")
 
-    def test_remove_failure(self):
+    def test_remove_failure_bulk(self):
         """ the remove operation should fail """
-        with patch('search.elastic.bulk', return_value=[0, 1]):
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException]]):
             with self.assertRaises(exceptions.ElasticsearchException):
+                self.searcher.remove("test_doc", ["test_id"])
+
+    def test_remove_failure_general(self):
+        """ the remove operation should fail """
+        with patch('search.elastic.bulk', side_effect=Exception()):
+            with self.assertRaises(Exception):
                 self.searcher.remove("test_doc", ["test_id"])
 
 
