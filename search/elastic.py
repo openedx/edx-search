@@ -361,19 +361,21 @@ class ElasticSearchEngine(SearchEngine):
                     "_source": source
                 }
                 actions.append(action)
-            response = bulk(
-                self._es,
-                actions,
-                stats_only=True,
-                **kwargs
-            )
             # bulk() returns a tuple with summary information
             # number of successfully executed actions and number of errors if stats_only is set to True.
-            if response[1]:
-                raise exceptions.ElasticsearchException
-        except exceptions.ElasticsearchException as ex:
+            _, num_errors = bulk(
+                self._es,
+                actions,
+                **kwargs
+            )
+            if num_errors:
+                for num_error in num_errors:
+                    log.exception("error while indexing - %s", num_error.message)
+                    raise num_error
+        # Broad exception handler to protect around bulk call
+        except Exception as ex:
             # log information and re-raise
-            log.exception("error while indexing - %s", ex.message)
+            log.exception("error while deleting document from index - %s", ex.message)
             raise ex
 
     def remove(self, doc_type, doc_ids, **kwargs):
@@ -392,19 +394,21 @@ class ElasticSearchEngine(SearchEngine):
                     "_id": doc_id
                 }
                 actions.append(action)
-            response = bulk(
+            # bulk() returns a tuple with summary information
+            # number of successfully executed actions and number of errors if stats_only is set to True.
+            _, num_errors = bulk(
                 self._es,
                 actions,
-                stats_only=True,
                 # let notfound not cause error
                 ignore=[404],
                 **kwargs
             )
-            # bulk() returns a tuple with summary information
-            # number of successfully executed actions and number of errors if stats_only is set to True.
-            if response[1]:
-                raise exceptions.ElasticsearchException
-        except exceptions.ElasticsearchException as ex:
+            if num_errors:
+                for num_error in num_errors:
+                    log.exception("error while indexing - %s", num_error.message)
+                    raise num_error
+        # Broad exception handler to protect around bulk call
+        except Exception as ex:
             # log information and re-raise
             log.exception("error while deleting document from index - %s", ex.message)
             raise ex
