@@ -204,6 +204,14 @@ class ElasticSearchEngine(SearchEngine):
         """ set new mapped-items structure into cache """
         cache.set(cls.get_cache_item_name(index_name, doc_type), mappings)
 
+    @classmethod
+    def log_indexing_error(cls, indexing_errors):
+        """ Logs indexing errors and raises a general ElasticSearch Exception"""
+        indexing_errors_log = []
+        for indexing_error in indexing_errors:
+            indexing_errors_log.append(indexing_error.message)
+        raise exceptions.ElasticsearchException(', '.join(indexing_errors_log))
+
     def _get_mappings(self, doc_type):
         """
         Interfaces with the elasticsearch mappings for the index
@@ -363,19 +371,17 @@ class ElasticSearchEngine(SearchEngine):
                 actions.append(action)
             # bulk() returns a tuple with summary information
             # number of successfully executed actions and number of errors if stats_only is set to True.
-            _, num_errors = bulk(
+            _, indexing_errors = bulk(
                 self._es,
                 actions,
                 **kwargs
             )
-            if num_errors:
-                for num_error in num_errors:
-                    log.exception("error while indexing - %s", num_error.message)
-                    raise num_error
+            if indexing_errors:
+                ElasticSearchEngine.log_indexing_error(indexing_errors)
         # Broad exception handler to protect around bulk call
         except Exception as ex:
             # log information and re-raise
-            log.exception("error while deleting document from index - %s", ex.message)
+            log.exception("error while indexing - %s", ex.message)
             raise ex
 
     def remove(self, doc_type, doc_ids, **kwargs):
@@ -396,17 +402,15 @@ class ElasticSearchEngine(SearchEngine):
                 actions.append(action)
             # bulk() returns a tuple with summary information
             # number of successfully executed actions and number of errors if stats_only is set to True.
-            _, num_errors = bulk(
+            _, indexing_errors = bulk(
                 self._es,
                 actions,
                 # let notfound not cause error
                 ignore=[404],
                 **kwargs
             )
-            if num_errors:
-                for num_error in num_errors:
-                    log.exception("error while indexing - %s", num_error.message)
-                    raise num_error
+            if indexing_errors:
+                ElasticSearchEngine.log_indexing_error(indexing_errors)
         # Broad exception handler to protect around bulk call
         except Exception as ex:
             # log information and re-raise
