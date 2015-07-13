@@ -182,7 +182,7 @@ class ErroringElasticTests(TestCase, SearcherMixin):
 
     def test_index_failure_bulk(self):
         """ the index operation should fail """
-        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException]]):
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException()]]):
             with self.assertRaises(exceptions.ElasticsearchException):
                 self.searcher.index("test_doc", [{"name": "abc test"}])
 
@@ -199,7 +199,7 @@ class ErroringElasticTests(TestCase, SearcherMixin):
 
     def test_remove_failure_bulk(self):
         """ the remove operation should fail """
-        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException]]):
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException()]]):
             with self.assertRaises(exceptions.ElasticsearchException):
                 self.searcher.remove("test_doc", ["test_id"])
 
