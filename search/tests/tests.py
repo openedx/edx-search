@@ -69,16 +69,16 @@ class MockSearchTests(TestCase, SearcherMixin):
         abstract = SearchEngine("test_index_name")
         test_string = "A test string"
         with self.assertRaises(NotImplementedError):
-            abstract.index("test_doc", {"name": test_string})
+            abstract.index("test_doc", [{"name": test_string}])
         with self.assertRaises(NotImplementedError):
             abstract.search(test_string)
         with self.assertRaises(NotImplementedError):
-            abstract.remove("test_doc", "test_id")
+            abstract.remove("test_doc", ["test_id"])
 
     def test_find_all(self):
         """ Make sure that null search finds everything in the index """
         test_string = "A test string"
-        self.searcher.index("test_doc", {"name": test_string})
+        self.searcher.index("test_doc", [{"name": test_string}])
 
         # search everything
         response = self.searcher.search(None)
@@ -86,7 +86,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         results = response["results"]
         self.assertEqual(results[0]["data"]["name"], test_string)
 
-        self.searcher.index("not_test_doc", {"value": test_string})
+        self.searcher.index("not_test_doc", [{"value": test_string}])
 
         response = self.searcher.search(None)
         self.assertEqual(response["total"], 2)
@@ -99,7 +99,7 @@ class MockSearchTests(TestCase, SearcherMixin):
     def test_find_doctype(self):
         """ Make sure that searches for specific doc_type only return requested doc_type """
         test_string = "A test string"
-        self.searcher.index("test_doc", {"name": test_string})
+        self.searcher.index("test_doc", [{"name": test_string}])
 
         # search by doc_type
         response = self.searcher.search(None, doc_type="test_doc")
@@ -108,7 +108,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(None, doc_type="not_test_doc")
         self.assertEqual(response["total"], 0)
 
-        self.searcher.index("not_test_doc", {"value": test_string})
+        self.searcher.index("not_test_doc", [{"value": test_string}])
 
         response = self.searcher.search(None, doc_type="not_test_doc")
         self.assertEqual(response["total"], 1)
@@ -116,7 +116,7 @@ class MockSearchTests(TestCase, SearcherMixin):
     def test_find_string(self):
         """ Find a string within the object "content" node """
         test_string = "A test string"
-        self.searcher.index("test_doc", {"content": {"name": test_string}})
+        self.searcher.index("test_doc", [{"content": {"name": test_string}}])
 
         # search string
         response = self.searcher.search(test_string)
@@ -125,7 +125,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 1)
 
-        self.searcher.index("not_test_doc", {"content": {"value": test_string}})
+        self.searcher.index("not_test_doc", [{"content": {"value": test_string}}])
 
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 2)
@@ -136,7 +136,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search_string("something else")
         self.assertEqual(response["total"], 0)
 
-        self.searcher.index("test_doc", {"content": {"deep": {"down": test_string}}})
+        self.searcher.index("test_doc", [{"content": {"deep": {"down": test_string}}}])
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 3)
 
@@ -152,7 +152,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             "fieldX": "valueY",
             "id": "12345"
         }
-        self.searcher.index("test_doc", test_object)
+        self.searcher.index("test_doc", [test_object])
 
         # search tags
         response = self.searcher.search_fields({"tags.tag_one": "one"})
@@ -186,7 +186,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             "course": "A/B/C",
             "abc": "xyz",
         }
-        self.searcher.index("test_doc", test_object)
+        self.searcher.index("test_doc", [test_object])
 
         response = self.searcher.search(query_string="find me")
         self.assertEqual(response["total"], 1)
@@ -219,7 +219,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             "taste": "sour",
         }
         test_object["tags"] = tags
-        self.searcher.index("test_doc", test_object)
+        self.searcher.index("test_doc", [test_object])
 
         response = self.searcher.search_fields({"tags.color": "red"})
         self.assertEqual(response["total"], 1)
@@ -274,8 +274,8 @@ class MockSearchTests(TestCase, SearcherMixin):
             "course_id": "C/D/E",
             "array": ["a", "b", "c"]
         }
-        self.searcher.index("test_doc", test_object1)
-        self.searcher.index("test_doc", test_object2)
+        self.searcher.index("test_doc", [test_object1])
+        self.searcher.index("test_doc", [test_object2])
 
         response = self.searcher.search(field_dictionary={"array": "x"})
         self.assertEqual(response["total"], 1)
@@ -302,8 +302,8 @@ class MockSearchTests(TestCase, SearcherMixin):
             "name": "Anthony Rizzo",
             "course": "C/D/E"
         }
-        self.searcher.index("test_doc", test_object1)
-        self.searcher.index("test_doc", test_object2)
+        self.searcher.index("test_doc", [test_object1])
+        self.searcher.index("test_doc", [test_object2])
 
         response = self.searcher.search(field_dictionary={"course": ["x", "y"]})
         self.assertEqual(response["total"], 0)
@@ -320,7 +320,7 @@ class MockSearchTests(TestCase, SearcherMixin):
     def test_extended_characters(self):
         """ Make sure that extended character searches work """
         test_string = u"قضايـا هامـة"
-        self.searcher.index("test_doc", {"content": {"name": test_string}})
+        self.searcher.index("test_doc", [{"content": {"name": test_string}}])
 
         # search string
         response = self.searcher.search(test_string)
@@ -329,7 +329,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 1)
 
-        self.searcher.index("not_test_doc", {"content": {"value": test_string}})
+        self.searcher.index("not_test_doc", [{"content": {"value": test_string}}])
 
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 2)
@@ -337,12 +337,12 @@ class MockSearchTests(TestCase, SearcherMixin):
     def test_delete_item(self):
         """ make sure that we can remove an item from the index """
         test_string = "This is a test of the emergency broadcast system"
-        self.searcher.index("test_doc", {"id": "FAKE_ID", "content": {"name": test_string}})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID", "content": {"name": test_string}}])
 
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 1)
 
-        self.searcher.remove("test_doc", response["results"][0]["data"]["id"])
+        self.searcher.remove("test_doc", [response["results"][0]["data"]["id"]])
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
@@ -350,36 +350,38 @@ class MockSearchTests(TestCase, SearcherMixin):
         """ make sure that we can remove an item from the index with complex id """
         test_string = "This is a test of the emergency broadcast system"
         self.searcher.index(
-            "test_doc", {
-                "id": "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4",
-                "content": {"name": test_string}
-            }
+            "test_doc", [
+                {
+                    "id": "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4",
+                    "content": {"name": test_string}
+                }
+            ]
         )
 
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 1)
 
-        self.searcher.remove("test_doc", "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4")
+        self.searcher.remove("test_doc", ["i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4"])
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
     def test_delete_item_not_present(self):
         """ make sure that we get no error removing an item that does not exist """
         test_string = "This is a test of the emergency broadcast system"
-        self.searcher.index("test_doc", {"id": "FAKE_ID", "content": {"name": "abc"}})
-        self.searcher.remove("test_doc", "FAKE_ID")
+        self.searcher.index("test_doc", [{"id": "FAKE_ID", "content": {"name": "abc"}}])
+        self.searcher.remove("test_doc", ["FAKE_ID"])
 
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
-        self.searcher.remove("test_doc", "FAKE_ID")
+        self.searcher.remove("test_doc", ["FAKE_ID"])
         response = self.searcher.search(test_string)
         self.assertEqual(response["total"], 0)
 
     def test_filter_items(self):
         """ Make sure that filters work """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2"})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2"}])
 
         response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
         self.assertEqual(response["total"], 2)
@@ -387,7 +389,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(field_dictionary={"filter_field": "my_filter_value"})
         self.assertEqual(response["total"], 1)
 
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"}])
         response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
         self.assertEqual(response["total"], 2)
 
@@ -399,9 +401,9 @@ class MockSearchTests(TestCase, SearcherMixin):
         Make sure that filtering with `None` value finds only fields where item
         is not present or where explicitly None
         """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"}])
 
         response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
         self.assertEqual(response["total"], 2)
@@ -409,14 +411,14 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search(filter_dictionary={"filter_field": None})
         self.assertEqual(response["total"], 1)
 
-        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "test_value": "4", "filter_field": None})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_4", "test_value": "4", "filter_field": None}])
         response = self.searcher.search(filter_dictionary={"filter_field": None})
         self.assertEqual(response["total"], 2)
 
     def test_date_range(self):
         """ Make sure that date ranges can be searched """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "start_date": datetime(2010, 1, 1)})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "start_date": datetime(2100, 1, 1)})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "start_date": datetime(2010, 1, 1)}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2", "start_date": datetime(2100, 1, 1)}])
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 2)
@@ -435,9 +437,9 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_numeric_range(self):
         """ Make sure that numeric ranges can be searched with both field and filter queries """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "age": 40})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "age": 20}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2", "age": 30}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "test_value": "3", "age": 40}])
 
         def test_age_range_field(begin, end, expect):
             """ repeated operations consolidated for tests """
@@ -468,7 +470,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         test_age_range_filter(None, 29, 1)
         test_age_range_filter(39, None, 1)
 
-        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "test_value": "4", "age": 50})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_4", "test_value": "4", "age": 50}])
 
         test_age_range_field(19, 29, 1)
         test_age_range_field(19, 39, 2)
@@ -486,7 +488,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         test_age_range_filter(None, 29, 1)
         test_age_range_filter(39, None, 2)
 
-        self.searcher.index("test_doc", {"id": "FAKE_ID_5", "test_value": "5", "not_age": 50})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_5", "test_value": "5", "not_age": 50}])
         test_age_range_filter(19, 29, 2)
         test_age_range_filter(19, 39, 3)
         test_age_range_filter(19, 49, 4)
@@ -497,9 +499,9 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_range_filter(self):
         """ Make sure that ranges can be used in field_dictionary and filter_dictionary """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "test_value": "1", "age": 20})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "test_value": "2", "age": 30})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "test_value": "3", "not_age": 40})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "age": 20}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2", "age": 30}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "test_value": "3", "not_age": 40}])
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
@@ -514,33 +516,39 @@ class MockSearchTests(TestCase, SearcherMixin):
         """ Test paging operation """
         self.searcher.index(
             "test_doc",
-            {
-                "course": "ABC",
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "ABC",
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "test_doc",
-            {
-                "course": "ABC",
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling Little Darling, it's been a year since you've been gone"
+            [
+                {
+                    "course": "ABC",
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "Little Darling Little Darling, it's been a year since you've been gone"
+                    }
                 }
-            }
+            ]
         )
         self.searcher.index(
             "test_doc",
-            {
-                "course": "XYZ",
-                "id": "FAKE_ID_3",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
+            [
+                {
+                    "course": "XYZ",
+                    "id": "FAKE_ID_3",
+                    "content": {
+                        "text": "Little Darling, it's been a long long lonely winter"
+                    }
                 }
-            }
+            ]
         )
 
         response = self.searcher.search(query_string="Little Darling")
@@ -591,12 +599,12 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_exclude_ids(self):
         """ Test that ids that would normally be present in the resultset will not be present if in the exclude list """
-        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_1"})
-        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_2"})
-        self.searcher.index("test_doc", {"course": "ABC", "id": "FAKE_ID_3"})
-        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_11"})
-        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_12"})
-        self.searcher.index("test_doc", {"course": "XYZ", "id": "FAKE_ID_13"})
+        self.searcher.index("test_doc", [{"course": "ABC", "id": "FAKE_ID_1"}])
+        self.searcher.index("test_doc", [{"course": "ABC", "id": "FAKE_ID_2"}])
+        self.searcher.index("test_doc", [{"course": "ABC", "id": "FAKE_ID_3"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "id": "FAKE_ID_11"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "id": "FAKE_ID_12"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "id": "FAKE_ID_13"}])
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 6)
@@ -640,9 +648,9 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_exclude_filter_single(self):
         """ Test that single entries present in the exclude filter are filtered out """
-        self.searcher.index("test_doc", {"course": "ABC", "org": "edX", "id": "FAKE_ID_1"})
-        self.searcher.index("test_doc", {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"})
-        self.searcher.index("test_doc", {"course": "LMN", "org": "MITX", "id": "FAKE_ID_3"})
+        self.searcher.index("test_doc", [{"course": "ABC", "org": "edX", "id": "FAKE_ID_1"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"}])
+        self.searcher.index("test_doc", [{"course": "LMN", "org": "MITX", "id": "FAKE_ID_3"}])
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
@@ -683,11 +691,11 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_exclude_filter_multiple(self):
         """ Test that multiple entries present in the exclude filter are filtered out """
-        self.searcher.index("test_doc", {"course": "ABC", "org": "edX", "id": "FAKE_ID_1"})
-        self.searcher.index("test_doc", {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"})
-        self.searcher.index("test_doc", {"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"})
-        self.searcher.index("test_doc", {"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"})
-        self.searcher.index("test_doc", {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"})
+        self.searcher.index("test_doc", [{"course": "ABC", "org": "edX", "id": "FAKE_ID_1"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"}])
+        self.searcher.index("test_doc", [{"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"}])
+        self.searcher.index("test_doc", [{"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"}])
+        self.searcher.index("test_doc", [{"course": "LMN", "org": "edX", "id": "FAKE_ID_5"}])
 
         response = self.searcher.search()
         self.assertEqual(response["total"], 5)
@@ -743,11 +751,11 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_exclude_filter_empty(self):
         """ Test that search works when exclude filter is an empty list """
-        self.searcher.index("test_doc", {"course": "ABC", "org": "edX", "id": "FAKE_ID_1"})
-        self.searcher.index("test_doc", {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"})
-        self.searcher.index("test_doc", {"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"})
-        self.searcher.index("test_doc", {"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"})
-        self.searcher.index("test_doc", {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"})
+        self.searcher.index("test_doc", [{"course": "ABC", "org": "edX", "id": "FAKE_ID_1"}])
+        self.searcher.index("test_doc", [{"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"}])
+        self.searcher.index("test_doc", [{"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"}])
+        self.searcher.index("test_doc", [{"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"}])
+        self.searcher.index("test_doc", [{"course": "LMN", "org": "edX", "id": "FAKE_ID_5"}])
 
         response = self.searcher.search(exclude_dictionary={"org": []})
         self.assertEqual(response["total"], 5)
@@ -772,13 +780,13 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def _index_for_facets(self):
         """ Prepare index for facet tests """
-        self.searcher.index("test_doc", {"id": "FAKE_ID_1", "subject": "mathematics", "org": "edX"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_2", "subject": "mathematics", "org": "MIT"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_3", "subject": "physics", "org": "MIT"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_4", "subject": "history", "org": "Harvard"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_5", "subject": "mathematics", "org": "Harvard"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_6", "subject": "physics", "org": "Harvard"})
-        self.searcher.index("test_doc", {"id": "FAKE_ID_7", "no_subject": "not_a_subject", "org": "Harvard"})
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "subject": "mathematics", "org": "edX"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "subject": "mathematics", "org": "MIT"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "subject": "physics", "org": "MIT"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_4", "subject": "history", "org": "Harvard"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_5", "subject": "mathematics", "org": "Harvard"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_6", "subject": "physics", "org": "Harvard"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_7", "no_subject": "not_a_subject", "org": "Harvard"}])
 
     def test_faceted_search(self):
         """ Test that faceting works well """

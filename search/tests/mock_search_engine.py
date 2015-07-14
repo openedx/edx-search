@@ -310,17 +310,19 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
-    def index(self, doc_type, body):
-        """ Add document of given type to the index """
+    def index(self, doc_type, sources):
+        """ Add documents of given type to the index """
         if MockSearchEngine._disabled:
             return None
-        MockSearchEngine.add_document(self.index_name, doc_type, body)
+        for body in sources:
+            MockSearchEngine.add_document(self.index_name, doc_type, body)
 
-    def remove(self, doc_type, doc_id):
-        """ Remove document of type with given id from the index """
+    def remove(self, doc_type, doc_ids):
+        """ Remove documents of type with given ids from the index """
         if MockSearchEngine._disabled:
             return None
-        MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
+        for doc_id in doc_ids:
+            MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
 
     def search(self,
                query_string=None,

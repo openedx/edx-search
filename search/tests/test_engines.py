@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 import os
 
+from mock import patch
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
@@ -27,7 +28,7 @@ class ElasticSearchTests(MockSearchTests):
     def test_reserved_characters(self):
         """ Make sure that we handle when reserved characters were passed into query_string """
         test_string = "What the ! is this?"
-        self.searcher.index("test_doc", {"content": {"name": test_string}})
+        self.searcher.index("test_doc", [{"content": {"name": test_string}}])
 
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 1)
@@ -105,7 +106,7 @@ class FileBackedMockSearchTests(MockSearchTests):
             "my_string_value": "If the officials just blew it, would they come out and admit it?"
         }
 
-        self.searcher.index("test_doc", test_object)
+        self.searcher.index("test_doc", [test_object])
 
         # now search should be successful
         response = self.searcher.search(query_string="deflated")
@@ -138,7 +139,7 @@ class FileBackedMockSearchTests(MockSearchTests):
             "my_string_value": "If the officials just blew it, would they come out and admit it?"
         }
 
-        self.searcher.index("test_doc", test_object)
+        self.searcher.index("test_doc", [test_object])
         response = self.searcher.search(query_string="deflated")
         self.assertEqual(response["total"], 1)
 
@@ -151,13 +152,13 @@ class FileBackedMockSearchTests(MockSearchTests):
         response = self.searcher.search(query_string="ABC")
         self.assertEqual(response["total"], 0)
 
-        self.searcher.index("test_doc", {"content": {"name": "ABC"}})
+        self.searcher.index("test_doc", [{"content": {"name": "ABC"}}])
         # now search should be unsuccessful because file does not exist
         response = self.searcher.search(query_string="ABC")
         self.assertEqual(response["total"], 0)
 
         # remove it, and then we'll reload file and it still should be there
-        self.searcher.remove("test_doc", "FAKE_ID")
+        self.searcher.remove("test_doc", ["FAKE_ID"])
 
         MockSearchEngine.create_test_file("fakefile.pkl", initial_file_content)
 
@@ -165,11 +166,11 @@ class FileBackedMockSearchTests(MockSearchTests):
         response = self.searcher.search(query_string="deflated")
         self.assertEqual(response["total"], 1)
 
-        self.searcher.remove("not_a_test_doc", "FAKE_ID")
+        self.searcher.remove("not_a_test_doc", ["FAKE_ID"])
         response = self.searcher.search(query_string="deflated")
         self.assertEqual(response["total"], 1)
 
-        self.searcher.remove("test_doc", "FAKE_ID")
+        self.searcher.remove("test_doc", ["FAKE_ID"])
         response = self.searcher.search(query_string="deflated")
         self.assertEqual(response["total"], 0)
 
@@ -179,20 +180,34 @@ class FileBackedMockSearchTests(MockSearchTests):
 class ErroringElasticTests(TestCase, SearcherMixin):
     """ testing handling of elastic exceptions when they happen """
 
-    def test_index_failure(self):
+    def test_index_failure_bulk(self):
         """ the index operation should fail """
-        with self.assertRaises(exceptions.ElasticsearchException):
-            self.searcher.index("test_doc", {"name": "abc test"})
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException()]]):
+            with self.assertRaises(exceptions.ElasticsearchException):
+                self.searcher.index("test_doc", [{"name": "abc test"}])
+
+    def test_index_failure_general(self):
+        """ the index operation should fail """
+        with patch('search.elastic.bulk', side_effect=Exception()):
+            with self.assertRaises(Exception):
+                self.searcher.index("test_doc", [{"name": "abc test"}])
 
     def test_search_failure(self):
         """ the search operation should fail """
         with self.assertRaises(exceptions.ElasticsearchException):
             self.searcher.search("abc test")
 
-    def test_remove_failure(self):
+    def test_remove_failure_bulk(self):
         """ the remove operation should fail """
-        with self.assertRaises(exceptions.ElasticsearchException):
-            self.searcher.remove("test_doc", "test_id")
+        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException()]]):
+            with self.assertRaises(exceptions.ElasticsearchException):
+                self.searcher.remove("test_doc", ["test_id"])
+
+    def test_remove_failure_general(self):
+        """ the remove operation should fail """
+        with patch('search.elastic.bulk', side_effect=Exception()):
+            with self.assertRaises(Exception):
+                self.searcher.remove("test_doc", ["test_id"])
 
 
 @override_settings(SEARCH_ENGINE=None)

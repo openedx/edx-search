@@ -65,12 +65,12 @@ class DemoCourse(object):
     @staticmethod
     def index(searcher, course_info):
         """ Adds course info dictionary to the index """
-        searcher.index(doc_type="course_info", body=course_info)
+        searcher.index(doc_type="course_info", sources=course_info)
 
     @classmethod
     def get_and_index(cls, searcher, update_dict=None, remove_fields=None):
         """ Adds course info dictionary to the index """
-        cls.index(searcher, cls.get(update_dict, remove_fields))
+        cls.index(searcher, [cls.get(update_dict, remove_fields)])
 
 
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
@@ -161,14 +161,14 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         self.assertEqual(results["total"], 1)
 
         additional_course = DemoCourse.get()
-        DemoCourse.index(self.searcher, additional_course)
+        DemoCourse.index(self.searcher, [additional_course])
 
         results = course_discovery_search()
         self.assertEqual(results["total"], 2)
 
         # Mark the course as having ended enrollment
         additional_course["enrollment_end"] = datetime(2015, 1, 1)
-        DemoCourse.index(self.searcher, additional_course)
+        DemoCourse.index(self.searcher, [additional_course])
 
         results = course_discovery_search()
         self.assertEqual(results["total"], 1)
@@ -301,7 +301,7 @@ class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):
 
     def setUp(self):
         super(TestElasticCourseDiscoverySearch, self).setUp()
-        self.searcher.index("doc_type_that_is_meaninless_to_bootstrap_index", {"test_doc_type": "bootstrap"})
+        self.searcher.index("doc_type_that_is_meaninless_to_bootstrap_index", [{"test_doc_type": "bootstrap"}])
 
 
 @override_settings(SEARCH_ENGINE=None)
