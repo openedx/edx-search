@@ -285,19 +285,19 @@ class MockSearchEngine(SearchEngine):
         return index[doc_type]
 
     @classmethod
-    def add_document(cls, index_name, doc_type, body):
-        """ add document of specific type to index """
-        cls.load_doc_type(index_name, doc_type).append(body)
+    def add_documents(cls, index_name, doc_type, sources):
+        """ add documents of specific type to index """
+        cls.load_doc_type(index_name, doc_type).extend(sources)
         cls._write_to_file()
 
     @classmethod
-    def remove_document(cls, index_name, doc_type, doc_id):
-        """ remove document by id of specific type to index """
+    def remove_documents(cls, index_name, doc_type, doc_ids):
+        """ remove documents by id of specific type to index """
         index = cls.load_index(index_name)
         if doc_type not in index:
             return
 
-        index[doc_type] = [d for d in index[doc_type] if "id" not in d or d["id"] != doc_id]
+        index[doc_type] = [d for d in index[doc_type] if "id" not in d or d["id"] not in doc_ids]
         cls._write_to_file()
 
     @classmethod
@@ -311,18 +311,19 @@ class MockSearchEngine(SearchEngine):
         MockSearchEngine.load_index(self.index_name)
 
     def index(self, doc_type, sources):
-        """ Add documents of given type to the index """
+        """ Add/update documents of given type to the index """
         if MockSearchEngine._disabled:
             return None
-        for body in sources:
-            MockSearchEngine.add_document(self.index_name, doc_type, body)
+
+        doc_ids = [s["id"] for s in sources if "id" in s]
+        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+        MockSearchEngine.add_documents(self.index_name, doc_type, sources)
 
     def remove(self, doc_type, doc_ids):
         """ Remove documents of type with given ids from the index """
         if MockSearchEngine._disabled:
             return None
-        for doc_id in doc_ids:
-            MockSearchEngine.remove_document(self.index_name, doc_type, doc_id)
+        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
 
     def search(self,
                query_string=None,
