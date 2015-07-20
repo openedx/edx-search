@@ -396,6 +396,23 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search()
         self.assertEqual(response["total"], 3)
 
+    def test_iterable_filters(self):
+        """
+        Make sure that iterable filters works
+        """
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_1"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "filter_field": "orange"}])
+        self.searcher.index("test_doc", [{"id": "FAKE_ID_3", "filter_field": ["orange", "blue"]}])
+
+        response = self.searcher.search(filter_dictionary={"filter_field": "orange"})
+        self.assertEqual(response["total"], 3)
+
+        response = self.searcher.search(filter_dictionary={"filter_field": ["orange", "green"]})
+        self.assertEqual(response["total"], 3)
+
+        response = self.searcher.search(filter_dictionary={"filter_field": ["red", "green"]})
+        self.assertEqual(response["total"], 1)
+
     def test_filter_where_null(self):
         """
         Make sure that filtering with `None` value finds only fields where item
