@@ -95,7 +95,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return any((item == compare_value for item in field_value))
 
         elif _is_iterable(compare_value) and _is_iterable(field_value):
-            return len(frozenset(compare_value).intersection(field_value)) > 0
+            return any((unicode(item) in field_value for item in compare_value))
 
         else:
             return compare_value == field_value
