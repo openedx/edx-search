@@ -270,7 +270,8 @@ class ElasticSearchEngine(SearchEngine):
 
     def __init__(self, index=None):
         super(ElasticSearchEngine, self).__init__(index)
-        self._es = getattr(settings, "ELASTIC_SEARCH_IMPL", Elasticsearch)()
+        es_config = getattr(settings, "ELASTIC_SEARCH_CONFIG", [{}])
+        self._es = getattr(settings, "ELASTIC_SEARCH_IMPL", Elasticsearch)(es_config)
         if not self._es.indices.exists(index=self.index_name):
             self._es.indices.create(index=self.index_name)
 

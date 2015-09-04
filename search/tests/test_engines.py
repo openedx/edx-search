@@ -218,3 +218,15 @@ class TestNone(TestCase):
         """ search opertaion should yeild an exception with no search engine """
         with self.assertRaises(NoSearchEngineError):
             perform_search("abc test")
+
+
+@override_settings(SEARCH_ENGINE="search.elastic.ElasticSearchEngine")
+@override_settings(ELASTIC_SEARCH_CONFIG=[{'host': '127.0.0.1'}, {'host': 'localhost'}])
+class TestElasticConfig(TestCase, SearcherMixin):
+    """ Tests correct configuration of the elasticsearch instance. """
+
+    def test_config(self):
+        """ should be configured with the correct hosts """
+        elasticsearch = self.searcher._es  # pylint: disable=protected-access
+        hosts = elasticsearch.transport.hosts
+        self.assertEqual(hosts, [{'host': '127.0.0.1'}, {'host': 'localhost'}])
