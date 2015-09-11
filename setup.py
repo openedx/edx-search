@@ -22,7 +22,7 @@ setup(
     packages=['search'],
     dependency_links=[],
     install_requires=[
-        "django==1.4.16",
+        "django >= 1.8, < 1.9",
         "elasticsearch<1.0.0"
     ]
 )
