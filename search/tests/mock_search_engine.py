@@ -8,6 +8,7 @@ import pytz
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
+from search.elastic import RESERVED_CHARACTERS
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, DateRange, _is_iterable
 
@@ -107,17 +108,23 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
     return filtered_documents
 
 
-def _process_query_string(documents_to_search, search_strings):
+def _process_query_string(documents_to_search, query_string):
     """ keep the documents that contain at least one of the search strings provided """
+    def _encode_string(string):
+        """Encode a Unicode string in the same way as the Elasticsearch search engine."""
+        return string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+
     def has_string(dictionary_object, search_string):
         """ search for string in dictionary items, look down into nested dictionaries """
         for name in dictionary_object:
             if isinstance(dictionary_object[name], dict):
                 return has_string(dictionary_object[name], search_string)
-            elif dictionary_object[name] and search_string.lower() in dictionary_object[name].lower():
-                return True
+            elif dictionary_object[name]:
+                if search_string.lower() in _encode_string(dictionary_object[name].lower()):
+                    return True
         return False
 
+    search_strings = _encode_string(query_string).split(" ")
     documents_to_keep = []
     for search_string in search_strings:
         documents_to_keep.extend(
@@ -360,7 +367,7 @@ class MockSearchEngine(SearchEngine):
             documents_to_search = _filter_intersection(documents_to_search, filter_dictionary, True)
 
         if query_string:
-            documents_to_search = _process_query_string(documents_to_search, query_string.split(" "))
+            documents_to_search = _process_query_string(documents_to_search, query_string)
 
         # Support deprecated argument of exclude_ids
         if "exclude_ids" in kwargs:
