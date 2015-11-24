@@ -5,4 +5,4 @@ elasticsearch==0.4.5
 
 # Our libraries:
 -e git+https://github.com/nosedjango/nosedjango.git@ed7d7f9aa969252ff799ec159f828eaa8c1cbc5a#egg=nosedjango-dev
--e git+https://github.com/edx/event-tracking.git@0.1.0#egg=event-tracking
+-e git+https://github.com/edx/event-tracking.git@0.2.1#egg=event-tracking==0.2.1 
