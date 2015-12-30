@@ -1,11 +1,14 @@
 """ Test utilities """
+import copy
 import json
+from datetime import datetime
+
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
+
+from search.elastic import ElasticSearchEngine
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.elastic import ElasticSearchEngine
-
 
 TEST_INDEX_NAME = "test_index"
 
@@ -81,3 +84,75 @@ class ErroringElasticImpl(Elasticsearch):
     def search(self, **kwargs):
         """ this will definitely fail """
         raise exceptions.ElasticsearchException("This search operation failed")
+
+
+class DemoCourse(object):
+    """ Class for dispensing demo courses """
+    DEMO_COURSE_ID = "edX/DemoX/Demo_Course"
+    DEMO_COURSE = {
+        "start": datetime(2014, 2, 1),
+        "number": "DemoX",
+        "content": {
+            "short_description": "Short description",
+            "overview": "Long overview page",
+            "display_name": "edX Demonstration Course",
+            "number": "DemoX"
+        },
+        "course": "edX/DemoX/Demo_Course",
+        "image_url": "/c4x/edX/DemoX/asset/images_course_image.jpg",
+        "effort": "5:30",
+        "id": DEMO_COURSE_ID,
+        "enrollment_start": datetime(2014, 1, 1),
+    }
+
+    demo_course_count = 0
+
+    @classmethod
+    def get(cls, updated_fields=None, fields_to_delete=None):
+        """ Get a copy of the dict representing the demo course.
+
+        Args:
+            updated_fields (dict): Dictionary of field-value pairs to be updated in the returned value.
+            fields_to_delete (List[str]): List of field names that should be removed from the returned value.
+
+        Returns:
+            dict: Dictionary representing the demo course.
+        """
+        cls.demo_course_count += 1
+        course = copy.deepcopy(cls.DEMO_COURSE)
+
+        fields_to_delete = fields_to_delete or []
+        updated_fields = updated_fields or {}
+
+        # Perform a nested-update (instead of a complete replacement) of the content field.
+        if "content" in updated_fields:
+            course["content"].update(updated_fields["content"])
+            del updated_fields["content"]
+
+        # All other fields can be replaced entirely.
+        course.update(updated_fields)
+
+        # Give the course a unique ID
+        course["id"] = "{}_{}".format(course["id"], cls.demo_course_count)
+
+        # Remove fields marked for deletion.
+        for field in fields_to_delete:
+            course.pop(field, None)
+
+        return course
+
+    @classmethod
+    def reset_count(cls):
+        """ go back to zero """
+        cls.demo_course_count = 0
+
+    @staticmethod
+    def index(searcher, course_info):
+        """ Adds course info dictionary to the index """
+        searcher.index(doc_type="course_info", sources=course_info)
+
+    @classmethod
+    def get_and_index(cls, searcher, update_dict=None, remove_fields=None):
+        """ Adds course info dictionary to the index """
+        source = cls.get(update_dict, remove_fields)
+        cls.index(searcher, [source])
