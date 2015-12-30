@@ -383,7 +383,7 @@ class ElasticSearchEngine(SearchEngine):
         except Exception as ex:
             # log information and re-raise
             log.exception("error while indexing - %s", ex.message)
-            raise ex
+            raise
 
     def remove(self, doc_type, doc_ids, **kwargs):
         """ Implements call to remove the documents from the index """
@@ -610,6 +610,6 @@ class ElasticSearchEngine(SearchEngine):
         except exceptions.ElasticsearchException as ex:
             # log information and re-raise
             log.exception("error while searching index - %s", ex.message)
-            raise ex
+            raise
 
         return _translate_hits(es_response)
