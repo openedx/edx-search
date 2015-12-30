@@ -84,12 +84,14 @@ class FileBackedMockSearchTests(MockSearchTests):
     """ Override that runs the same tests with file-backed MockSearchEngine """
 
     def setUp(self):
+        super(FileBackedMockSearchTests, self).setUp()
         MockSearchEngine.create_test_file()
         self._searcher = None
 
     def tearDown(self):
         MockSearchEngine.destroy_test_file()
         self._searcher = None
+        super(FileBackedMockSearchTests, self).tearDown()
 
     def test_file_value_formats(self):
         """ test the format of values that write/read from the file """

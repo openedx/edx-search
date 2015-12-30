@@ -134,11 +134,11 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         """ test searching with too-large page_size """
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 101})
         self.assertEqual(code, 500)
-        self.assertTrue("error" in results)
+        self.assertIn("error", results)
 
     @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringSearchEngine")
     def test_bad_engine(self):
         """ test in place to see how this module behaves when search engine is not available for some reason """
         code, results = post_discovery_request({"search_string": "sun"})
-        self.assertTrue(code > 499)
+        self.assertGreater(code, 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')

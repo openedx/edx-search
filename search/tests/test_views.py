@@ -1,10 +1,11 @@
 """ High-level view tests"""
 from datetime import datetime
-from django.core.urlresolvers import resolve
-from django.core.urlresolvers import Resolver404
+
+from django.core.urlresolvers import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
 from mock import patch, call
+
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
@@ -26,6 +27,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self.mock_tracker.reset_mock()
 
     def setUp(self):
+        super(MockSearchUrlTest, self).setUp()
         MockSearchEngine.destroy()
         self._searcher = None
         patcher = patch('search.views.track')
@@ -35,6 +37,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def tearDown(self):
         MockSearchEngine.destroy()
         self._searcher = None
+        super(MockSearchUrlTest, self).tearDown()
 
     def assert_no_events_were_emitted(self):
         """Ensures no events were emitted since the last event related assertion"""
@@ -228,14 +231,15 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def test_empty_search_string(self):
         """ test when search string is provided as empty or null (None) """
         code, results = post_request({"search_string": ""})
-        self.assertTrue(code > 499)
+        self.assertGreater(code, 499)
         self.assertEqual(results["error"], "No search term provided for search")
 
         code, results = post_request({"no_search_string_provided": ""})
-        self.assertTrue(code > 499)
+        self.assertGreater(code, 499)
         self.assertEqual(results["error"], "No search term provided for search")
 
-    def test_pagination(self):  # pylint: disable=too-many-statements
+    # pylint: disable=too-many-statements,wrong-assert-type
+    def test_pagination(self):
         """ test searching using the course url """
         self.searcher.index(
             "courseware_content",
@@ -279,7 +283,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 3)
 
@@ -288,77 +292,70 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 1, 0, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 0})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 1, 0, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_2"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 1, 1, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 1, "page_index": 2})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_3" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_3"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 1, 2, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 2})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1", "FAKE_ID_2"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 2, 0, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 0})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1", "FAKE_ID_2"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 2, 0, 3)
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 2, "page_index": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
-        self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
-        self.assertTrue("FAKE_ID_3" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_3"])
 
         # Test initiate search and return results were called - and clear mocked tracker
         self.assert_initiated_return_events("Little Darling", 2, 1, 3)
@@ -391,10 +388,12 @@ class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
     def setUp(self):
+        super(BadSearchTest, self).setUp()
         MockSearchEngine.destroy()
 
     def tearDown(self):
         MockSearchEngine.destroy()
+        super(BadSearchTest, self).tearDown()
 
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
@@ -424,7 +423,7 @@ class BadSearchTest(TestCase, SearcherMixin):
         searcher.index("test_doc", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
 
         code, results = post_request({"search_string": "sun"})
-        self.assertTrue(code > 499)
+        self.assertGreater(code, 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
 
         with self.assertRaises(StandardError):
@@ -436,10 +435,12 @@ class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
     def setUp(self):
+        super(BadIndexTest, self).setUp()
         MockSearchEngine.destroy()
 
     def tearDown(self):
         MockSearchEngine.destroy()
+        super(BadIndexTest, self).tearDown()
 
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
