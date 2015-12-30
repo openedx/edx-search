@@ -66,10 +66,7 @@ class SearchResultProcessorTests(TestCase):
             "Sail away to say HELLO",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
-        self.assertEqual(len(matches), 2)
-        self.assertTrue(strings[0] in matches)
-        self.assertFalse(strings[1] in matches)
-        self.assertTrue(strings[2] in matches)
+        self.assertEqual(matches, [strings[0], strings[2]])
 
         words = ["hello", "there"]
         strings = [
@@ -78,10 +75,7 @@ class SearchResultProcessorTests(TestCase):
             "Sail away to say HELLO",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
-        self.assertEqual(len(matches), 2)
-        self.assertTrue(strings[0] in matches)
-        self.assertFalse(strings[1] in matches)
-        self.assertTrue(strings[2] in matches)
+        self.assertEqual(matches, [strings[0], strings[2]])
 
         words = ["hello", "there"]
         strings = [
@@ -90,10 +84,7 @@ class SearchResultProcessorTests(TestCase):
             "Sail away to say HELLO",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
-        self.assertEqual(len(matches), 3)
-        self.assertTrue(strings[0] in matches)
-        self.assertTrue(strings[1] in matches)
-        self.assertTrue(strings[2] in matches)
+        self.assertEqual(matches, strings)
 
         words = ["goodbye there", "goodbye", "there"]
         strings = [
@@ -102,9 +93,7 @@ class SearchResultProcessorTests(TestCase):
             "Sail away to say GOODBYE",
         ]
         matches = SearchResultProcessor.find_matches(strings, words, 100)
-        self.assertTrue(strings[0] in matches)
-        self.assertTrue(strings[1] in matches)
-        self.assertTrue(strings[2] in matches)
+        self.assertEqual(matches, strings)
 
         words = ["none of these are present"]
         strings = [
@@ -159,7 +148,7 @@ class SearchResultProcessorTests(TestCase):
         test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertTrue(u"note about <b>الاستحسان</b> and it is" in excerpt)
+        self.assertIn(u"note about <b>الاستحسان</b> and it is", excerpt)
 
         test_string = (
             u"Here is a note about stuff and it is very long - more than the desirable length of 100"
@@ -175,7 +164,7 @@ class SearchResultProcessorTests(TestCase):
         test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertTrue(u"should trim the <b>الاستحسان</b> characters around" in excerpt)
+        self.assertIn(u"should trim the <b>الاستحسان</b> characters around", excerpt)
 
     def test_excerpt_front(self):
         """ test that we process correctly when match is at the front of the excerpt """
