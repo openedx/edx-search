@@ -1,4 +1,4 @@
-# edx-search [![Build Status](https://travis-ci.org/edx/edx-search.svg?branch=master)](https://travis-ci.org/edx/edx-search)
+# edx-search [![Build Status](https://travis-ci.org/edx/edx-search.svg?branch=master)](https://travis-ci.org/edx/edx-search) [![Coverage Status](https://coveralls.io/repos/edx/edx-search/badge.svg?branch=master&service=github)](https://coveralls.io/github/edx/edx-search?branch=master)
 
 This is a django application to provide access to search services from within edx-platform applications.
 
