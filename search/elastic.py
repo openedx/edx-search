@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
-from elasticsearch.helpers import bulk
+from elasticsearch.helpers import bulk, BulkIndexError
 
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
@@ -244,25 +244,25 @@ class ElasticSearchEngine(SearchEngine):
 
         We cache the properties of each doc_type, if they are not available, we'll load them again from Elasticsearch
         """
-        doc_mappings = ElasticSearchEngine.get_mappings(self.index_name, doc_type)
-        if not doc_mappings:
-            try:
-                doc_mappings = self._es.indices.get_mapping(
-                    index=self.index_name,
-                    doc_type=doc_type,
-                )[doc_type]
+        # Try loading the mapping from the cache.
+        mapping = ElasticSearchEngine.get_mappings(self.index_name, doc_type)
+
+        # Fall back to Elasticsearch
+        if not mapping:
+            mapping = self._es.indices.get_mapping(
+                index=self.index_name,
+                doc_type=doc_type,
+            ).get(self.index_name, {}).get('mappings', {}).get(doc_type, {})
+
+            # Cache the mapping, if one was retrieved
+            if mapping:
                 ElasticSearchEngine.set_mappings(
                     self.index_name,
                     doc_type,
-                    doc_mappings
+                    mapping
                 )
-            except exceptions.NotFoundError:
-                # In this case there are no mappings for this doc_type on the elasticsearch server
-                # This is a normal case when a new doc_type is being created, and it is expected that
-                # we'll hit it for new doc_type s
-                return {}
 
-        return doc_mappings
+        return mapping
 
     def _clear_mapping(self, doc_type):
         """ Remove the cached mappings, so that they get loaded from ES next time they are requested """
@@ -393,7 +393,7 @@ class ElasticSearchEngine(SearchEngine):
             # pylint: disable=unexpected-keyword-arg
             actions = []
             for doc_id in doc_ids:
-                log.debug("remove index for %s object with id %s", doc_type, doc_id)
+                log.debug("Removing document of type %s and index %s", doc_type, doc_id)
                 action = {
                     '_op_type': 'delete',
                     "_index": self.index_name,
@@ -401,22 +401,13 @@ class ElasticSearchEngine(SearchEngine):
                     "_id": doc_id
                 }
                 actions.append(action)
-            # bulk() returns a tuple with summary information
-            # number of successfully executed actions and number of errors if stats_only is set to True.
-            _, indexing_errors = bulk(
-                self._es,
-                actions,
-                # let notfound not cause error
-                ignore=[404],
-                **kwargs
-            )
-            if indexing_errors:
-                ElasticSearchEngine.log_indexing_error(indexing_errors)
-        # Broad exception handler to protect around bulk call
-        except Exception as ex:
-            # log information and re-raise
-            log.exception("error while deleting document from index - %s", ex.message)
-            raise ex
+            bulk(self._es, actions, **kwargs)
+        except BulkIndexError as ex:
+            valid_errors = [error for error in ex.errors if error['delete']['status'] != 404]
+
+            if valid_errors:
+                log.exception("An error occurred while removing documents from the index.")
+                raise
 
     # A few disabled pylint violations here:
     # This procedure takes each of the possible input parameters and builds the query with each argument
