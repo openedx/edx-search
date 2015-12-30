@@ -25,6 +25,6 @@ script:
   - DJANGO_SETTINGS_MODULE=settings coverage run --source=search ./manage.py test
   - coverage report -m
   - pep8 --config=.pep8 search
-  - pylint --rcfile=.pylintrc search --report=no
+  - pylint --rcfile=pylintrc search
 
 after_success: coveralls
