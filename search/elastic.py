@@ -92,6 +92,7 @@ def _process_field_queries(field_dictionary):
     We have a field_dictionary - we want to match the values for an elasticsearch "match" query
     This is only potentially useful when trying to tune certain search operations
     """
+
     def field_item(field):
         """ format field match as "match" item for elasticsearch query """
         return {
@@ -116,6 +117,7 @@ def _process_filters(filter_dictionary):
     and matches, then we can include, OR if the field is undefined, then we
     assume it is safe to include
     """
+
     def filter_item(field):
         """ format elasticsearch filter to pass if value matches OR field is not included """
         if filter_dictionary[field] is not None:
@@ -183,7 +185,6 @@ def _process_facet_terms(facet_terms):
 
 
 class ElasticSearchEngine(SearchEngine):
-
     """ ElasticSearch implementation of SearchEngine abstraction """
 
     @staticmethod
@@ -383,7 +384,7 @@ class ElasticSearchEngine(SearchEngine):
         except Exception as ex:
             # log information and re-raise
             log.exception("error while indexing - %s", ex.message)
-            raise ex
+            raise
 
     def remove(self, doc_type, doc_ids, **kwargs):
         """ Implements call to remove the documents from the index """

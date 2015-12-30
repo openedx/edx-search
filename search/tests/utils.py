@@ -44,7 +44,7 @@ class SearcherMixin(object):
 class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
     """
     Override of ElasticSearchEngine that forces the update of the index,
-    so that tests can relaibly search right afterward
+    so that tests can reliably query the index immediately after indexing.
     """
 
     def index(self, doc_type, sources, **kwargs):
