@@ -3,11 +3,10 @@ language: python
 python:
     - "2.7"
 
-env:
-    - TRAVIS_MODE=1
+global:
+    - DJANGO_SETTINGS_MODULE=settings
 
 before_install:
-    - export DJANGO_SETTINGS_MODULE=settings
     - wget --no-check-certificate https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.deb
     - sudo service elasticsearch stop
     - sudo dpkg -i --force-confnew elasticsearch-0.90.13.deb
@@ -15,9 +14,7 @@ before_install:
 
 # command to install dependencies
 install:
-    - "pip install coveralls"
-    - "pip install pep8"
-    - "pip install pylint"
+    - "pip install -U pip wheel coveralls"
     - "pip install -r test_requirements.txt"
 
 services:
@@ -28,7 +25,7 @@ script:
     - coverage run --source=search ./manage.py test
     - coverage report -m
     - pep8 --config=.pep8 search
-    - pylint --rcfile=.pylintrc search --report=no
+    - pylint --rcfile=pylintrc search
 
 branches:
     only:
