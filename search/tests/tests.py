@@ -12,12 +12,11 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
-from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine
+from search.search_engine_base import SearchEngine
+from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from search.utils import ValueRange, DateRange
-
-from .mock_search_engine import MockSearchEngine
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -27,6 +26,7 @@ from .mock_search_engine import MockSearchEngine
 @override_settings(MOCK_SEARCH_BACKING_FILE=None)
 class MockSearchTests(TestCase, SearcherMixin):
     """ Test operation of search activities """
+
     @property
     def _is_elastic(self):
         """ check search engine implementation, to manage cleanup differently """

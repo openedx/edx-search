@@ -11,7 +11,6 @@ setup(
     url='https://github.com/edx/edx-search',
     license='AGPL',
     classifiers=[
-        'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU Affero General Public License v3',
@@ -20,7 +19,6 @@ setup(
         'Framework :: Django',
     ],
     packages=['search'],
-    dependency_links=[],
     install_requires=[
         "django >= 1.8, < 1.9",
         "elasticsearch<1.0.0"
