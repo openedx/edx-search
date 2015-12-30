@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='edx-search',
-    version='0.1.1',
+    version='1.0.0',
     description='Search and Index routines for index access',
     author='edX',
     url='https://github.com/edx/edx-search',
@@ -22,6 +22,6 @@ setup(
     packages=['search'],
     install_requires=[
         "django >= 1.8, < 1.9",
-        "elasticsearch<1.0.0"
+        "elasticsearch>=1.0.0,<2.0.0"
     ]
 )
