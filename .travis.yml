@@ -1,38 +1,30 @@
+sudo: false
+
 language: python
 
 python:
     - "2.7"
 
-env:
-    - TRAVIS_MODE=1
+# Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
+cache:
+  - directories:
+    - $HOME/.cache/pip
 
 before_install:
-    - export DJANGO_SETTINGS_MODULE=settings
-    - wget --no-check-certificate https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.deb
-    - sudo service elasticsearch stop
-    - sudo dpkg -i --force-confnew elasticsearch-0.90.13.deb
-    - sudo service elasticsearch start
+  - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.zip
+  - unzip elasticsearch-0.90.13.zip
+  - elasticsearch-0.90.13/bin/elasticsearch
 
-# command to install dependencies
+
 install:
-    - "pip install coveralls"
-    - "pip install pep8"
-    - "pip install pylint"
-    - "pip install -r test_requirements.txt"
+  - "pip install -U pip wheel coveralls pep8 pylint"
+  - "pip install -r test_requirements.txt"
 
-services:
-    - elasticsearch
 
-# command to run tests and quality checks
 script:
-    - coverage run --source=search ./manage.py test
-    - coverage report -m
-    - pep8 --config=.pep8 search
-    - pylint --rcfile=.pylintrc search --report=no
-
-branches:
-    only:
-        - master
-        - travis_test
+  - DJANGO_SETTINGS_MODULE=settings coverage run --source=search ./manage.py test
+  - coverage report -m
+  - pep8 --config=.pep8 search
+  - pylint --rcfile=.pylintrc search --report=no
 
 after_success: coveralls
