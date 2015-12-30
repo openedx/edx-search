@@ -340,6 +340,9 @@ class ElasticSearchEngine(SearchEngine):
             if (field not in exclude_fields) and (field not in self._get_mappings(doc_type).get('properties', {}))
         }
 
+        # TODO Remove this after fixing Travis issues
+        print new_properties
+
         if new_properties:
             self._es.indices.put_mapping(
                 index=self.index_name,
