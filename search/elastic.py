@@ -209,6 +209,7 @@ class ElasticSearchEngine(SearchEngine):
         """ Logs indexing errors and raises a general ElasticSearch Exception"""
         indexing_errors_log = []
         for indexing_error in indexing_errors:
+            print "error: {}".format(indexing_error)
             indexing_errors_log.append(indexing_error.message)
         raise exceptions.ElasticsearchException(', '.join(indexing_errors_log))
 
@@ -256,7 +257,7 @@ class ElasticSearchEngine(SearchEngine):
                     doc_type,
                     doc_mappings
                 )
-            except exceptions.NotFoundError:
+            except KeyError:
                 # In this case there are no mappings for this doc_type on the elasticsearch server
                 # This is a normal case when a new doc_type is being created, and it is expected that
                 # we'll hit it for new doc_type s
@@ -377,6 +378,7 @@ class ElasticSearchEngine(SearchEngine):
                 actions,
                 **kwargs
             )
+            indexing_errors = [error for error in indexing_errors if error['index']['status'] not in range(200, 299)]
             if indexing_errors:
                 ElasticSearchEngine.log_indexing_error(indexing_errors)
         # Broad exception handler to protect around bulk call
