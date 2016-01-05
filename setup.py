@@ -6,8 +6,9 @@ from setuptools import setup
 setup(
     name='edx-search',
     version='1.0.0',
-    description='Search and Index routines for index access',
+    description='Search and index routines for index access',
     author='edX',
+    author_email='oscm@edx.org',
     url='https://github.com/edx/edx-search',
     license='AGPL',
     classifiers=[
