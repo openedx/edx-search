@@ -23,3 +23,12 @@ install:
 script: make validate
 
 after_success: coveralls
+
+deploy:
+  provider: pypi
+  user: edx
+  password:
+    secure: cMZzzg6zBrw55qlznVKb/3AaRVI9yeN4HhQOOUrGtcsEvamuOGyOXdYwNamKRqTy3VJIjRKVder+kSnEwNGoFPUBUdNIEN70IxyiGcnhLppoIvCw3FO3RI0J2N08oUSoK0nM+ACvNRT+Q2GQj3awyPJyb6J20QixCYvwax/O3v8=
+  distributions: "sdist bdist_wheel"
+  on:
+    tags: true
