@@ -10,9 +10,9 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
-  - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.13.zip
-  - unzip elasticsearch-0.90.13.zip
-  - elasticsearch-0.90.13/bin/elasticsearch
+  - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
+  - unzip elasticsearch-1.5.2.zip
+  - elasticsearch-1.5.2/bin/elasticsearch -d
 
 
 install:
