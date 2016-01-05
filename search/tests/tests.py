@@ -33,6 +33,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         return isinstance(self.searcher, ElasticSearchEngine)
 
     def setUp(self):
+        super(MockSearchTests, self).setUp()
         # ignore unexpected-keyword-arg; ES python client documents that it can be used
         # pylint: disable=unexpected-keyword-arg
         if self._is_elastic:
@@ -59,6 +60,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             MockSearchEngine.destroy()
 
         self._searcher = None
+        super(MockSearchTests, self).tearDown()
 
     def test_factory_creator(self):
         """ Make sure that search object implements SearchEngine interface """
@@ -576,43 +578,37 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertEqual(response["total"], 3)
         self.assertEqual(len(response["results"]), 1)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids)
+        self.assertIn("FAKE_ID_1", result_ids)
 
         response = self.searcher.search(query_string="Little Darling", size=1, from_=0)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 1)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1"])
 
         response = self.searcher.search(query_string="Little Darling", size=1, from_=1)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 1)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_2"])
 
         response = self.searcher.search(query_string="Little Darling", size=1, from_=2)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 1)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_3" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_3"])
 
         response = self.searcher.search(query_string="Little Darling", size=2)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 2)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1", "FAKE_ID_2"])
 
         response = self.searcher.search(query_string="Little Darling", size=2, from_=0)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 2)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_1", "FAKE_ID_2"])
 
         response = self.searcher.search(query_string="Little Darling", size=2, from_=2)
         self.assertEqual(response["total"], 3)
-        self.assertEqual(len(response["results"]), 1)
         result_ids = [r["data"]["id"] for r in response["results"]]
-        self.assertTrue("FAKE_ID_3" in result_ids)
+        self.assertEqual(result_ids, ["FAKE_ID_3"])
 
     def test_exclude_ids(self):
         """ Test that ids that would normally be present in the resultset will not be present if in the exclude list """

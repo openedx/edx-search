@@ -1,2 +1,6 @@
 ### Python artifacts
 *.pyc
+*.egg-info/
+
+.coverage
+.idea/

@@ -15,7 +15,6 @@ from elasticsearch import Elasticsearch
 from search.api import course_discovery_search, NoSearchEngineError
 from search.elastic import ElasticSearchEngine
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
-
 from .mock_search_engine import MockSearchEngine
 
 
@@ -50,7 +49,7 @@ class DemoCourse(object):
                 course_copy["content"].update(update_dict["content"])
                 del update_dict["content"]
             course_copy.update(update_dict)
-        course_copy.update({"id": "{}_{}".format(course_copy["id"], cls.demo_course_count), })
+        course_copy.update({"id": "{}_{}".format(course_copy["id"], cls.demo_course_count)})
         if remove_fields:
             for remove_field in remove_fields:
                 if remove_field in course_copy:
@@ -86,12 +85,14 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
     """
     Tests course discovery activities
     """
+
     @property
     def _is_elastic(self):
         """ check search engine implementation, to manage cleanup differently """
         return isinstance(self.searcher, ElasticSearchEngine)
 
     def setUp(self):
+        super(TestMockCourseDiscoverySearch, self).setUp()
         # ignore unexpected-keyword-arg; ES python client documents that it can be used
         # pylint: disable=unexpected-keyword-arg
         if self._is_elastic:
@@ -117,6 +118,7 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
             MockSearchEngine.destroy()
 
         self._searcher = None
+        super(TestMockCourseDiscoverySearch, self).tearDown()
 
     def test_course_list(self):
         """ No arguments to course_discovery_search should show all available courses"""
