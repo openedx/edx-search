@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='edx-search',
-    version='1.0.0',
+    version='1.0.1',
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
@@ -20,7 +20,7 @@ setup(
         'Programming Language :: Python',
         'Framework :: Django',
     ],
-    packages=['search'],
+    packages=['search', 'search.tests'],
     install_requires=[
         "django >= 1.8, < 1.9",
         "elasticsearch>=1.0.0,<2.0.0"
