@@ -16,13 +16,12 @@ before_install:
 
 
 install:
-  - "pip install -U pip wheel coveralls"
   - make requirements
 
 
 script: make validate
 
-after_success: coveralls
+after_success: codecov
 
 deploy:
   provider: pypi
