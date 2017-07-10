@@ -25,8 +25,8 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 2)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
 
         test_dict.update({
             "CASCADE": {
@@ -35,9 +35,9 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 3)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
-        self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
+        self.assertIn(test_dict["CASCADE"]["z"], get_strings)
 
         test_dict.update({
             "DEEP": {
@@ -52,10 +52,10 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 4)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
-        self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
-        self.assertEqual(get_strings[3], test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
+        self.assertIn(test_dict["CASCADE"]["z"], get_strings)
+        self.assertIn(test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"], get_strings)
 
     def test_find_matches(self):
         """ test finding matches """
@@ -127,9 +127,9 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
 
         srp = SearchResultProcessor(test_result, u"edx")
-        self.assertEqual(
-            srp.excerpt,
-            u'Here is a الاستحسان about <b>edx</b><span class="search-results-ellipsis"></span><b>edX</b> search a lot'
+        self.assertIn(
+            u"Here is a الاستحسان about <b>edx</b>",
+            srp.excerpt
         )
 
     def test_too_long_excerpt(self):
