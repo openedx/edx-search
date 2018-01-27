@@ -27,6 +27,17 @@ class NoSearchEngineError(Exception):
     pass
 
 
+class QueryParseError(Exception):
+    """QueryParseError will be thrown if the query is malformed.
+
+    If a query has mismatched quotes (e.g. '"some phrase', return a
+    more specific exception so the view can provide a more helpful
+    error message to the user.
+
+    """
+    pass
+
+
 def perform_search(
         search_term,
         user=None,
