@@ -5,12 +5,6 @@ language: python
 python:
   - 2.7
 
-env:
-  - TOXENV=django18
-  - TOXENV=django19
-  - TOXENV=django110
-  - TOXENV=django111
-
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
