@@ -1,6 +1,8 @@
 """ search business logic implementations """
-from datetime import datetime
-
+import dateutil.parser
+from datetime import datetime, timedelta
+from django.utils.datastructures import SortedDict
+from xmodule.course_module import CATALOG_VISIBILITY_CATALOG_AND_ABOUT
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
@@ -84,6 +86,19 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
 
+    filter_dictionary = {"enrollment_end": DateRange(datetime.utcnow(), None)}
+    start = use_field_dictionary.pop('start', None)
+    if start == 'current':
+        filter_dictionary.update({'start': DateRange(None, datetime.utcnow() - timedelta(days=30))})
+    elif start == 'new':
+        filter_dictionary.update({'start': DateRange(datetime.utcnow() - timedelta(days=30), datetime.utcnow())})
+    elif start == 'soon':
+        filter_dictionary.update({'start': DateRange(datetime.utcnow(), datetime.utcnow() + timedelta(days=30))})
+    elif start == 'future':
+        filter_dictionary.update({'start': DateRange(datetime.utcnow() + timedelta(days=30), None)})
+
+    use_field_dictionary['catalog_visibility'] = CATALOG_VISIBILITY_CATALOG_AND_ABOUT
+
     results = searcher.search(
         query_string=search_term,
         doc_type="course_info",
@@ -92,9 +107,37 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         # only show when enrollment start IS provided and is before now
         field_dictionary=use_field_dictionary,
         # show if no enrollment end is provided and has not yet been reached
-        filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
+        filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
     )
+
+    start_terms = results.get('facets', {}).get('start', {}).get('terms', {})
+    new_start_terms = {}
+
+    for key, value in start_terms.items():
+        key = dateutil.parser.parse(key, ignoretz=True)
+        now = datetime.utcnow()
+        new_key = 'future'
+
+        if key < now - timedelta(days=30):
+            new_key = 'current'
+        elif key <= now:
+            new_key = 'new'
+        elif key < now + timedelta(days=30):
+            new_key = 'soon'
+
+        if new_key in new_start_terms:
+            new_start_terms[new_key] += value
+        else:
+            new_start_terms[new_key] = value
+
+    sorted_new_start_terms = SortedDict()
+    for key in ['current', 'new', 'soon', 'future']:
+        if key in new_start_terms:
+            sorted_new_start_terms[key] = new_start_terms[key]
+
+    results['facets']['start']['terms'] = sorted_new_start_terms
+    results['facets']['start']['total'] = 4
 
     return results
