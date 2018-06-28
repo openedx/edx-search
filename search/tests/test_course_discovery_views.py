@@ -2,9 +2,9 @@
 from django.test.utils import override_settings
 
 from search.tests.tests import TEST_INDEX_NAME
+from search.tests.utils import post_discovery_request
 from .test_views import MockSearchUrlTest
 from .test_course_discovery import DemoCourse
-from search.tests.utils import post_discovery_request
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods
@@ -34,9 +34,6 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         DemoCourse.get_and_index(
             self.searcher, {"content": {"short_description": "Find this one somehow"}}
         )
-
-    def tearDown(self):
-        super(DiscoveryUrlTest, self).tearDown()
 
     def test_search_from_url(self):
         """ test searching using the url """

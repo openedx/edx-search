@@ -45,8 +45,8 @@ def _find_field(doc, field_name):
 
     if isinstance(field_value, dict):
         return _find_field(field_value, remaining_path)
-    else:
-        return field_value
+
+    return field_value
 
 
 def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
@@ -66,7 +66,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return include_blanks
 
         # if we have a string that we are trying to process as a date object
-        if isinstance(field_value, DateRange) or isinstance(field_value, datetime):
+        if isinstance(field_value, (DateRange, datetime)):
             if isinstance(compare_value, basestring):
                 compare_value = json_date_to_datetime(compare_value)
 
@@ -98,8 +98,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
         elif _is_iterable(compare_value) and _is_iterable(field_value):
             return any((unicode(item) in field_value for item in compare_value))
 
-        else:
-            return compare_value == field_value
+        return compare_value == field_value
 
     filtered_documents = documents_to_search
     for field_name, field_value in dictionary_object.items():
@@ -321,20 +320,17 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
-    def index(self, doc_type, sources):
+    def index(self, doc_type, sources):  # pylint: disable=arguments-differ
         """ Add/update documents of given type to the index """
-        if MockSearchEngine._disabled:
-            return None
+        if not MockSearchEngine._disabled:
+            doc_ids = [s["id"] for s in sources if "id" in s]
+            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+            MockSearchEngine.add_documents(self.index_name, doc_type, sources)
 
-        doc_ids = [s["id"] for s in sources if "id" in s]
-        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
-        MockSearchEngine.add_documents(self.index_name, doc_type, sources)
-
-    def remove(self, doc_type, doc_ids):
+    def remove(self, doc_type, doc_ids):  # pylint: disable=arguments-differ
         """ Remove documents of type with given ids from the index """
-        if MockSearchEngine._disabled:
-            return None
-        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+        if not MockSearchEngine._disabled:
+            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
 
     def search(self,
                query_string=None,
