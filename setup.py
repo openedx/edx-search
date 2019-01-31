@@ -28,6 +28,6 @@ setup(
     packages=['search', 'search.tests'],
     install_requires=[
         "django >= 1.8, < 2.0",
-        "elasticsearch>=1.0.0,<2.0.0"
+        "elasticsearch>=1.0.0,<6.0"
     ]
 )
