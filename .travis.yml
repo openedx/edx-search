@@ -26,7 +26,7 @@ matrix:
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
-  - $HOME/.cache/pip
+    - $HOME/.cache/pip
 
 before_install:
   - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
