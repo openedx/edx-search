@@ -139,11 +139,7 @@ def do_search(request, course_id=None):
             err
         )
 
-    return JsonResponse(
-        results,
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)
 
 
 @require_POST
@@ -234,8 +230,4 @@ def course_discovery(request):
             err
         )
 
-    return JsonResponse(
-        results,
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)
