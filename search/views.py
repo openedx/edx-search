@@ -2,11 +2,9 @@
 # This contains just the url entry points to use if desired, which currently has only one
 # pylint: disable=too-few-public-methods
 import logging
-import json
 
 from django.conf import settings
-from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
@@ -141,11 +139,7 @@ def do_search(request, course_id=None):
             err
         )
 
-    return HttpResponse(
-        json.dumps(results, cls=DjangoJSONEncoder),
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)
 
 
 @require_POST
@@ -236,8 +230,4 @@ def course_discovery(request):
             err
         )
 
-    return HttpResponse(
-        json.dumps(results, cls=DjangoJSONEncoder),
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)
