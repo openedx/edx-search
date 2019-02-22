@@ -1,4 +1,5 @@
 """ Test utilities """
+from __future__ import absolute_import
 import json
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
@@ -68,14 +69,14 @@ class ErroringSearchEngine(MockSearchEngine):
                field_dictionary=None,
                filter_dictionary=None,
                **kwargs):  # pylint: disable=arguments-differ
-        raise StandardError("There is a problem here")
+        raise Exception("There is a problem here")
 
 
 class ErroringIndexEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
     def index(self, doc_type, sources, **kwargs):  # pylint: disable=unused-argument, arguments-differ
-        raise StandardError("There is a problem here")
+        raise Exception("There is a problem here")
 
 
 class ErroringElasticImpl(Elasticsearch):
