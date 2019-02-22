@@ -1,13 +1,13 @@
 language: python
 # dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
 python:
-    - 2.7
-    - 3.6
-    - 3.7
+  - 2.7
+  - 3.6
+  - 3.7
 env:
-    - TOXENV=django111
-    - TOXENV=django20
-    - TOXENV=django21
+  - TOXENV=django111
+  - TOXENV=django20
+  - TOXENV=django21
 matrix:
   include:
     - python: 2.7
@@ -26,7 +26,7 @@ matrix:
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
-    - $HOME/.cache/pip
+  - $HOME/.cache/pip
 
 before_install:
   - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
