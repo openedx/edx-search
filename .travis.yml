@@ -22,7 +22,6 @@ matrix:
   allow_failures:
     - python: 3.6
     - python: 3.7
-    - env: TOXENV=quality
 
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
