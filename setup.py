@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """ Setup to allow pip installs of edx-search module """
 
+from __future__ import absolute_import
 from setuptools import setup
 
 setup(

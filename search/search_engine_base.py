@@ -1,5 +1,6 @@
 """ Abstract SearchEngine with factory method """
 # This will get called by tests, but pylint thinks that it is not used
+from __future__ import absolute_import
 from django.conf import settings
 
 from .utils import _load_class
