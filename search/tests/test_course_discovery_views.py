@@ -1,4 +1,5 @@
 """ High-level view tests"""
+from __future__ import absolute_import
 from django.test.utils import override_settings
 
 from search.tests.tests import TEST_INDEX_NAME

@@ -1,4 +1,5 @@
 """ overridable result processor object to allow additional properties to be exposed """
+from __future__ import absolute_import
 import inspect
 from itertools import chain
 import json
@@ -10,6 +11,7 @@ import textwrap
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
+import six
 from .utils import _load_class
 
 DESIRED_EXCERPT_LENGTH = 100
@@ -43,8 +45,8 @@ class SearchResultProcessor(object):
     @staticmethod
     def strings_in_dictionary(dictionary):
         """ Used by default implementation for finding excerpt """
-        strings = [value for value in dictionary.itervalues() if not isinstance(value, dict)]
-        for child_dict in [dv for dv in dictionary.itervalues() if isinstance(dv, dict)]:
+        strings = [value for value in six.itervalues(dictionary) if not isinstance(value, dict)]
+        for child_dict in [dv for dv in six.itervalues(dictionary) if isinstance(dv, dict)]:
             strings.extend(SearchResultProcessor.strings_in_dictionary(child_dict))
         return strings
 

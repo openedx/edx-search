@@ -1,6 +1,7 @@
 """ handle requests for courseware search http requests """
 # This contains just the url entry points to use if desired, which currently has only one
 # pylint: disable=too-few-public-methods
+from __future__ import absolute_import
 import logging
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
+import six
 from .api import QueryParseError, perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
@@ -118,9 +120,9 @@ def do_search(request, course_id=None):
 
     except ValueError as invalid_err:
         results = {
-            "error": unicode(invalid_err)
+            "error": six.text_type(invalid_err)
         }
-        log.debug(unicode(invalid_err))
+        log.debug(six.text_type(invalid_err))
 
     except QueryParseError:
         results = {
@@ -209,9 +211,9 @@ def course_discovery(request):
 
     except ValueError as invalid_err:
         results = {
-            "error": unicode(invalid_err)
+            "error": six.text_type(invalid_err)
         }
-        log.debug(unicode(invalid_err))
+        log.debug(six.text_type(invalid_err))
 
     except QueryParseError:
         results = {

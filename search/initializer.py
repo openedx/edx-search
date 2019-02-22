@@ -1,5 +1,6 @@
 """ overridable initializer object used to inject environment settings """
 
+from __future__ import absolute_import
 from django.conf import settings
 
 from .utils import _load_class

@@ -1,4 +1,5 @@
 """ Elastic Search implementation for courseware search index """
+from __future__ import absolute_import
 import copy
 import logging
 
@@ -7,6 +8,7 @@ from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 from elasticsearch.helpers import bulk, BulkIndexError
 
+import six
 from search.api import QueryParseError
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
@@ -600,7 +602,7 @@ class ElasticSearchEngine(SearchEngine):
                 **kwargs
             )
         except exceptions.ElasticsearchException as ex:
-            message = unicode(ex)
+            message = six.text_type(ex)
             if 'QueryParsingException' in message:
                 log.exception("Malformed search query: %s", message)
                 raise QueryParseError('Malformed search query.')
