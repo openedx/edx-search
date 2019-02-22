@@ -219,7 +219,7 @@ class SearchResultProcessorTests(TestCase):
         (u'"never disappear"', u"leads to your door Will <b>never disappear</b>"),
         (u'"I\'ve seen"', u"<b>I've seen</b> that road before It always"),
         (
-            u'"long and winding" leads', 
+            u'"long and winding" leads',
             u'The <b>long and winding</b> road That <b>leads</b> to your door'
         ),
         (u'"search"', u"इसको <b>search</b> करें| Lead"),
@@ -243,7 +243,7 @@ class SearchResultProcessorTests(TestCase):
                     u"यह एक हिंदी में लिखा हुआ वाक्य है| इसको search करें| "
                     u"Lead me to you door "
                     u"The wild and windy night "
-                    u"That the rain washed away "                    
+                    u"That the rain washed away "
                 ),
             }
         }
