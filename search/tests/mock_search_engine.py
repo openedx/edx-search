@@ -10,7 +10,6 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 import six
-from search.elastic import RESERVED_CHARACTERS
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, DateRange, _is_iterable
 
@@ -113,7 +112,7 @@ def _process_query_string(documents_to_search, query_string):
     """ keep the documents that contain at least one of the search strings provided """
     def _encode_string(string):
         """Encode a Unicode string in the same way as the Elasticsearch search engine."""
-        return string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+        return string.encode('utf-8')
 
     def has_string(dictionary_object, search_string):
         """ search for string in dictionary items, look down into nested dictionaries """
