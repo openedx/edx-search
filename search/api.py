@@ -104,6 +104,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
+        sort=getattr(settings, 'SEARCH_DISCOVERY_SORT_FIELDS', ''),
     )
 
     return results
