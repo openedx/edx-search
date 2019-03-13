@@ -538,10 +538,14 @@ class ElasticSearchEngine(SearchEngine):
 
         # We have a query string, search all fields for matching text within the "content" node
         if query_string:
+            if six.PY2:
+                query_string = query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+            else:
+                query_string = query_string.translate(query_string.maketrans('', '', RESERVED_CHARACTERS))
             elastic_queries.append({
                 "query_string": {
                     "fields": ["content.*"],
-                    "query": query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+                    "query": query_string
                 }
             })
 

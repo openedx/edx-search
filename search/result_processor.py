@@ -132,10 +132,16 @@ class SearchResultProcessor(object):
             return None
 
         match_phrases = [self._match_phrase]
-        separate_phrases = [
-            phrase.decode('utf-8')
-            for phrase in shlex.split(self._match_phrase.encode('utf-8'))
-        ]
+        if six.PY2:
+            separate_phrases = [
+                phrase.decode('utf-8')
+                for phrase in shlex.split(self._match_phrase.encode('utf-8'))
+            ]
+        else:
+            separate_phrases = [
+                phrase
+                for phrase in shlex.split(self._match_phrase)
+            ]
         if len(separate_phrases) > 1:
             match_phrases.extend(separate_phrases)
         else:
