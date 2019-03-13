@@ -212,7 +212,7 @@ class ElasticSearchEngine(SearchEngine):
         """ Logs indexing errors and raises a general ElasticSearch Exception"""
         indexing_errors_log = []
         for indexing_error in indexing_errors:
-            indexing_errors_log.append(indexing_error.message)
+            indexing_errors_log.append(str(indexing_error))
         raise exceptions.ElasticsearchException(', '.join(indexing_errors_log))
 
     def _get_mappings(self, doc_type):
@@ -385,7 +385,7 @@ class ElasticSearchEngine(SearchEngine):
         # Broad exception handler to protect around bulk call
         except Exception as ex:
             # log information and re-raise
-            log.exception("error while indexing - %s", ex.message)
+            log.exception("error while indexing - %s", str(ex))
             raise
 
     def remove(self, doc_type, doc_ids, **kwargs):
@@ -608,7 +608,7 @@ class ElasticSearchEngine(SearchEngine):
                 raise QueryParseError('Malformed search query.')
             else:
                 # log information and re-raise
-                log.exception("error while searching index - %s", ex.message)
+                log.exception("error while searching index - %s", str(message))
                 raise
 
         return _translate_hits(es_response)
