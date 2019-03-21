@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='edx-search',
-    version='1.2.1',
+    version='1.2.2',
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
@@ -18,13 +18,14 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
         'Framework :: Django',
-        'Framework :: Django :: 1.8',
-        'Framework :: Django :: 1.9',
-        'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
+        'Framework :: Django :: 2.0',
+        'Framework :: Django :: 2.1',
     ],
     packages=['search', 'search.tests'],
     install_requires=[
