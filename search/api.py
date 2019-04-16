@@ -118,7 +118,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         # only show when enrollment start IS provided and is before now
         field_dictionary=use_field_dictionary,
         # show if no enrollment end is provided and has not yet been reached
-        filter_dictionary=use_field_dictionary,
+        filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
     )
