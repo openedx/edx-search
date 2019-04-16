@@ -3,22 +3,22 @@
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
 # pylint: disable=too-few-public-methods
-""" Tests for search functionalty """
-from datetime import datetime
+""" Tests for search functionality """
 import json
 import os
+from datetime import datetime
 
-from mock import patch
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
+from elasticsearch.helpers import BulkIndexError
+from mock import patch
 
-from search.elastic import RESERVED_CHARACTERS
-from search.tests.utils import ErroringElasticImpl, SearcherMixin
 from search.api import perform_search, NoSearchEngineError
-
-from .mock_search_engine import MockSearchEngine, json_date_to_datetime
-from .tests import MockSearchTests
+from search.elastic import RESERVED_CHARACTERS
+from search.tests.mock_search_engine import MockSearchEngine, json_date_to_datetime
+from search.tests.tests import MockSearchTests
+from search.tests.utils import ErroringElasticImpl, SearcherMixin
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
@@ -201,8 +201,13 @@ class ErroringElasticTests(TestCase, SearcherMixin):
 
     def test_remove_failure_bulk(self):
         """ the remove operation should fail """
-        with patch('search.elastic.bulk', return_value=[0, [exceptions.ElasticsearchException()]]):
-            with self.assertRaises(exceptions.ElasticsearchException):
+        doc_id = 'test_id'
+        doc_type = 'test_doc'
+        error = {'delete': {
+            'status': 500, '_type': doc_type, '_index': 'test_index', '_version': 1, 'found': True, '_id': doc_id
+        }}
+        with patch('search.elastic.bulk', side_effect=BulkIndexError('Simulated error', [error])):
+            with self.assertRaises(BulkIndexError):
                 self.searcher.remove("test_doc", ["test_id"])
 
     def test_remove_failure_general(self):

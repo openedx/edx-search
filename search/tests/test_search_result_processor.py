@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Tests for result processors """
+import ddt
+
 from django.test import TestCase
 from django.test.utils import override_settings
 from search.result_processor import SearchResultProcessor
@@ -7,6 +9,7 @@ from search.result_processor import SearchResultProcessor
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods
+@ddt.ddt
 class SearchResultProcessorTests(TestCase):
     """ Tests to check SearchResultProcessor is working as desired """
 
@@ -25,8 +28,8 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 2)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
 
         test_dict.update({
             "CASCADE": {
@@ -35,9 +38,9 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 3)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
-        self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
+        self.assertIn(test_dict["CASCADE"]["z"], get_strings)
 
         test_dict.update({
             "DEEP": {
@@ -52,10 +55,10 @@ class SearchResultProcessorTests(TestCase):
         })
         get_strings = SearchResultProcessor.strings_in_dictionary(test_dict)
         self.assertEqual(len(get_strings), 4)
-        self.assertEqual(get_strings[0], test_dict["a"])
-        self.assertEqual(get_strings[1], test_dict["b"])
-        self.assertEqual(get_strings[2], test_dict["CASCADE"]["z"])
-        self.assertEqual(get_strings[3], test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"])
+        self.assertIn(test_dict["a"], get_strings)
+        self.assertIn(test_dict["b"], get_strings)
+        self.assertIn(test_dict["CASCADE"]["z"], get_strings)
+        self.assertIn(test_dict["DEEP"]["DEEPER"]["STILL_GOING"]["MORE"]["here"], get_strings)
 
     def test_find_matches(self):
         """ test finding matches """
@@ -127,9 +130,9 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
 
         srp = SearchResultProcessor(test_result, u"edx")
-        self.assertEqual(
-            srp.excerpt,
-            u'Here is a الاستحسان about <b>edx</b><span class="search-results-ellipsis"></span><b>edX</b> search a lot'
+        self.assertIn(
+            u"Here is a الاستحسان about <b>edx</b>",
+            srp.excerpt
         )
 
     def test_too_long_excerpt(self):
@@ -182,33 +185,7 @@ class SearchResultProcessorTests(TestCase):
                     "Dog - match upon first word "
                     "The long and winding road "
                     "That leads to your door "
-                    "Will never disappear "
-                    "I've seen that road before "
-                    "It always leads me here "
-                    "Lead me to you door "
-                    "The wild and windy night "
-                    "That the rain washed away "
-                    "Has left a pool of tears "
-                    "Crying for the day "
-                    "Why leave me standing here "
-                    "Let me know the way "
-                    "Many times I've been alone "
-                    "And many times I've cried "
-                    "Any way you'll never know "
-                    "The many ways I've tried "
-                    "But still they lead me back "
-                    "To the long winding road "
-                    "You left me standing here "
-                    "A long long time ago "
-                    "Don't leave me waiting here "
-                    "Lead me to your door "
-                    "But still they lead me back "
-                    "To the long winding road "
-                    "You left me standing here "
-                    "A long long time ago "
-                    "Don't leave me waiting here "
-                    "Lead me to your door "
-                    "Yeah, yeah, yeah, yeah "
+                    "Will never disappear ..."
                 ),
             }
         }
@@ -229,40 +206,49 @@ class SearchResultProcessorTests(TestCase):
             "content": {
                 "notes": (
                     "The long and winding road "
-                    "That leads to your door "
-                    "Will never disappear "
-                    "I've seen that road before "
-                    "It always leads me here "
-                    "Lead me to you door "
-                    "The wild and windy night "
-                    "That the rain washed away "
-                    "Has left a pool of tears "
-                    "Crying for the day "
-                    "Why leave me standing here "
-                    "Let me know the way "
-                    "Many times I've been alone "
-                    "And many times I've cried "
-                    "Any way you'll never know "
-                    "The many ways I've tried "
-                    "But still they lead me back "
-                    "To the long winding road "
-                    "You left me standing here "
-                    "A long long time ago "
-                    "Don't leave me waiting here "
-                    "Lead me to your door "
-                    "But still they lead me back "
-                    "To the long winding road "
-                    "You left me standing here "
-                    "A long long time ago "
-                    "Don't leave me waiting here "
-                    "Lead me to your door "
-                    "Yeah, yeah, yeah, yeah "
+                    "That leads to your door ..."
+                    "... Yeah, yeah, yeah, yeah "
                     "Match upon last word - Dog"
                 ),
             }
         }
         srp = SearchResultProcessor(test_result, "dog")
         self.assertEqual(srp.excerpt[-33:], "Match upon last word - <b>Dog</b>")
+
+    @ddt.data(
+        (u'"never disappear"', u"leads to your door Will <b>never disappear</b>"),
+        (u'"I\'ve seen"', u"<b>I've seen</b> that road before It always"),
+        (
+            u'"long and winding" leads', 
+            u'The <b>long and winding</b> road That <b>leads</b> to your door'
+        ),
+        (u'"search"', u"इसको <b>search</b> करें| Lead"),
+        (u'"हिंदी में"', u"It always leads me here यह एक <b>हिंदी में</b>"),
+        (u'"इसको search"', u"वाक्य है| <b>इसको search</b> करें| Lead me"),
+        # Match at the beginning
+        (u'"The long"', u'<b>The long</b> and winding road That'),
+        # Match at the end
+        (u'"rain washed away"', u'windy night That the <b>rain washed away</b>'),
+    )
+    @ddt.unpack
+    def test_excerpt_quoted(self, search_phrase, expected_excerpt):
+        test_result = {
+            "content": {
+                "notes": (
+                    u"The long and winding road "
+                    u"That leads to your door "
+                    u"Will never disappear "
+                    u"I've seen that road before "
+                    u"It always leads me here "
+                    u"यह एक हिंदी में लिखा हुआ वाक्य है| इसको search करें| "
+                    u"Lead me to you door "
+                    u"The wild and windy night "
+                    u"That the rain washed away "                    
+                ),
+            }
+        }
+        srp = SearchResultProcessor(test_result, search_phrase)
+        self.assertIn(expected_excerpt, srp.excerpt)
 
 
 class TestSearchResultProcessor(SearchResultProcessor):

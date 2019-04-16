@@ -1,6 +1,6 @@
 """ search business logic implementations """
-import dateutil.parser
 from datetime import datetime, timedelta
+import dateutil.parser
 from django.utils.datastructures import SortedDict
 from django.conf import settings
 
@@ -12,7 +12,7 @@ from .utils import DateRange
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 #from xmodule.course_module import CATALOG_VISIBILITY_CATALOG_AND_ABOUT
-CATALOG_VISIBILITY_CATALOG_AND_ABOUT = "both"
+CATALOG_VISIBILITY_CATALOG_AND_ABOUT
 
 def course_discovery_filter_fields():
     """ look up the desired list of course discovery filter fields """
@@ -26,6 +26,17 @@ def course_discovery_facets():
 
 class NoSearchEngineError(Exception):
     """ NoSearchEngineError exception to be thrown if no search engine is specified """
+    pass
+
+
+class QueryParseError(Exception):
+    """QueryParseError will be thrown if the query is malformed.
+
+    If a query has mismatched quotes (e.g. '"some phrase', return a
+    more specific exception so the view can provide a more helpful
+    error message to the user.
+
+    """
     pass
 
 
@@ -107,37 +118,9 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         # only show when enrollment start IS provided and is before now
         field_dictionary=use_field_dictionary,
         # show if no enrollment end is provided and has not yet been reached
-        filter_dictionary=filter_dictionary,
+        filter_dictionary=use_field_dictionary,
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
     )
-
-    start_terms = results.get('facets', {}).get('start', {}).get('terms', {})
-    new_start_terms = {}
-
-    for key, value in start_terms.items():
-        key = dateutil.parser.parse(key, ignoretz=True)
-        now = datetime.utcnow()
-        new_key = 'future'
-
-        if key < now - timedelta(days=30):
-            new_key = 'current'
-        elif key <= now:
-            new_key = 'new'
-        elif key < now + timedelta(days=30):
-            new_key = 'soon'
-
-        if new_key in new_start_terms:
-            new_start_terms[new_key] += value
-        else:
-            new_start_terms[new_key] = value
-
-    sorted_new_start_terms = SortedDict()
-    for key in ['current', 'new', 'soon', 'future']:
-        if key in new_start_terms:
-            sorted_new_start_terms[key] = new_start_terms[key]
-
-    results['facets']['start']['terms'] = sorted_new_start_terms
-    results['facets']['start']['total'] = 4
 
     return results
