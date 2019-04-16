@@ -1,7 +1,6 @@
 """ search business logic implementations """
 from datetime import datetime, timedelta
 import dateutil.parser
-from django.utils.datastructures import SortedDict
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
@@ -122,5 +121,33 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
     )
+
+    start_terms = results.get('facets', {}).get('start', {}).get('terms', {})
+    new_start_terms = {}
+
+    for key, value in start_terms.items():
+        key = dateutil.parser.parse(key, ignoretz=True)
+        now = datetime.utcnow()
+        new_key = 'future'
+
+        if key < now - timedelta(days=30):
+            new_key = 'current'
+        elif key <= now:
+            new_key = 'new'
+        elif key < now + timedelta(days=30):
+            new_key = 'soon'
+
+        if new_key in new_start_terms:
+            new_start_terms[new_key] += value
+        else:
+            new_start_terms[new_key] = value
+
+    sorted_new_start_terms = OrderedDict()
+    for key in ['current', 'new', 'soon', 'future']:
+        if key in new_start_terms:
+            sorted_new_start_terms[key] = new_start_terms[key]
+
+    results['facets']['start']['terms'] = sorted_new_start_terms
+    results['facets']['start']['total'] = 4
 
     return results
