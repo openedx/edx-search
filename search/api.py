@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 import dateutil.parser
 from django.conf import settings
+from collections import OrderedDict
 
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
