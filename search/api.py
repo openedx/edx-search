@@ -2,7 +2,6 @@
 import dateutil.parser
 from datetime import datetime, timedelta
 from django.utils.datastructures import SortedDict
-from xmodule.course_module import CATALOG_VISIBILITY_CATALOG_AND_ABOUT
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
@@ -12,7 +11,8 @@ from .utils import DateRange
 
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
-
+#from xmodule.course_module import CATALOG_VISIBILITY_CATALOG_AND_ABOUT
+CATALOG_VISIBILITY_CATALOG_AND_ABOUT = "both"
 
 def course_discovery_filter_fields():
     """ look up the desired list of course discovery filter fields """
