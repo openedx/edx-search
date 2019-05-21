@@ -20,7 +20,6 @@ matrix:
     - python: 2.7
       env: TOXENV=django21
   allow_failures:
-    - python: 3.6
     - python: 3.7
 
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.

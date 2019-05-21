@@ -119,7 +119,7 @@ class SearchResultProcessor(object):
         # protect around any problems introduced by subclasses within their properties
         except Exception as ex:  # pylint: disable=broad-except
             log.exception("error processing properties for %s - %s: will remove from results",
-                          json.dumps(dictionary, cls=DjangoJSONEncoder), ex.message)
+                          json.dumps(dictionary, cls=DjangoJSONEncoder), str(ex))
             return None
         return dictionary
 
@@ -132,10 +132,16 @@ class SearchResultProcessor(object):
             return None
 
         match_phrases = [self._match_phrase]
-        separate_phrases = [
-            phrase.decode('utf-8')
-            for phrase in shlex.split(self._match_phrase.encode('utf-8'))
-        ]
+        if six.PY2:
+            separate_phrases = [
+                phrase.decode('utf-8')
+                for phrase in shlex.split(self._match_phrase.encode('utf-8'))
+            ]
+        else:
+            separate_phrases = [
+                phrase
+                for phrase in shlex.split(self._match_phrase)
+            ]
         if len(separate_phrases) > 1:
             match_phrases.extend(separate_phrases)
         else:
