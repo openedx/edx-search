@@ -112,7 +112,11 @@ def _process_query_string(documents_to_search, query_string):
     """ keep the documents that contain at least one of the search strings provided """
     def _encode_string(string):
         """Encode a Unicode string in the same way as the Elasticsearch search engine."""
-        return string.encode('utf-8')
+        if six.PY2:
+            string = string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+        else:
+            string = string.translate(string.maketrans('', '', RESERVED_CHARACTERS))
+        return string
 
     def has_string(dictionary_object, search_string):
         """ search for string in dictionary items, look down into nested dictionaries """
