@@ -2,8 +2,10 @@
 # http://open-edx-proposals.readthedocs.io/en/latest/oeps/oep-0002.html#specification
 
 nick: srch
-owner: edx/solutions-team
+owner: fysheets
+
 oeps:
+    oep-2: true
     oep-7: false
     oep-18: false
 tags:
