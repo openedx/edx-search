@@ -32,7 +32,9 @@ before_install:
   - unzip elasticsearch-1.5.2.zip
   - elasticsearch-1.5.2/bin/elasticsearch -d
 
-install: make requirements
+install:
+  - make upgrade 
+  - make requirements
 
 script: make validate
 

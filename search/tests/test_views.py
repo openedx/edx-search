@@ -459,6 +459,7 @@ class BadIndexTest(TestCase, SearcherMixin):
 class ElasticSearchUrlTest(TestCase, SearcherMixin):
     """Elastic-specific tests"""
     def setUp(self):
+        super(ElasticSearchUrlTest, self).setUp()
         self.searcher.index(
             "courseware_content",
             [

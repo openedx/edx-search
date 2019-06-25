@@ -118,7 +118,7 @@ class SearchResultProcessor(object):
             srp.add_properties()
         # protect around any problems introduced by subclasses within their properties
         except Exception as ex:  # pylint: disable=broad-except
-            log.exception("error processing properties for %s - %s: will remove from results",
+            log.exception("error processing properties for %s - %s: will remove from results",  # lint-amnesty, pylint: disable=unicode-format-string
                           json.dumps(dictionary, cls=DjangoJSONEncoder), str(ex))
             return None
         return dictionary

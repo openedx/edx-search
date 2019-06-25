@@ -75,8 +75,8 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             field_has_tz_info = False
             if isinstance(field_value, DateRange):
                 field_has_tz_info = (
-                    (field_value.lower and field_value.lower.tzinfo is not None) or
-                    (field_value.upper and field_value.upper.tzinfo is not None)
+                    (field_value.lower and field_value.lower.tzinfo is not None)
+                    or (field_value.upper and field_value.upper.tzinfo is not None)
                 )
             else:
                 field_has_tz_info = field_value.tzinfo is not None
@@ -88,8 +88,8 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
         if isinstance(field_value, ValueRange):
             return (
-                (field_value.lower is None or compare_value >= field_value.lower) and
-                (field_value.upper is None or compare_value <= field_value.upper)
+                (field_value.lower is None or compare_value >= field_value.lower)
+                and (field_value.upper is None or compare_value <= field_value.upper)
             )
         elif _is_iterable(compare_value) and not _is_iterable(field_value):
             return any((item == field_value for item in compare_value))
