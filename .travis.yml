@@ -36,7 +36,7 @@ install:
   - make upgrade 
   - make requirements
 
-script: make validate
+script: tox
 
 after_success: codecov
 
