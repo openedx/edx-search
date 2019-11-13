@@ -1,6 +1,4 @@
 language: python
-jdk: openjdk8
-# dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
 python:
   - 2.7
   - 3.6
@@ -23,18 +21,24 @@ matrix:
   allow_failures:
     - python: 3.7
 
+addons:
+  apt:
+    packages:
+      - openjdk-8-jdk
+
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
     - $HOME/.cache/pip
 
 before_install:
+  - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+  - export PATH=${PATH/\/usr\/local\/lib\/jvm\/openjdk11\/bin/$JAVA_HOME\/bin}
   - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
   - unzip elasticsearch-1.5.2.zip
   - elasticsearch-1.5.2/bin/elasticsearch -d
 
 install:
-  - make upgrade 
   - make requirements
 
 script: make validate
