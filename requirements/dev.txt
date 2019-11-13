@@ -48,6 +48,7 @@ scandir==1.10.0
 singledispatch==3.4.0.3
 six==1.13.0
 toml==0.10.0
+tox-battery==0.5.1
 tox==3.14.1
 urllib3==1.25.7
 virtualenv==16.7.7

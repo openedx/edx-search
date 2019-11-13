@@ -10,7 +10,7 @@ matrix:
   include:
     - python: 2.7
       env: TOXENV=quality
-    - python: 3.7
+    - python: 3.5
       env: TOXENV=quality
   exclude:
     - python: 2.7
@@ -36,9 +36,9 @@ before_install:
   - elasticsearch-1.5.2/bin/elasticsearch -d
 
 install:
-  - make requirements
+  - pip install -r requirements/travis.txt
 
-script: make validate
+script: tox
 
 after_success: codecov
 
@@ -50,5 +50,5 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
-    python: 3.6
+    python: 3.5
     condition: '$TOXENV = django111'
