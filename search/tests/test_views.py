@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from datetime import datetime
 import ddt
 
-from django.core.urlresolvers import Resolver404, resolve
+from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
 from mock import patch, call

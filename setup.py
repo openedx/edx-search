@@ -32,7 +32,7 @@ def is_requirement(line):
 
 setup(
     name='edx-search',
-    version='1.3.0',
+    version='1.3.1',
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
@@ -52,6 +52,7 @@ setup(
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
         'Framework :: Django :: 2.1',
+        'Framework :: Django :: 2.2',
     ],
     packages=['search', 'search.tests'],
     install_requires=load_requirements('requirements/base.in')
