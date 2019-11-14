@@ -1,9 +1,7 @@
 language: python
-# dist: xenial  # required for Python >= 3.7 (travis-ci/travis-ci#9069)
 python:
   - 2.7
-  - 3.6
-  - 3.7
+  - 3.5
 env:
   - TOXENV=django111
   - TOXENV=django20
@@ -12,15 +10,18 @@ matrix:
   include:
     - python: 2.7
       env: TOXENV=quality
-    - python: 3.7
+    - python: 3.5
       env: TOXENV=quality
   exclude:
     - python: 2.7
       env: TOXENV=django20
     - python: 2.7
       env: TOXENV=django21
-  allow_failures:
-    - python: 3.7
+
+addons:
+  apt:
+    packages:
+      - openjdk-8-jdk
 
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
@@ -28,15 +29,16 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
+  - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+  - export PATH=${PATH/\/usr\/local\/lib\/jvm\/openjdk11\/bin/$JAVA_HOME\/bin}
   - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
   - unzip elasticsearch-1.5.2.zip
   - elasticsearch-1.5.2/bin/elasticsearch -d
 
 install:
-  - make upgrade 
-  - make requirements
+  - pip install -r requirements/travis.txt
 
-script: make validate
+script: tox
 
 after_success: codecov
 
@@ -48,5 +50,5 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
-    python: 3.6
+    python: 3.5
     condition: '$TOXENV = django111'
