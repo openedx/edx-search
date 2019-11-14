@@ -16,7 +16,7 @@ def post_request(body, course_id=None):
     address = '/' if course_id is None else '/{}'.format(course_id)
     response = Client().post(address, body)
 
-    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))
 
 
 def post_discovery_request(body):
@@ -24,7 +24,7 @@ def post_discovery_request(body):
     address = '/course_discovery/'
     response = Client().post(address, body)
 
-    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))
 
 
 # pylint: disable=too-few-public-methods
