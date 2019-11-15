@@ -1,5 +1,5 @@
 """
-WSGI config for edxsearch project.
+WSGI config for edxsearch project
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
