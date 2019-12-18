@@ -1,14 +1,17 @@
 """ overridable result processor object to allow additional properties to be exposed """
+from __future__ import absolute_import
 import inspect
 from itertools import chain
 import json
 import logging
 import re
+import shlex
 import textwrap
 
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
+import six
 from .utils import _load_class
 
 DESIRED_EXCERPT_LENGTH = 100
@@ -42,8 +45,8 @@ class SearchResultProcessor(object):
     @staticmethod
     def strings_in_dictionary(dictionary):
         """ Used by default implementation for finding excerpt """
-        strings = [value for value in dictionary.itervalues() if not isinstance(value, dict)]
-        for child_dict in [dv for dv in dictionary.itervalues() if isinstance(dv, dict)]:
+        strings = [value for value in six.itervalues(dictionary) if not isinstance(value, dict)]
+        for child_dict in [dv for dv in six.itervalues(dictionary) if isinstance(dv, dict)]:
             strings.extend(SearchResultProcessor.strings_in_dictionary(child_dict))
         return strings
 
@@ -115,8 +118,8 @@ class SearchResultProcessor(object):
             srp.add_properties()
         # protect around any problems introduced by subclasses within their properties
         except Exception as ex:  # pylint: disable=broad-except
-            log.exception("error processing properties for %s - %s: will remove from results",
-                          json.dumps(dictionary, cls=DjangoJSONEncoder), ex.message)
+            log.exception("error processing properties for %s - %s: will remove from results",  # lint-amnesty, pylint: disable=unicode-format-string
+                          json.dumps(dictionary, cls=DjangoJSONEncoder), str(ex))
             return None
         return dictionary
 
@@ -128,19 +131,30 @@ class SearchResultProcessor(object):
         if "content" not in self._results_fields:
             return None
 
-        match_words = [self._match_phrase]
-        separate_words = self._match_phrase.split(' ')
-        if len(separate_words) > 1:
-            match_words.extend(self._match_phrase.split(' '))
+        match_phrases = [self._match_phrase]
+        if six.PY2:
+            separate_phrases = [
+                phrase.decode('utf-8')
+                for phrase in shlex.split(self._match_phrase.encode('utf-8'))
+            ]
+        else:
+            separate_phrases = [
+                phrase
+                for phrase in shlex.split(self._match_phrase)
+            ]
+        if len(separate_phrases) > 1:
+            match_phrases.extend(separate_phrases)
+        else:
+            match_phrases = separate_phrases
 
         matches = SearchResultProcessor.find_matches(
             SearchResultProcessor.strings_in_dictionary(self._results_fields["content"]),
-            match_words,
+            match_phrases,
             DESIRED_EXCERPT_LENGTH
         )
         excerpt_text = ELLIPSIS.join(matches)
 
-        for match_word in match_words:
+        for match_word in match_phrases:
             excerpt_text = SearchResultProcessor.decorate_matches(excerpt_text, match_word)
 
         return excerpt_text

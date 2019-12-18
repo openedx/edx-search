@@ -1,4 +1,5 @@
 """ Test utilities """
+from __future__ import absolute_import
 import json
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
@@ -15,7 +16,7 @@ def post_request(body, course_id=None):
     address = '/' if course_id is None else '/{}'.format(course_id)
     response = Client().post(address, body)
 
-    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))
 
 
 def post_discovery_request(body):
@@ -23,7 +24,7 @@ def post_discovery_request(body):
     address = '/course_discovery/'
     response = Client().post(address, body)
 
-    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None))
+    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))
 
 
 # pylint: disable=too-few-public-methods
@@ -63,21 +64,25 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
 class ErroringSearchEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
-    def search(self, query_string=None, field_dictionary=None, filter_dictionary=None, **kwargs):
-        raise StandardError("There is a problem here")
+    def search(self,
+               query_string=None,
+               field_dictionary=None,
+               filter_dictionary=None,
+               **kwargs):  # pylint: disable=arguments-differ
+        raise Exception("There is a problem here")
 
 
 class ErroringIndexEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
-    def index(self, doc_type, sources, **kwargs):  # pylint: disable=unused-argument
-        raise StandardError("There is a problem here")
+    def index(self, doc_type, sources, **kwargs):  # pylint: disable=unused-argument, arguments-differ
+        raise Exception("There is a problem here")
 
 
 class ErroringElasticImpl(Elasticsearch):
     """ Elasticsearch implementation that throws exceptions"""
 
     # pylint: disable=unused-argument
-    def search(self, **kwargs):
+    def search(self, **kwargs):  # pylint: disable=arguments-differ
         """ this will definitely fail """
         raise exceptions.ElasticsearchException("This search operation failed")

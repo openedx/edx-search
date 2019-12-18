@@ -1,4 +1,5 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
+from __future__ import absolute_import
 import copy
 from datetime import datetime
 import json
@@ -8,6 +9,7 @@ import pytz
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
+import six
 from search.elastic import RESERVED_CHARACTERS
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, DateRange, _is_iterable
@@ -37,7 +39,7 @@ def _find_field(doc, field_name):
     if not isinstance(doc, dict):
         raise ValueError('Parameter `doc` should be a python dict object')
 
-    if not isinstance(field_name, basestring):
+    if not isinstance(field_name, six.string_types):
         raise ValueError('Parameter `field_name` should be a string')
 
     immediate_field, remaining_path = field_name.split('.', 1) if '.' in field_name else (field_name, None)
@@ -45,8 +47,8 @@ def _find_field(doc, field_name):
 
     if isinstance(field_value, dict):
         return _find_field(field_value, remaining_path)
-    else:
-        return field_value
+
+    return field_value
 
 
 def _filter_intersection(documents_to_search, dictionary_object, include_blanks=False):
@@ -66,15 +68,15 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return include_blanks
 
         # if we have a string that we are trying to process as a date object
-        if isinstance(field_value, DateRange) or isinstance(field_value, datetime):
-            if isinstance(compare_value, basestring):
+        if isinstance(field_value, (DateRange, datetime)):
+            if isinstance(compare_value, six.string_types):
                 compare_value = json_date_to_datetime(compare_value)
 
             field_has_tz_info = False
             if isinstance(field_value, DateRange):
                 field_has_tz_info = (
-                    (field_value.lower and field_value.lower.tzinfo is not None) or
-                    (field_value.upper and field_value.upper.tzinfo is not None)
+                    (field_value.lower and field_value.lower.tzinfo is not None)
+                    or (field_value.upper and field_value.upper.tzinfo is not None)
                 )
             else:
                 field_has_tz_info = field_value.tzinfo is not None
@@ -86,8 +88,8 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
         if isinstance(field_value, ValueRange):
             return (
-                (field_value.lower is None or compare_value >= field_value.lower) and
-                (field_value.upper is None or compare_value <= field_value.upper)
+                (field_value.lower is None or compare_value >= field_value.lower)
+                and (field_value.upper is None or compare_value <= field_value.upper)
             )
         elif _is_iterable(compare_value) and not _is_iterable(field_value):
             return any((item == field_value for item in compare_value))
@@ -96,10 +98,9 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return any((item == compare_value for item in field_value))
 
         elif _is_iterable(compare_value) and _is_iterable(field_value):
-            return any((unicode(item) in field_value for item in compare_value))
+            return any((six.text_type(item) in field_value for item in compare_value))
 
-        else:
-            return compare_value == field_value
+        return compare_value == field_value
 
     filtered_documents = documents_to_search
     for field_name, field_value in dictionary_object.items():
@@ -112,7 +113,11 @@ def _process_query_string(documents_to_search, query_string):
     """ keep the documents that contain at least one of the search strings provided """
     def _encode_string(string):
         """Encode a Unicode string in the same way as the Elasticsearch search engine."""
-        return string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+        if six.PY2:
+            string = string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+        else:
+            string = string.translate(string.maketrans('', '', RESERVED_CHARACTERS))
+        return string
 
     def has_string(dictionary_object, search_string):
         """ search for string in dictionary items, look down into nested dictionaries """
@@ -321,20 +326,17 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
-    def index(self, doc_type, sources):
+    def index(self, doc_type, sources):  # pylint: disable=arguments-differ
         """ Add/update documents of given type to the index """
-        if MockSearchEngine._disabled:
-            return None
+        if not MockSearchEngine._disabled:
+            doc_ids = [s["id"] for s in sources if "id" in s]
+            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+            MockSearchEngine.add_documents(self.index_name, doc_type, sources)
 
-        doc_ids = [s["id"] for s in sources if "id" in s]
-        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
-        MockSearchEngine.add_documents(self.index_name, doc_type, sources)
-
-    def remove(self, doc_type, doc_ids):
+    def remove(self, doc_type, doc_ids):  # pylint: disable=arguments-differ
         """ Remove documents of type with given ids from the index """
-        if MockSearchEngine._disabled:
-            return None
-        MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+        if not MockSearchEngine._disabled:
+            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
 
     def search(self,
                query_string=None,

@@ -5,15 +5,18 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-ancestors
 """ Tests for search functionalty """
+from __future__ import absolute_import
 import copy
 from datetime import datetime
+import ddt
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
 from search.api import course_discovery_search, NoSearchEngineError
-from search.elastic import ElasticSearchEngine
+from search.elastic import ElasticSearchEngine, QueryParseError
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from .mock_search_engine import MockSearchEngine
 
@@ -99,6 +102,9 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
             _elasticsearch = Elasticsearch()
             # Make sure that we are fresh
             _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+
+            # remove cached property mappings (along with everything else)
+            cache.clear()
 
             config_body = {}
             # ignore unexpected-keyword-arg; ES python client documents that it can be used
@@ -298,12 +304,65 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
+@ddt.ddt
 class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):
     """ version of tests that use Elastic Backed index instead of mock """
 
     def setUp(self):
         super(TestElasticCourseDiscoverySearch, self).setUp()
         self.searcher.index("doc_type_that_is_meaninless_to_bootstrap_index", [{"test_doc_type": "bootstrap"}])
+
+    def test_course_matching_empty_index(self):
+        """ Check for empty result count before indexing """
+        results = course_discovery_search("defensive")
+        self.assertEqual(results["total"], 0)
+
+    @ddt.data(
+        ('defensive', 1),
+        ('offensive', 2),
+        ('move', 3),
+        ('"offensive move"', 1),
+        ('"offensive move"', 1),
+        ('"highly-offensive"', 1),
+        ('"highly-offensive teams"', 1),
+    )
+    @ddt.unpack
+    # pylint: disable=arguments-differ
+    def test_course_matching(self, term, result_count):
+        """ Make sure that matches within content can be located and processed """
+        DemoCourse.get_and_index(self.searcher, {
+            "content": {
+                "short_description": "This is a defensive move",
+                "overview": "Defensive teams often win"
+            }
+        })
+
+        DemoCourse.get_and_index(self.searcher, {
+            "content": {
+                "short_description": "This is an offensive move",
+                "overview": "Offensive teams often win"
+            }
+        })
+
+        DemoCourse.get_and_index(self.searcher, {
+            "content": {
+                "short_description": "This is a hyphenated move",
+                "overview": "Highly-offensive teams often win"
+            }
+        })
+
+        results = course_discovery_search()
+
+        self.assertEqual(results["total"], 3)
+
+        results = course_discovery_search(term)
+        self.assertEqual(results["total"], result_count)
+
+    def test_malformed_query_handling(self):
+        """Make sure that mismatched quotes produce a specific exception. """
+
+        with self.assertRaises(QueryParseError):
+            course_discovery_search('"missing quote')
 
 
 @override_settings(SEARCH_ENGINE=None)

@@ -1,17 +1,17 @@
 """ handle requests for courseware search http requests """
 # This contains just the url entry points to use if desired, which currently has only one
 # pylint: disable=too-few-public-methods
+from __future__ import absolute_import
 import logging
-import json
 
 from django.conf import settings
-from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-from .api import perform_search, course_discovery_search, course_discovery_filter_fields
+import six
+from .api import QueryParseError, perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
@@ -28,7 +28,7 @@ def _process_pagination_values(request):
         max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", 100)
         # The parens below are superfluous, but make it much clearer to the reader what is going on
         if not (0 < size <= max_page_size):  # pylint: disable=superfluous-parens
-            raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))
+            raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))  # lint-amnesty, pylint: disable=unicode-format-string
 
         if "page_index" in request.POST:
             page = int(request.POST["page_index"])
@@ -120,27 +120,28 @@ def do_search(request, course_id=None):
 
     except ValueError as invalid_err:
         results = {
-            "error": unicode(invalid_err)
+            "error": six.text_type(invalid_err)
         }
-        log.debug(unicode(invalid_err))
+        log.debug(six.text_type(invalid_err))
+
+    except QueryParseError:
+        results = {
+            "error": _('Your query seems malformed. Check for unmatched quotes.')
+        }
 
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except
         results = {
-            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
+            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)  # lint-amnesty, pylint: disable=unicode-format-string
         }
         log.exception(
-            'Search view exception when searching for %s for user %s: %r',
+            'Search view exception when searching for %s for user %s: %r',  # lint-amnesty, pylint: disable=unicode-format-string
             search_term,
             request.user.id,
             err
         )
 
-    return HttpResponse(
-        json.dumps(results, cls=DjangoJSONEncoder),
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)
 
 
 @require_POST
@@ -210,24 +211,25 @@ def course_discovery(request):
 
     except ValueError as invalid_err:
         results = {
-            "error": unicode(invalid_err)
+            "error": six.text_type(invalid_err)
         }
-        log.debug(unicode(invalid_err))
+        log.debug(six.text_type(invalid_err))
+
+    except QueryParseError:
+        results = {
+            "error": _('Your query seems malformed. Check for unmatched quotes.')
+        }
 
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except
         results = {
-            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
+            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)  # lint-amnesty, pylint: disable=unicode-format-string
         }
         log.exception(
-            'Search view exception when searching for %s for user %s: %r',
+            'Search view exception when searching for %s for user %s: %r',  # lint-amnesty, pylint: disable=unicode-format-string
             search_term,
             request.user.id,
             err
         )
 
-    return HttpResponse(
-        json.dumps(results, cls=DjangoJSONEncoder),
-        content_type='application/json',
-        status=status_code
-    )
+    return JsonResponse(results, status=status_code)

@@ -1,2 +1,4 @@
-[pep8]
-max-line-length = 120
+[pycodestyle]
+ignore=E501, W503
+max_line_length=120
+exclude=.git,.tox,milestones/migrations,settings

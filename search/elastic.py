@@ -1,4 +1,5 @@
-""" Elatic Search implementation for courseware search index """
+""" Elastic Search implementation for courseware search index """
+from __future__ import absolute_import
 import copy
 import logging
 
@@ -7,6 +8,8 @@ from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 from elasticsearch.helpers import bulk, BulkIndexError
 
+import six
+from search.api import QueryParseError
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
 
@@ -17,7 +20,7 @@ log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 # We _may_ want to use these for their special uses for certain queries,
 # but for analysed fields these kinds of characters are removed anyway, so
 # we can safely remove them from analysed matches
-RESERVED_CHARACTERS = "+-=><!(){}[]^\"~*:\\/&|?"
+RESERVED_CHARACTERS = "+=><!(){}[]^~*:\\/&|?"
 
 
 def _translate_hits(es_response):
@@ -129,12 +132,12 @@ def _process_filters(filter_dictionary):
                     }
                 ]
             }
-        else:
-            return {
-                "missing": {
-                    "field": field
-                }
+
+        return {
+            "missing": {
+                "field": field
             }
+        }
 
     return [filter_item(field) for field in filter_dictionary]
 
@@ -209,7 +212,7 @@ class ElasticSearchEngine(SearchEngine):
         """ Logs indexing errors and raises a general ElasticSearch Exception"""
         indexing_errors_log = []
         for indexing_error in indexing_errors:
-            indexing_errors_log.append(indexing_error.message)
+            indexing_errors_log.append(str(indexing_error))
         raise exceptions.ElasticsearchException(', '.join(indexing_errors_log))
 
     def _get_mappings(self, doc_type):
@@ -362,7 +365,7 @@ class ElasticSearchEngine(SearchEngine):
             for source in sources:
                 self._check_mappings(doc_type, source)
                 id_ = source['id'] if 'id' in source else None
-                log.debug("indexing %s object with id %s", doc_type, id_)
+                log.debug("indexing %s object with id %s", doc_type, id_)  # lint-amnesty, pylint: disable=unicode-format-string
                 action = {
                     "_index": self.index_name,
                     "_type": doc_type,
@@ -382,7 +385,7 @@ class ElasticSearchEngine(SearchEngine):
         # Broad exception handler to protect around bulk call
         except Exception as ex:
             # log information and re-raise
-            log.exception("error while indexing - %s", ex.message)
+            log.exception("error while indexing - %s", str(ex))  # lint-amnesty, pylint: disable=unicode-format-string
             raise
 
     def remove(self, doc_type, doc_ids, **kwargs):
@@ -393,7 +396,7 @@ class ElasticSearchEngine(SearchEngine):
             # pylint: disable=unexpected-keyword-arg
             actions = []
             for doc_id in doc_ids:
-                log.debug("Removing document of type %s and index %s", doc_type, doc_id)
+                log.debug("Removing document of type %s and index %s", doc_type, doc_id)  # lint-amnesty, pylint: disable=unicode-format-string
                 action = {
                     '_op_type': 'delete',
                     "_index": self.index_name,
@@ -433,8 +436,8 @@ class ElasticSearchEngine(SearchEngine):
                facet_terms=None,
                exclude_ids=None,
                use_field_match=False,
-               **kwargs):  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
-        """
+               **kwargs):  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, arguments-differ, unicode-format-string
+        """  # lint-amnesty, pylint: disable=unicode-format-string
         Implements call to search the index for the desired content.
 
         Args:
@@ -528,17 +531,21 @@ class ElasticSearchEngine(SearchEngine):
             )
         """
 
-        log.debug("searching index with %s", query_string)
+        log.debug("searching index with %s", query_string)  # lint-amnesty, pylint: disable=unicode-format-string
 
         elastic_queries = []
         elastic_filters = []
 
         # We have a query string, search all fields for matching text within the "content" node
         if query_string:
+            if six.PY2:
+                query_string = query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+            else:
+                query_string = query_string.translate(query_string.maketrans('', '', RESERVED_CHARACTERS))
             elastic_queries.append({
                 "query_string": {
                     "fields": ["content.*"],
-                    "query": query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
+                    "query": query_string
                 }
             })
 
@@ -599,8 +606,13 @@ class ElasticSearchEngine(SearchEngine):
                 **kwargs
             )
         except exceptions.ElasticsearchException as ex:
-            # log information and re-raise
-            log.exception("error while searching index - %s", ex.message)
-            raise
+            message = six.text_type(ex)
+            if 'QueryParsingException' in message:
+                log.exception("Malformed search query: %s", message)  # lint-amnesty, pylint: disable=unicode-format-string
+                raise QueryParseError('Malformed search query.')
+            else:
+                # log information and re-raise
+                log.exception("error while searching index - %s", str(message))  # lint-amnesty, pylint: disable=unicode-format-string
+                raise
 
         return _translate_hits(es_response)
