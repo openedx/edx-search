@@ -111,7 +111,7 @@ def _hack_filter_discovery_results(results):
     results["total"] = max(0, results["total"] - access_denied_count)
     for name, facet in six.iteritems(results["facets"]):
         results["total"] = max(0, results["total"] - access_denied_count)
-        facet["other"] = max(0, facet["other"] - access_denied_count)
+        facet["other"] = max(0, facet.get("other", 0) - access_denied_count)
         facet["terms"] = {
             term: max(0, count - access_denied_count)
             for term, count in six.iteritems(facet["terms"])
