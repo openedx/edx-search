@@ -2,7 +2,14 @@ sudo: false
 
 language: python
 
-python: "2.7"
+python:
+  - 2.7
+
+env:
+  - TOXENV=django18
+  - TOXENV=django19
+  - TOXENV=django110
+  - TOXENV=django111
 
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
@@ -16,13 +23,12 @@ before_install:
 
 
 install:
-  - "pip install -U pip wheel coveralls"
   - make requirements
 
 
 script: make validate
 
-after_success: coveralls
+after_success: codecov
 
 deploy:
   provider: pypi

@@ -1,5 +1,6 @@
 """ High-level view tests"""
 from datetime import datetime
+import ddt
 
 from django.core.urlresolvers import Resolver404, resolve
 from django.test import TestCase
@@ -9,7 +10,7 @@ from mock import patch, call
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
-from search.tests.utils import post_request, SearcherMixin
+from search.tests.utils import post_discovery_request, post_request, SearcherMixin
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -447,3 +448,82 @@ class BadIndexTest(TestCase, SearcherMixin):
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(StandardError):
             searcher.index("courseware_content", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+
+
+@override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
+@override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
+@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@ddt.ddt
+class ElasticSearchUrlTest(TestCase, SearcherMixin):
+    """Elastic-specific tests"""
+    def setUp(self):
+        self.searcher.index(
+            "courseware_content",
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_1",
+                    "content": {
+                        "text": "It seems like k-means clustering would work in this context."
+                    },
+                    "test_date": datetime(2015, 1, 1),
+                    "test_string": "ABC, It's easy as 123"
+                }
+            ]
+        )
+        self.searcher.index(
+            "courseware_content",
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_2",
+                    "content": {
+                        "text": "It looks like k-means clustering could work in this context."
+                    }
+                }
+            ]
+        )
+        self.searcher.index(
+            "courseware_content",
+            [
+                {
+                    "course": "ABC/DEF/GHI",
+                    "id": "FAKE_ID_3",
+                    "content": {
+                        "text": "It looks like k means something different in this context."
+                    }
+                }
+            ]
+        )
+
+    @ddt.data(
+        # Quoted phrases
+        ('"in this context"', None, 3),
+        ('"in this context"', "ABC/DEF/GHI", 3),
+        ('"looks like"', None, 2),
+        ('"looks like"', "ABC/DEF/GHI", 2),
+        # Hyphenated phrases
+        ('k-means', None, 3),
+        ('k-means', "ABC/DEF/GHI", 3),
+    )
+    @ddt.unpack
+    def test_valid_search(self, query, course_id, result_count):
+        code, results = post_request({"search_string": query}, course_id)
+        self.assertTrue(199 < code < 300)
+        self.assertEqual(results["total"], result_count)
+
+    def test_malformed_query_handling(self):
+        # root
+        code, results = post_request({"search_string": "\"missing quote"})
+        self.assertGreater(code, 499)
+        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')
+
+        # course ID
+        code, results = post_request({"search_string": "\"missing quote"}, "ABC/DEF/GHI")
+        self.assertGreater(code, 499)
+        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')
+
+        # course discovery
+        code, results = post_discovery_request({"search_string": "\"missing quote"})
+        self.assertGreater(code, 499)
+        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')

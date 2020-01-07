@@ -4,16 +4,13 @@ clean:
 	rm -rf coverage htmlcov
 
 quality:
-	pep8 --config=.pep8 search
-	pylint --rcfile=pylintrc search
+	tox -e quality
 
 requirements:
 	pip install -r test_requirements.txt
 
 validate: clean
-	DJANGO_SETTINGS_MODULE=settings coverage run --source=search ./manage.py test
-	coverage report
-	make quality
+	tox
 
 
 .PHONY: clean, quality, requirements, validate
