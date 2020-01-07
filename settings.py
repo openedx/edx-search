@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-from __future__ import absolute_import
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -43,7 +42,7 @@ INSTALLED_APPS = (
     'eventtracking.django',
 )
 
-MIDDLEWARE = (
+MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -114,4 +113,3 @@ EVENT_TRACKING_BACKENDS = {
         }
     }
 }
-

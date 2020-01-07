@@ -1,5 +1,4 @@
 """ overridable filter object to inject fields to auto-filter upon within searches """
-from __future__ import absolute_import
 from datetime import datetime
 
 from django.conf import settings

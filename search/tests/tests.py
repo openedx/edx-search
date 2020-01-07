@@ -5,7 +5,6 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-ancestors
 """ Tests for search functionalty """
-from __future__ import absolute_import
 from datetime import datetime
 
 from django.core.cache import cache
