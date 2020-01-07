@@ -4,7 +4,6 @@
 # error, but they do get used when included as part of the override_settings
 # pylint: disable=too-few-public-methods
 """ Tests for search functionality """
-from __future__ import absolute_import
 import json
 import os
 from datetime import datetime

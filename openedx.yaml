@@ -2,12 +2,7 @@
 # http://open-edx-proposals.readthedocs.io/en/latest/oeps/oep-0002.html#specification
 
 nick: srch
-owner: azarembok
-
-oeps:
-    oep-2: true
-    oep-7: true
-    oep-18: false
-tags:
-    - dedx
-    - library
+oeps: {}
+owner: edx/solutions-team
+tags: [dedx]
+track-pulls: true
