@@ -81,9 +81,12 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     """
     Course Discovery activities against the search engine index of course details
     """
+    # We'll ignore the course-enrollemnt informaiton in field and filter
+    # dictionary, and use our own logic upon enrollment dates for these
+    use_search_fields = ["org"]
     (search_fields, _, exclude_dictionary) = SearchFilterGenerator.generate_field_filters()
     use_field_dictionary = {}
-    use_field_dictionary.update(search_fields)
+    use_field_dictionary.update({field: search_fields[field] for field in search_fields if field in use_search_fields})
     if field_dictionary:
         use_field_dictionary.update(field_dictionary)
     if not getattr(settings, "SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING", False):
