@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import dateutil.parser
 from django.conf import settings
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
@@ -78,6 +78,65 @@ def perform_search(
     return results
 
 
+def _format_filter(filter, missing_included=True):
+    """This is used to apply filters missing or existing search according to specific value.
+    """
+    return {'value': filter, 'missing_included': missing_included}
+
+
+def process_range_data(results):
+    """Mainly used for processing range datetime data.
+    """
+    start_terms = results.get('facets', {}).get('start', {}).get('terms', {})
+    if start_terms:
+        new_start_terms = defaultdict(int)
+
+        for key, value in start_terms.items():
+            key = dateutil.parser.parse(key, ignoretz=True)
+            now = datetime.utcnow()
+            new_key = 'future'
+
+            if key < now - timedelta(days=30):
+                new_key = 'current'
+            elif key <= now:
+                new_key = 'new'
+            elif key < now + timedelta(days=30):
+                new_key = 'soon'
+
+            new_start_terms[new_key] += value
+
+        sorted_new_start_terms = OrderedDict()
+        for key in ['current', 'new', 'soon', 'future']:
+            if key in new_start_terms:
+                sorted_new_start_terms[key] = new_start_terms[key]
+
+        results['facets']['start']['terms'] = sorted_new_start_terms
+        results['facets']['start']['total'] = 4
+
+    end_terms = results.get('facets', {}).get('end', {}).get('terms', {})
+    if end_terms:
+        new_end_terms = defaultdict(int)
+
+        for key, value in end_terms.items():
+            key = dateutil.parser.parse(key, ignoretz=True)
+            now = datetime.utcnow()
+            new_key = 'active'
+            if key < now:
+                new_key = 'archive'
+
+            new_end_terms[new_key] += value
+
+        sorted_new_end_terms = OrderedDict()
+        for key in ['archive', 'active']:
+            if key in new_end_terms:
+                sorted_new_end_terms[key] = new_end_terms[key]
+
+        results['facets']['end']['terms'] = sorted_new_end_terms
+        results['facets']['end']['total'] = 2
+
+    return results
+
+
 def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None):
     """
     Course Discovery activities against the search engine index of course details
@@ -97,16 +156,48 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
 
-    filter_dictionary = {"enrollment_end": DateRange(datetime.utcnow(), None)}
+    filter_dictionary = {
+        "enrollment_end": _format_filter(DateRange(datetime.utcnow(), None))
+    }
     start = use_field_dictionary.pop('start', None)
     if start == 'current':
-        filter_dictionary.update({'start': DateRange(None, datetime.utcnow() - timedelta(days=30))})
+        filter_dictionary.update({
+            'start':
+            _format_filter(
+                DateRange(None,
+                          datetime.utcnow() - timedelta(days=30)))
+        })
     elif start == 'new':
-        filter_dictionary.update({'start': DateRange(datetime.utcnow() - timedelta(days=30), datetime.utcnow())})
+        filter_dictionary.update({
+            'start':
+            _format_filter(
+                DateRange(datetime.utcnow() - timedelta(days=30),
+                          datetime.utcnow()))
+        })
     elif start == 'soon':
-        filter_dictionary.update({'start': DateRange(datetime.utcnow(), datetime.utcnow() + timedelta(days=30))})
+        filter_dictionary.update({
+            'start':
+            _format_filter(
+                DateRange(datetime.utcnow(),
+                          datetime.utcnow() + timedelta(days=30)))
+        })
     elif start == 'future':
-        filter_dictionary.update({'start': DateRange(datetime.utcnow() + timedelta(days=30), None)})
+        filter_dictionary.update({
+            'start':
+            _format_filter(
+                DateRange(datetime.utcnow() + timedelta(days=30), None))
+        })
+
+    end = use_field_dictionary.pop('end', None)
+    if end == 'archive':
+        filter_dictionary.update({
+            'end':
+            _format_filter(DateRange(None, datetime.utcnow()),
+                           missing_included=False)
+        })
+    elif end == 'active':
+        filter_dictionary.update(
+            {'end': _format_filter(DateRange(datetime.utcnow(), None))})
 
     use_field_dictionary['catalog_visibility'] = CATALOG_VISIBILITY_CATALOG_AND_ABOUT
 
@@ -123,32 +214,5 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         facet_terms=course_discovery_facets(),
     )
 
-    start_terms = results.get('facets', {}).get('start', {}).get('terms', {})
-    new_start_terms = {}
-
-    for key, value in start_terms.items():
-        key = dateutil.parser.parse(key, ignoretz=True)
-        now = datetime.utcnow()
-        new_key = 'future'
-
-        if key < now - timedelta(days=30):
-            new_key = 'current'
-        elif key <= now:
-            new_key = 'new'
-        elif key < now + timedelta(days=30):
-            new_key = 'soon'
-
-        if new_key in new_start_terms:
-            new_start_terms[new_key] += value
-        else:
-            new_start_terms[new_key] = value
-
-    sorted_new_start_terms = OrderedDict()
-    for key in ['current', 'new', 'soon', 'future']:
-        if key in new_start_terms:
-            sorted_new_start_terms[key] = new_start_terms[key]
-
-    results['facets']['start']['terms'] = sorted_new_start_terms
-    results['facets']['start']['total'] = 4
-
+    results = process_range_data(results)
     return results

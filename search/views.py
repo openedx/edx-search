@@ -38,11 +38,18 @@ def _process_pagination_values(request):
 
 def _process_field_values(request):
     """ Create separate dictionary of supported filter values provided """
-    return {
-        field_key: request.POST[field_key]
-        for field_key in request.POST
-        if field_key in course_discovery_filter_fields()
-    }
+    field_values = {}
+    for field_key in request.POST:
+        # Check if the key's value is array so using request.POST.getlist to get array value.
+        if field_key.endswith('[]'):
+            if field_key[:-2] in course_discovery_filter_fields():
+                field_values[field_key[:-2]] = request.POST.getlist(
+                    field_key)[0] if len(request.POST.getlist(
+                        field_key)) == 1 else request.POST.getlist(field_key)
+        elif field_key in course_discovery_filter_fields():
+            field_values[field_key] = request.POST[field_key]
+
+    return field_values
 
 
 @require_POST
@@ -104,6 +111,7 @@ def do_search(request, course_id=None):
             from_=from_,
             course_id=course_id
         )
+        log.info('%s courses find', results['total'])
 
         status_code = 200
 
@@ -199,6 +207,7 @@ def course_discovery(request):
             from_=from_,
             field_dictionary=field_dictionary,
         )
+        log.info('%s courses find', results['total'])
 
         # Analytics - log search results before sending to browser
         track.emit(

@@ -114,28 +114,18 @@ def _process_field_filters(field_dictionary):
 def _process_filters(filter_dictionary):
     """
     We have a filter_dictionary - this means that if the field is included
-    and matches, then we can include, OR if the field is undefined, then we
-    assume it is safe to include
+    and matches, then we can include, OR if the field is undefined, we include it accroding to flag.
     """
     def filter_item(field):
         """ format elasticsearch filter to pass if value matches OR field is not included """
-        if filter_dictionary[field] is not None:
-            return {
-                "or": [
-                    _get_filter_field(field, filter_dictionary[field]),
-                    {
-                        "missing": {
-                            "field": field
-                        }
-                    }
-                ]
-            }
-
-        return {
-            "missing": {
-                "field": field
-            }
+        processed_item = {
+            "or":
+            [_get_filter_field(field, filter_dictionary[field]['value'])]
         }
+        if filter_dictionary[field]['missing_included']:
+            processed_item["or"].append({"missing": {"field": field}})
+
+        return processed_item
 
     return [filter_item(field) for field in filter_dictionary]
 
@@ -538,7 +528,7 @@ class ElasticSearchEngine(SearchEngine):
         if query_string:
             elastic_queries.append({
                 "query_string": {
-                    "fields": ["content.*"],
+                    "fields": ["content.display_name", "content.number"],
                     "query": query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
                 }
             })
