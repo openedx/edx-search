@@ -206,6 +206,7 @@ def course_discovery(request):
             size=size,
             from_=from_,
             field_dictionary=field_dictionary,
+            user=request.user
         )
         log.info('%s courses find', results['total'])
 
