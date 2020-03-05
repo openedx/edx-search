@@ -21,8 +21,7 @@ def course_discovery_filter_fields():
 
 def course_discovery_facets():
     """ Discovery facets to include, by default we specify each filter field with unspecified size attribute """
-    return getattr(settings, "COURSE_DISCOVERY_FACETS", {field: {} for field in course_discovery_filter_fields()})
-
+    return getattr(settings, "COURSE_DISCOVERY_FACETS", {field: {'size': 50} for field in course_discovery_filter_fields()})
 
 class NoSearchEngineError(Exception):
     """ NoSearchEngineError exception to be thrown if no search engine is specified """
