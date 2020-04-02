@@ -11,7 +11,7 @@
 -c constraints.txt
 
 
-Django<2                     # Web application framework
+Django                       # Web application framework
 elasticsearch>=1.0.0,<2.0.0
 event-tracking
 six
