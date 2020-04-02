@@ -4,10 +4,10 @@
 #
 #    make upgrade
 #
-django==1.11.26
-elasticsearch==1.9.0
-event-tracking==0.3.0
-pymongo==3.9.0            # via event-tracking
+django==1.11.29           # via -r requirements/base.in, event-tracking
+elasticsearch==1.9.0      # via -r requirements/base.in
+event-tracking==0.3.0     # via -r requirements/base.in
+pymongo==3.10.1           # via event-tracking
 pytz==2019.3              # via django, event-tracking
-six==1.13.0
-urllib3==1.25.7           # via elasticsearch
+six==1.14.0               # via -r requirements/base.in, event-tracking
+urllib3==1.25.8           # via elasticsearch
