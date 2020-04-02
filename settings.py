@@ -26,9 +26,22 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1
 # This is just a container for running tests
 DEBUG = True
 
-TEMPLATE_DEBUG = True
-
 ALLOWED_HOSTS = []
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': (
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            )
+        }
+    },
+]
 
 
 # Application definition
