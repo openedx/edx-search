@@ -4,13 +4,13 @@
 #
 #    make upgrade
 #
-coverage==4.5.4
-ddt==1.2.1
-elasticsearch==1.9.0
-event-tracking==0.3.0
+coverage==5.0.4           # via -r requirements/testing.in
+ddt==1.3.1                # via -r requirements/testing.in
+elasticsearch==1.9.0      # via -r requirements/base.txt
+event-tracking==0.3.0     # via -r requirements/base.txt
 funcsigs==1.0.2           # via mock
-mock==3.0.5
-pymongo==3.9.0
-pytz==2019.3
-six==1.13.0
-urllib3==1.25.7
+mock==3.0.5               # via -r requirements/testing.in
+pymongo==3.10.1           # via -r requirements/base.txt, event-tracking
+pytz==2019.3              # via -r requirements/base.txt, django, event-tracking
+six==1.14.0               # via -r requirements/base.txt, event-tracking, mock
+urllib3==1.25.8           # via -r requirements/base.txt, elasticsearch
