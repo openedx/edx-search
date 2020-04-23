@@ -28,7 +28,7 @@ def post_discovery_request(body):
 
 
 # pylint: disable=too-few-public-methods
-class SearcherMixin(object):
+class SearcherMixin:
     """ Mixin to provide searcher for the tests """
     _searcher = None
 

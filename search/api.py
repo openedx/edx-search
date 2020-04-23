@@ -25,7 +25,6 @@ def course_discovery_facets():
 
 class NoSearchEngineError(Exception):
     """ NoSearchEngineError exception to be thrown if no search engine is specified """
-    pass
 
 
 class QueryParseError(Exception):
@@ -36,7 +35,6 @@ class QueryParseError(Exception):
     error message to the user.
 
     """
-    pass
 
 
 def perform_search(

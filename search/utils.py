@@ -25,7 +25,7 @@ def _is_iterable(item):
     return isinstance(item, collections.Iterable) and not isinstance(item, six.string_types)
 
 
-class ValueRange(object):
+class ValueRange:
 
     """ Object to represent a range of values """
 

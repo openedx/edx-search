@@ -6,7 +6,7 @@ from django.conf import settings
 from .utils import _load_class
 
 
-class SearchInitializer(object):
+class SearchInitializer:
 
     """
     Class to set starting environment parameters for search app.
@@ -17,7 +17,6 @@ class SearchInitializer(object):
     # pylint: disable=unused-argument, no-self-use
     def initialize(self, **kwargs):
         """ empty base implementation """
-        pass
 
     @classmethod
     def set_search_enviroment(cls, **kwargs):

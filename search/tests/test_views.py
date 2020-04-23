@@ -118,7 +118,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "sun"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_3" in result_ids and "FAKE_ID_2" in result_ids)
@@ -128,7 +128,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Darling"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
@@ -138,7 +138,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "winter"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids)
@@ -194,7 +194,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Little Darling"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
 
         # Test initiate search and return results were called - and clear mocked tracker
@@ -202,7 +202,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "Darling"}, "ABC/DEF/GHI")
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" in result_ids)
@@ -212,7 +212,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "winter"}, "ABC/DEF/GHI")
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" not in result_ids)
@@ -222,7 +222,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self._reset_mocked_tracker()
 
         code, results = post_request({"search_string": "winter"}, "LMN/OPQ/RST")
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertTrue("FAKE_ID_1" not in result_ids and "FAKE_ID_2" not in result_ids and "FAKE_ID_3" in result_ids)

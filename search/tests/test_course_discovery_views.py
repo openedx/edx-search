@@ -39,58 +39,58 @@ class DiscoveryUrlTest(MockSearchUrlTest):
     def test_search_from_url(self):
         """ test searching using the url """
         code, results = post_discovery_request({})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
 
         code, results = post_discovery_request({"search_string": "right"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
 
         code, results = post_discovery_request({"search_string": "parameter"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 2)
 
         code, results = post_discovery_request({"search_string": "Find this one"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
 
     def test_pagination(self):
         """ test that paging attributes are correctly applied """
         code, results = post_discovery_request({"search_string": "Find this one"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 3)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_1", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 1, "page_index": 0})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_1", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 1, "page_index": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 1, "page_index": 2})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_3", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 2})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
@@ -98,7 +98,7 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 2, "page_index": 0})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 2)
         result_ids = [r["data"]["id"] for r in results["results"]]
@@ -106,7 +106,7 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
 
         code, results = post_discovery_request({"search_string": "Find this one", "page_size": 2, "page_index": 1})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 3)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
@@ -115,14 +115,14 @@ class DiscoveryUrlTest(MockSearchUrlTest):
     def test_field_matching(self):
         """ test that requests can specify field matches """
         code, results = post_discovery_request({"org": "OrgA"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
         self.assertIn(DemoCourse.DEMO_COURSE_ID + "_1", result_ids)
 
         code, results = post_discovery_request({"org": "OrgB"})
-        self.assertTrue(code < 300 and code > 199)
+        self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], 1)
         self.assertEqual(len(results["results"]), 1)
         result_ids = [r["data"]["id"] for r in results["results"]]
