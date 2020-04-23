@@ -91,13 +91,13 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
                 (field_value.lower is None or compare_value >= field_value.lower)
                 and (field_value.upper is None or compare_value <= field_value.upper)
             )
-        elif _is_iterable(compare_value) and not _is_iterable(field_value):
+        if _is_iterable(compare_value) and not _is_iterable(field_value):
             return any((item == field_value for item in compare_value))
 
-        elif _is_iterable(field_value) and not _is_iterable(compare_value):
+        if _is_iterable(field_value) and not _is_iterable(compare_value):
             return any((item == compare_value for item in field_value))
 
-        elif _is_iterable(compare_value) and _is_iterable(field_value):
+        if _is_iterable(compare_value) and _is_iterable(field_value):
             return any((six.text_type(item) in field_value for item in compare_value))
 
         return compare_value == field_value
@@ -113,10 +113,7 @@ def _process_query_string(documents_to_search, query_string):
     """ keep the documents that contain at least one of the search strings provided """
     def _encode_string(string):
         """Encode a Unicode string in the same way as the Elasticsearch search engine."""
-        if six.PY2:
-            string = string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
-        else:
-            string = string.translate(string.maketrans('', '', RESERVED_CHARACTERS))
+        string = string.translate(string.maketrans('', '', RESERVED_CHARACTERS))
         return string
 
     def has_string(dictionary_object, search_string):
@@ -124,7 +121,7 @@ def _process_query_string(documents_to_search, query_string):
         for name in dictionary_object:
             if isinstance(dictionary_object[name], dict):
                 return has_string(dictionary_object[name], search_string)
-            elif dictionary_object[name]:
+            if dictionary_object[name]:
                 if search_string.lower() in _encode_string(dictionary_object[name].lower()):
                     return True
         return False

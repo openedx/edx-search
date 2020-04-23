@@ -21,7 +21,7 @@ from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from .mock_search_engine import MockSearchEngine
 
 
-class DemoCourse(object):
+class DemoCourse:
     """ Class for dispensing demo courses """
     DEMO_COURSE_ID = "edX/DemoX/Demo_Course"
     DEMO_COURSE = {
