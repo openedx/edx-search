@@ -7,7 +7,7 @@ from django.conf import settings
 from .utils import _load_class, DateRange
 
 
-class SearchFilterGenerator(object):
+class SearchFilterGenerator:
 
     """
     Class to provide a set of filters for the search.

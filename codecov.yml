@@ -4,9 +4,10 @@ coverage:
       default:
         enabled: yes
         target: auto
+        threshold: 0.5
     patch:
       default:
         enabled: yes
-        target: 100%
+        target: 97%
 
 comment: false

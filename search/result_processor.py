@@ -21,7 +21,7 @@ ELLIPSIS = '<span class="search-results-ellipsis"></span>'
 log = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-class SearchResultProcessor(object):
+class SearchResultProcessor:
 
     """
     Class to post-process a search result from the search.
@@ -81,7 +81,7 @@ class SearchResultProcessor(object):
     def decorate_matches(match_in, match_word):
         """ decorate the matches within the excerpt """
         matches = re.finditer(match_word, match_in, re.IGNORECASE)
-        for matched_string in set([match.group() for match in matches]):
+        for matched_string in {match.group() for match in matches}:
             match_in = match_in.replace(
                 matched_string,
                 getattr(settings, "SEARCH_MATCH_DECORATION", u"<b>{}</b>").format(matched_string)
@@ -132,16 +132,7 @@ class SearchResultProcessor(object):
             return None
 
         match_phrases = [self._match_phrase]
-        if six.PY2:
-            separate_phrases = [
-                phrase.decode('utf-8')
-                for phrase in shlex.split(self._match_phrase.encode('utf-8'))
-            ]
-        else:
-            separate_phrases = [
-                phrase
-                for phrase in shlex.split(self._match_phrase)
-            ]
+        separate_phrases = list(shlex.split(self._match_phrase))
         if len(separate_phrases) > 1:
             match_phrases.extend(separate_phrases)
         else:

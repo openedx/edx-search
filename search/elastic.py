@@ -538,10 +538,7 @@ class ElasticSearchEngine(SearchEngine):
 
         # We have a query string, search all fields for matching text within the "content" node
         if query_string:
-            if six.PY2:
-                query_string = query_string.encode('utf-8').translate(None, RESERVED_CHARACTERS)
-            else:
-                query_string = query_string.translate(query_string.maketrans('', '', RESERVED_CHARACTERS))
+            query_string = query_string.translate(query_string.maketrans('', '', RESERVED_CHARACTERS))
             elastic_queries.append({
                 "query_string": {
                     "fields": ["content.*"],
@@ -610,9 +607,8 @@ class ElasticSearchEngine(SearchEngine):
             if 'QueryParsingException' in message:
                 log.exception("Malformed search query: %s", message)  # lint-amnesty, pylint: disable=unicode-format-string
                 raise QueryParseError('Malformed search query.')
-            else:
-                # log information and re-raise
-                log.exception("error while searching index - %s", str(message))  # lint-amnesty, pylint: disable=unicode-format-string
-                raise
+            # log information and re-raise
+            log.exception("error while searching index - %s", str(message))  # lint-amnesty, pylint: disable=unicode-format-string
+            raise
 
         return _translate_hits(es_response)
