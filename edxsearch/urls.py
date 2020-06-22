@@ -1,5 +1,5 @@
 """ import urls from search component to test it's operation when included within other django projects """
-from __future__ import absolute_import
+
 import django
 from django.conf.urls import include, url
 
