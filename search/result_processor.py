@@ -1,5 +1,5 @@
 """ overridable result processor object to allow additional properties to be exposed """
-from __future__ import absolute_import
+
 import inspect
 from itertools import chain
 import json

@@ -1,5 +1,5 @@
 """ Test utilities """
-from __future__ import absolute_import
+
 import json
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
