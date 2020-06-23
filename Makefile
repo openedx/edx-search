@@ -15,7 +15,6 @@ clean:
 quality:
 	pycodestyle --config=.pep8 manage.py search edxsearch/settings.py setup.py
 	pylint --rcfile=pylintrc manage.py search edxsearch/settings.py setup.py
-	pylint --py3k --rcfile=pylintrc manage.py msearch edxsearch/settings.py setup.py
 
 requirements:
 	pip install -r requirements/dev.txt

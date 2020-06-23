@@ -1,5 +1,5 @@
 """ Elastic Search implementation for courseware search index """
-from __future__ import absolute_import
+
 import copy
 import logging
 

@@ -1,5 +1,5 @@
 """ Utility classes to support others """
-from __future__ import absolute_import
+
 import importlib
 import collections
 import six
