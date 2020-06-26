@@ -8,7 +8,6 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from mock import patch, call
 
-import six
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
@@ -50,7 +49,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """Ensures an search initiated event was emitted"""
         initiated_search_call = self.mock_tracker.emit.mock_calls[0]  # pylint: disable=maybe-no-member
         expected_result = call('edx.course.search.initiated', {
-            "search_term": six.text_type(search_term),
+            "search_term": str(search_term),
             "page_size": size,
             "page_number": page,
         })
@@ -60,7 +59,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         """Ensures an results returned event was emitted"""
         returned_results_call = self.mock_tracker.emit.mock_calls[1]  # pylint: disable=maybe-no-member
         expected_result = call('edx.course.search.results_displayed', {
-            "search_term": six.text_type(search_term),
+            "search_term": str(search_term),
             "page_size": size,
             "page_number": page,
             "results_count": total,

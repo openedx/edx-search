@@ -11,7 +11,6 @@ import textwrap
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
-import six
 from .utils import _load_class
 
 DESIRED_EXCERPT_LENGTH = 100
@@ -45,8 +44,8 @@ class SearchResultProcessor:
     @staticmethod
     def strings_in_dictionary(dictionary):
         """ Used by default implementation for finding excerpt """
-        strings = [value for value in six.itervalues(dictionary) if not isinstance(value, dict)]
-        for child_dict in [dv for dv in six.itervalues(dictionary) if isinstance(dv, dict)]:
+        strings = [value for value in dictionary.values() if not isinstance(value, dict)]
+        for child_dict in [dv for dv in dictionary.values() if isinstance(dv, dict)]:
             strings.extend(SearchResultProcessor.strings_in_dictionary(child_dict))
         return strings
 

@@ -9,7 +9,6 @@ import pytz
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
-import six
 from search.elastic import RESERVED_CHARACTERS
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, DateRange, _is_iterable
@@ -39,7 +38,7 @@ def _find_field(doc, field_name):
     if not isinstance(doc, dict):
         raise ValueError('Parameter `doc` should be a python dict object')
 
-    if not isinstance(field_name, six.string_types):
+    if not isinstance(field_name, str):
         raise ValueError('Parameter `field_name` should be a string')
 
     immediate_field, remaining_path = field_name.split('.', 1) if '.' in field_name else (field_name, None)
@@ -69,7 +68,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
 
         # if we have a string that we are trying to process as a date object
         if isinstance(field_value, (DateRange, datetime)):
-            if isinstance(compare_value, six.string_types):
+            if isinstance(compare_value, str):
                 compare_value = json_date_to_datetime(compare_value)
 
             field_has_tz_info = False
@@ -98,7 +97,7 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
             return any((item == compare_value for item in field_value))
 
         if _is_iterable(compare_value) and _is_iterable(field_value):
-            return any((six.text_type(item) in field_value for item in compare_value))
+            return any((str(item) in field_value for item in compare_value))
 
         return compare_value == field_value
 
