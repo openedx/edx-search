@@ -8,7 +8,6 @@ from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 from elasticsearch.helpers import bulk, BulkIndexError
 
-import six
 from search.api import QueryParseError
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
@@ -603,7 +602,7 @@ class ElasticSearchEngine(SearchEngine):
                 **kwargs
             )
         except exceptions.ElasticsearchException as ex:
-            message = six.text_type(ex)
+            message = str(ex)
             if 'QueryParsingException' in message:
                 log.exception("Malformed search query: %s", message)  # lint-amnesty, pylint: disable=unicode-format-string
                 raise QueryParseError('Malformed search query.')

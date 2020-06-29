@@ -9,6 +9,6 @@ elasticsearch==1.9.0      # via -r requirements/base.in
 event-tracking==0.3.2     # via -r requirements/base.in
 pymongo==3.10.1           # via event-tracking
 pytz==2020.1              # via django, event-tracking
-six==1.15.0               # via -r requirements/base.in, event-tracking
+six==1.15.0               # via event-tracking
 sqlparse==0.3.1           # via django
 urllib3==1.25.9           # via elasticsearch

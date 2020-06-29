@@ -10,7 +10,6 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-import six
 from .api import QueryParseError, perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
@@ -120,9 +119,9 @@ def do_search(request, course_id=None):
 
     except ValueError as invalid_err:
         results = {
-            "error": six.text_type(invalid_err)
+            "error": str(invalid_err)
         }
-        log.debug(six.text_type(invalid_err))
+        log.debug(str(invalid_err))
 
     except QueryParseError:
         results = {
@@ -211,9 +210,9 @@ def course_discovery(request):
 
     except ValueError as invalid_err:
         results = {
-            "error": six.text_type(invalid_err)
+            "error": str(invalid_err)
         }
-        log.debug(six.text_type(invalid_err))
+        log.debug(str(invalid_err))
 
     except QueryParseError:
         results = {

@@ -14,4 +14,3 @@
 Django                       # Web application framework
 elasticsearch>=1.0.0,<2.0.0
 event-tracking
-six
