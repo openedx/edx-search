@@ -11,14 +11,15 @@ from mock import patch, call
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
-from search.tests.utils import post_discovery_request, post_request, SearcherMixin
+from search.tests.utils import post_request, SearcherMixin
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
-@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 class MockSearchUrlTest(TestCase, SearcherMixin):
     """
     Make sure that requests to the url get routed to the correct view handler
@@ -86,31 +87,28 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def test_search_from_url(self):
         """ test searching using the url """
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    },
-                    "test_date": datetime(2015, 1, 1),
-                    "test_string": "ABC, It's easy as 123"
+        self.searcher.index([
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                },
+                "test_date": datetime(2015, 1, 1),
+                "test_string": "ABC, It's easy as 123"
+            },
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "id": "FAKE_ID_2",
-                    "content": {
-                        "text": "Little Darling, it's been a year since sun been gone"
-                    }
+            },
+            {
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Here comes the sun"
                 }
-            ]
-        )
-        self.searcher.index("courseware_content", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+            }
+        ])
 
         # Test no events called  yet after setup
         self.assert_no_events_were_emitted()
@@ -151,42 +149,29 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def test_course_search_url(self):
         """ test searching using the course url """
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    }
+        self.searcher.index([
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_2",
-                    "content": {
-                        "text": "Little Darling, it's been a year since you've been gone"
-                    }
+            },
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since you've been gone"
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "LMN/OPQ/RST",
-                    "id": "FAKE_ID_3",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    }
+            },
+            {
+                "course": "LMN/OPQ/RST",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
+            }
+        ])
 
         # Test no events called  yet after setup
         self.assert_no_events_were_emitted()
@@ -243,42 +228,29 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     # pylint: disable=too-many-statements,wrong-assert-type
     def test_pagination(self):
         """ test searching using the course url """
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC",
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
-                    }
+        self.searcher.index([
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling Little Darling Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC",
-                    "id": "FAKE_ID_2",
-                    "content": {
-                        "text": "Little Darling Little Darling, it's been a year since you've been gone"
-                    }
+            },
+            {
+                "course": "ABC",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling Little Darling, it's been a year since you've been gone"
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "XYZ",
-                    "id": "FAKE_ID_3",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    }
+            },
+            {
+                "course": "XYZ",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
+            }
+        ])
 
         # Test no events called  yet after setup
         self.assert_no_events_were_emitted()
@@ -365,18 +337,15 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def test_page_size_too_large(self):
         """ test searching with too-large page_size """
-        self.searcher.index(
-            "test_doc",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    }
+        self.searcher.index([
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
+            }
+        ])
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 101})
         self.assertEqual(code, 500)
@@ -385,7 +354,8 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
-@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -400,29 +370,26 @@ class BadSearchTest(TestCase, SearcherMixin):
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        searcher.index(
-            "courseware_content",
-            [
-                {
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "Little Darling, it's been a long long lonely winter"
-                    }
+        searcher.index([
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
                 }
-            ]
-        )
-        searcher.index(
-            "courseware_content",
-            [
-                {
-                    "id": "FAKE_ID_2",
-                    "content": {
-                        "text": "Little Darling, it's been a year since sun been gone"
-                    }
+            },
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
                 }
-            ]
-        )
-        searcher.index("test_doc", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+            },
+            {
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Here comes the sun"
+                }
+            }
+        ])
 
         code, results = post_request({"search_string": "sun"})
         self.assertGreater(code, 499)
@@ -448,55 +415,43 @@ class BadIndexTest(TestCase, SearcherMixin):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(Exception):
-            searcher.index("courseware_content", [{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+            searcher.index([{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
-@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 @ddt.ddt
 class ElasticSearchUrlTest(TestCase, SearcherMixin):
     """Elastic-specific tests"""
     def setUp(self):
         super(ElasticSearchUrlTest, self).setUp()
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_1",
-                    "content": {
-                        "text": "It seems like k-means clustering would work in this context."
-                    },
-                    "test_date": datetime(2015, 1, 1),
-                    "test_string": "ABC, It's easy as 123"
+        self.searcher.index([
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "It seems like k-means clustering would work in this context."
+                },
+                "test_date": datetime(2015, 1, 1),
+                "test_string": "ABC, It's easy as 123"
+            },
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "It looks like k-means clustering could work in this context."
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_2",
-                    "content": {
-                        "text": "It looks like k-means clustering could work in this context."
-                    }
+            },
+            {
+                "course": "ABC/DEF/GHI",
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "It looks like k means something different in this context."
                 }
-            ]
-        )
-        self.searcher.index(
-            "courseware_content",
-            [
-                {
-                    "course": "ABC/DEF/GHI",
-                    "id": "FAKE_ID_3",
-                    "content": {
-                        "text": "It looks like k means something different in this context."
-                    }
-                }
-            ]
-        )
+            }
+        ])
 
     @ddt.data(
         # Quoted phrases
@@ -513,19 +468,3 @@ class ElasticSearchUrlTest(TestCase, SearcherMixin):
         code, results = post_request({"search_string": query}, course_id)
         self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], result_count)
-
-    def test_malformed_query_handling(self):
-        # root
-        code, results = post_request({"search_string": "\"missing quote"})
-        self.assertGreater(code, 499)
-        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')
-
-        # course ID
-        code, results = post_request({"search_string": "\"missing quote"}, "ABC/DEF/GHI")
-        self.assertGreater(code, 499)
-        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')
-
-        # course discovery
-        code, results = post_discovery_request({"search_string": "\"missing quote"})
-        self.assertGreater(code, 499)
-        self.assertEqual(results["error"], 'Your query seems malformed. Check for unmatched quotes.')
