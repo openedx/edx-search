@@ -12,7 +12,7 @@
 ddt < 1.4.0
 
 # newer version is causing failure
-tox-battery==0.5.2
+tox-battery==0.6.1
 
 
 coverage<5.1
