@@ -16,11 +16,11 @@ class SearchEngine:
         if index:
             self.index_name = index
 
-    def index(self, doc_type, sources, **kwargs):
+    def index(self, sources, **kwargs):
         """ This operation is called to add documents of given type to the search index """
         raise NotImplementedError
 
-    def remove(self, doc_type, doc_ids, **kwargs):
+    def remove(self, doc_ids, **kwargs):
         """ This operation is called to remove documents of given type from the search index """
         raise NotImplementedError
 
@@ -29,7 +29,7 @@ class SearchEngine:
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               facet_terms=None,
+               agg_terms=None,
                **kwargs):  # pylint: disable=too-many-arguments
         """ This operation is called to search for matching documents within the search index """
         raise NotImplementedError
