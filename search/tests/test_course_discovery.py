@@ -16,7 +16,7 @@ from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
 from search.api import course_discovery_search, NoSearchEngineError
-from search.elastic import ElasticSearchEngine, QueryParseError
+from search.elastic import ElasticSearchEngine
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from .mock_search_engine import MockSearchEngine
 
@@ -67,7 +67,7 @@ class DemoCourse:
     @staticmethod
     def index(searcher, course_info):
         """ Adds course info dictionary to the index """
-        searcher.index(doc_type="course_info", sources=course_info)
+        searcher.index(sources=course_info)
 
     @classmethod
     def get_and_index(cls, searcher, update_dict=None, remove_fields=None):
@@ -82,7 +82,8 @@ class DemoCourse:
     "enrollment_end": {"type": "date"}
 })
 @override_settings(MOCK_SEARCH_BACKING_FILE=None)
-@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable=too-many-public-methods
     """
@@ -226,8 +227,11 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         results = course_discovery_search(field_dictionary={"modes": "verified"})
         self.assertEqual(results["total"], 1)
 
-    def test_faceting(self):
-        """ Test that facet results are incorporated  (org and modes are default facets) """
+    def test_aggregating(self):
+        """
+        Test that aggregation results are incorporated
+        (org and modes are default aggregations)
+        """
         DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor", "verified"]})
         DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor"]})
         DemoCourse.get_and_index(self.searcher, {"org": "OrgB", "modes": ["honor"]})
@@ -236,22 +240,25 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
 
         results = course_discovery_search()
         self.assertEqual(results["total"], 5)
-        self.assertIn("facets", results)
+        self.assertIn("aggs", results)
 
-        self.assertIn("org", results["facets"])
-        self.assertEqual(results["facets"]["org"]["total"], 4)
-        self.assertEqual(results["facets"]["org"]["terms"]["OrgA"], 2)
-        self.assertEqual(results["facets"]["org"]["terms"]["OrgB"], 2)
+        self.assertIn("org", results["aggs"])
+        self.assertEqual(results["aggs"]["org"]["total"], 4)
+        self.assertEqual(results["aggs"]["org"]["terms"]["OrgA"], 2)
+        self.assertEqual(results["aggs"]["org"]["terms"]["OrgB"], 2)
 
-        self.assertIn("modes", results["facets"])
-        self.assertEqual(results["facets"]["modes"]["total"], 6)
-        self.assertEqual(results["facets"]["modes"]["terms"]["honor"], 3)
-        self.assertEqual(results["facets"]["modes"]["terms"]["verified"], 2)
-        self.assertEqual(results["facets"]["modes"]["terms"]["other"], 1)
+        self.assertIn("modes", results["aggs"])
+        self.assertEqual(results["aggs"]["modes"]["total"], 6)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["honor"], 3)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["verified"], 2)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["other"], 1)
 
     @override_settings(COURSE_DISCOVERY_FILTERS=["test_name", "modes"])
-    def test_faceting_filters(self):
-        """ Test that facet under consideration can be specified by virtue of filters being overriden """
+    def test_aggregating_filters(self):
+        """
+        Test that aggregation under consideration can be specified
+        by virtue of filters being overriden
+        """
         DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 1", "modes": ["honor", "verified"]})
         DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 1", "modes": ["honor"]})
         DemoCourse.get_and_index(self.searcher, {"test_name": "Test Name 2", "modes": ["honor"]})
@@ -260,24 +267,27 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
 
         results = course_discovery_search()
         self.assertEqual(results["total"], 5)
-        self.assertIn("facets", results)
+        self.assertIn("aggs", results)
 
-        self.assertNotIn("org", results["facets"])
+        self.assertNotIn("org", results["aggs"])
 
-        self.assertIn("modes", results["facets"])
-        self.assertEqual(results["facets"]["modes"]["total"], 6)
-        self.assertEqual(results["facets"]["modes"]["terms"]["honor"], 3)
-        self.assertEqual(results["facets"]["modes"]["terms"]["verified"], 2)
-        self.assertEqual(results["facets"]["modes"]["terms"]["other"], 1)
+        self.assertIn("modes", results["aggs"])
+        self.assertEqual(results["aggs"]["modes"]["total"], 6)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["honor"], 3)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["verified"], 2)
+        self.assertEqual(results["aggs"]["modes"]["terms"]["other"], 1)
 
-        self.assertIn("test_name", results["facets"])
-        self.assertEqual(results["facets"]["test_name"]["total"], 4)
-        self.assertEqual(results["facets"]["test_name"]["terms"]["Test Name 1"], 2)
-        self.assertEqual(results["facets"]["test_name"]["terms"]["Test Name 2"], 2)
+        self.assertIn("test_name", results["aggs"])
+        self.assertEqual(results["aggs"]["test_name"]["total"], 4)
+        self.assertEqual(results["aggs"]["test_name"]["terms"]["Test Name 1"], 2)
+        self.assertEqual(results["aggs"]["test_name"]["terms"]["Test Name 2"], 2)
 
-    @override_settings(COURSE_DISCOVERY_FACETS={"subject": {}, "lang": {}})
-    def test_faceting_override(self):
-        """ Test that facet under consideration can be specified with custom setting """
+    @override_settings(COURSE_DISCOVERY_AGGREGATIONS={"subject": {}, "lang": {}})
+    def test_aggregating_override(self):
+        """
+        Test that aggregation under consideration can be specified
+        with custom setting
+        """
         DemoCourse.get_and_index(self.searcher, {"subject": "Mathematics", "lang": ["en", "fr"]})
         DemoCourse.get_and_index(self.searcher, {"subject": "Mathematics", "lang": ["en"]})
         DemoCourse.get_and_index(self.searcher, {"subject": "History", "lang": ["en"]})
@@ -286,31 +296,27 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
 
         results = course_discovery_search()
         self.assertEqual(results["total"], 5)
-        self.assertIn("facets", results)
+        self.assertIn("aggs", results)
 
-        self.assertNotIn("org", results["facets"])
-        self.assertNotIn("modes", results["facets"])
+        self.assertNotIn("org", results["aggs"])
+        self.assertNotIn("modes", results["aggs"])
 
-        self.assertIn("subject", results["facets"])
-        self.assertEqual(results["facets"]["subject"]["total"], 4)
-        self.assertEqual(results["facets"]["subject"]["terms"]["Mathematics"], 2)
-        self.assertEqual(results["facets"]["subject"]["terms"]["History"], 2)
+        self.assertIn("subject", results["aggs"])
+        self.assertEqual(results["aggs"]["subject"]["total"], 4)
+        self.assertEqual(results["aggs"]["subject"]["terms"]["Mathematics"], 2)
+        self.assertEqual(results["aggs"]["subject"]["terms"]["History"], 2)
 
-        self.assertIn("lang", results["facets"])
-        self.assertEqual(results["facets"]["lang"]["total"], 6)
-        self.assertEqual(results["facets"]["lang"]["terms"]["en"], 3)
-        self.assertEqual(results["facets"]["lang"]["terms"]["fr"], 2)
-        self.assertEqual(results["facets"]["lang"]["terms"]["de"], 1)
+        self.assertIn("lang", results["aggs"])
+        self.assertEqual(results["aggs"]["lang"]["total"], 6)
+        self.assertEqual(results["aggs"]["lang"]["terms"]["en"], 3)
+        self.assertEqual(results["aggs"]["lang"]["terms"]["fr"], 2)
+        self.assertEqual(results["aggs"]["lang"]["terms"]["de"], 1)
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 @ddt.ddt
 class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):
     """ version of tests that use Elastic Backed index instead of mock """
-
-    def setUp(self):
-        super(TestElasticCourseDiscoverySearch, self).setUp()
-        self.searcher.index("doc_type_that_is_meaninless_to_bootstrap_index", [{"test_doc_type": "bootstrap"}])
 
     def test_course_matching_empty_index(self):
         """ Check for empty result count before indexing """
@@ -357,12 +363,6 @@ class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):
 
         results = course_discovery_search(term)
         self.assertEqual(results["total"], result_count)
-
-    def test_malformed_query_handling(self):
-        """Make sure that mismatched quotes produce a specific exception. """
-
-        with self.assertRaises(QueryParseError):
-            course_discovery_search('"missing quote')
 
 
 @override_settings(SEARCH_ENGINE=None)

@@ -13,7 +13,7 @@ TEST_INDEX_NAME = "test_index"
 
 def post_request(body, course_id=None):
     """ Helper method to post the request and process the response """
-    address = '/' if course_id is None else '/{}'.format(course_id)
+    address = '/{}'.format(course_id) if course_id else '/'
     response = Client().post(address, body)
 
     return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))
@@ -48,17 +48,13 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
     so that tests can relaibly search right afterward
     """
 
-    def index(self, doc_type, sources, **kwargs):
-        kwargs.update({
-            "refresh": True
-        })
-        super(ForceRefreshElasticSearchEngine, self).index(doc_type, sources, **kwargs)
+    def index(self, sources, **kwargs):
+        kwargs["refresh"] = True
+        super(ForceRefreshElasticSearchEngine, self).index(sources, **kwargs)
 
-    def remove(self, doc_type, doc_ids, **kwargs):
-        kwargs.update({
-            "refresh": True
-        })
-        super(ForceRefreshElasticSearchEngine, self).remove(doc_type, doc_ids, **kwargs)
+    def remove(self, doc_ids, **kwargs):
+        kwargs["refresh"] = True
+        super(ForceRefreshElasticSearchEngine, self).remove(doc_ids, **kwargs)
 
 
 class ErroringSearchEngine(MockSearchEngine):
@@ -75,7 +71,7 @@ class ErroringSearchEngine(MockSearchEngine):
 class ErroringIndexEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
-    def index(self, doc_type, sources, **kwargs):  # pylint: disable=unused-argument, arguments-differ
+    def index(self, sources, **kwargs):  # pylint: disable=unused-argument, arguments-differ
         raise Exception("There is a problem here")
 
 

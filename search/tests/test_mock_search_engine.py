@@ -95,10 +95,14 @@ class MockSpecificSearchTests(TestCase, SearcherMixin):
         # first where index has no timezones, and query has
         low_date = datetime(2010, 1, 1)
         high_date = datetime(2100, 1, 1)
-        self.searcher.index("test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date}])
-        self.searcher.index("test_doc", [{"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date}])
+        self.searcher.index([
+            {"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date},
+            {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date}
+        ])
 
-        response = self.searcher.search(field_dictionary={"start_date": low_date.replace(tzinfo=pytz.UTC)})
+        response = self.searcher.search(
+            field_dictionary={"start_date": low_date.replace(tzinfo=pytz.UTC)}
+        )
         self.assertEqual(response["total"], 1)
 
         response = self.searcher.search(
@@ -112,12 +116,10 @@ class MockSpecificSearchTests(TestCase, SearcherMixin):
         self.assertEqual(response["total"], 1)
 
         self.searcher.destroy()
-        self.searcher.index(
-            "test_doc", [{"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date.replace(tzinfo=pytz.UTC)}]
-        )
-        self.searcher.index(
-            "test_doc", [{"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date.replace(tzinfo=pytz.UTC)}]
-        )
+        self.searcher.index([
+            {"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date.replace(tzinfo=pytz.UTC)},
+            {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date.replace(tzinfo=pytz.UTC)},
+        ])
 
         response = self.searcher.search(field_dictionary={"start_date": low_date})
         self.assertEqual(response["total"], 1)
