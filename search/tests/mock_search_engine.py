@@ -149,15 +149,15 @@ def _process_exclude_dictionary(documents_to_search, exclude_dictionary):
     return documents_to_search
 
 
-def _count_facet_values(documents, facet_terms):
+def _count_aggregated_values(documents, agg_terms):
     """
-    Calculate the counts for the facets provided:
+    Calculate the counts for the aggregations provided:
 
-    For each facet, count up the number of hits for each facet value, so
+    For each aggregation, count up the number of hits for each aggregation value, so
     that we can report back the breakdown of how many of each value there
-    exist. Notice that the total is the total number of facet matches that
+    exist. Notice that the total is the total number of aggregation matches that
     we receive - a single document will get counted multiple times in the
-    total if the facet field is multi-valued:
+    total if the aggregation field is multi-valued:
 
         e.g. a course may have a value for modes as ["honor", "validated"], and
         so the document will count as 1 towards the honor count, 1 towards the
@@ -165,38 +165,44 @@ def _count_facet_values(documents, facet_terms):
         surprising but matches the behaviour that elasticsearch presents)
 
     """
-    facets = {}
+    aggregations = {}
 
-    def process_facet(facet):
-        """ Find the values for this facet """
-        faceted_documents = [facet_document for facet_document in documents if facet in facet_document]
+    def process_aggregation(aggregate):
+        """
+        Find the values for this aggregation
+        """
+        aggregated_documents = [
+            agg_document for agg_document in documents if aggregate in agg_document
+        ]
         terms = {}
 
-        def add_facet_value(facet_value):
-            """ adds the discovered value to the counts for the selected facet """
-            if isinstance(facet_value, list):
-                for individual_value in facet_value:
-                    add_facet_value(individual_value)
+        def add_agg_value(agg_value):
+            """
+            adds the discovered value to the counts for the selected aggregation
+            """
+            if isinstance(agg_value, list):
+                for individual_value in agg_value:
+                    add_agg_value(individual_value)
             else:
-                if facet_value not in terms:
-                    terms[facet_value] = 0
-                terms[facet_value] += 1
+                if agg_value not in terms:
+                    terms[agg_value] = 0
+                terms[agg_value] += 1
 
-        for document in faceted_documents:
-            add_facet_value(document[facet])
+        for document in aggregated_documents:
+            add_agg_value(document[aggregate])
 
         total = sum([terms[term] for term in terms])
 
         return total, terms
 
-    for facet in facet_terms:
-        total, terms = process_facet(facet)
-        facets[facet] = {
+    for agg in agg_terms:
+        total, terms = process_aggregation(agg)
+        aggregations[agg] = {
             "total": total,
             "terms": terms,
         }
 
-    return facets
+    return aggregations
 
 
 class MockSearchEngine(SearchEngine):
@@ -281,35 +287,22 @@ class MockSearchEngine(SearchEngine):
         """ load the index, if necessary from the backed file """
         cls._load_from_file()
         if index_name not in cls._mock_elastic:
-            cls._mock_elastic[index_name] = {}
+            cls._mock_elastic[index_name] = []
             cls._write_to_file()
 
         return cls._mock_elastic[index_name]
 
     @classmethod
-    def load_doc_type(cls, index_name, doc_type):
-        """ load the documents of type doc_type, if necessary loading from the backed file """
-        index = cls.load_index(index_name)
-        if doc_type not in index:
-            index[doc_type] = []
-            cls._write_to_file()
-
-        return index[doc_type]
-
-    @classmethod
-    def add_documents(cls, index_name, doc_type, sources):
-        """ add documents of specific type to index """
-        cls.load_doc_type(index_name, doc_type).extend(sources)
+    def add_documents(cls, index_name, sources):
+        """ add documents to index """
+        cls.load_index(index_name).extend(sources)
         cls._write_to_file()
 
     @classmethod
-    def remove_documents(cls, index_name, doc_type, doc_ids):
-        """ remove documents by id of specific type to index """
+    def remove_documents(cls, index_name, doc_ids):
+        """ remove documents by id from index """
         index = cls.load_index(index_name)
-        if doc_type not in index:
-            return
-
-        index[doc_type] = [d for d in index[doc_type] if "id" not in d or d["id"] not in doc_ids]
+        cls._mock_elastic[index_name] = [d for d in index if "id" not in d or d["id"] not in doc_ids]
         cls._write_to_file()
 
     @classmethod
@@ -322,24 +315,24 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
-    def index(self, doc_type, sources):  # pylint: disable=arguments-differ
-        """ Add/update documents of given type to the index """
+    def index(self, sources):  # pylint: disable=arguments-differ
+        """ Add/update documents to the index """
         if not MockSearchEngine._disabled:
             doc_ids = [s["id"] for s in sources if "id" in s]
-            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
-            MockSearchEngine.add_documents(self.index_name, doc_type, sources)
+            MockSearchEngine.remove_documents(self.index_name, doc_ids)
+            MockSearchEngine.add_documents(self.index_name, sources)
 
-    def remove(self, doc_type, doc_ids):  # pylint: disable=arguments-differ
-        """ Remove documents of type with given ids from the index """
+    def remove(self, doc_ids):  # pylint: disable=arguments-differ
+        """ Remove documents with given ids from the index """
         if not MockSearchEngine._disabled:
-            MockSearchEngine.remove_documents(self.index_name, doc_type, doc_ids)
+            MockSearchEngine.remove_documents(self.index_name, doc_ids)
 
     def search(self,
                query_string=None,
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               facet_terms=None,
+               agg_terms=None,
                **kwargs):  # pylint: disable=too-many-arguments
         """ Perform search upon documents within index """
         if MockSearchEngine._disabled:
@@ -351,12 +344,8 @@ class MockSearchEngine(SearchEngine):
             }
 
         documents_to_search = []
-        if "doc_type" in kwargs:
-            documents_to_search = MockSearchEngine.load_doc_type(self.index_name, kwargs["doc_type"])
-        else:
-            index = MockSearchEngine.load_index(self.index_name)
-            for doc_type in index:
-                documents_to_search.extend(index[doc_type])
+        index = MockSearchEngine.load_index(self.index_name)
+        documents_to_search.extend(index)
 
         if field_dictionary:
             documents_to_search = _filter_intersection(documents_to_search, field_dictionary)
@@ -414,7 +403,7 @@ class MockSearchEngine(SearchEngine):
             "results": results
         }
 
-        if facet_terms:
-            response["facets"] = _count_facet_values(documents_to_search, facet_terms)
+        if agg_terms:
+            response["aggs"] = _count_aggregated_values(documents_to_search, agg_terms)
 
         return response
