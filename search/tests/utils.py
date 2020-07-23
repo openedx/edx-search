@@ -12,8 +12,10 @@ TEST_INDEX_NAME = "test_index"
 
 
 def post_request(body, course_id=None):
-    """ Helper method to post the request and process the response """
-    address = '/{}'.format(course_id) if course_id else '/'
+    """
+    Helper method to post the request and process the response
+    """
+    address = '/{}'.format(course_id if course_id else '')
     response = Client().post(address, body)
 
     return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))

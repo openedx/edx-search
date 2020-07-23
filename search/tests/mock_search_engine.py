@@ -1,6 +1,7 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 
 import copy
+from collections import defaultdict
 from datetime import datetime
 import json
 import os
@@ -174,18 +175,16 @@ def _count_aggregated_values(documents, agg_terms):
         aggregated_documents = [
             agg_document for agg_document in documents if aggregate in agg_document
         ]
-        terms = {}
+        terms = defaultdict(int)
 
         def add_agg_value(agg_value):
             """
-            adds the discovered value to the counts for the selected aggregation
+            Adds the discovered value to the counts for the selected aggregation.
             """
             if isinstance(agg_value, list):
                 for individual_value in agg_value:
                     add_agg_value(individual_value)
             else:
-                if agg_value not in terms:
-                    terms[agg_value] = 0
                 terms[agg_value] += 1
 
         for document in aggregated_documents:
@@ -294,13 +293,17 @@ class MockSearchEngine(SearchEngine):
 
     @classmethod
     def add_documents(cls, index_name, sources):
-        """ add documents to index """
+        """
+        Add documents to index.
+        """
         cls.load_index(index_name).extend(sources)
         cls._write_to_file()
 
     @classmethod
     def remove_documents(cls, index_name, doc_ids):
-        """ remove documents by id from index """
+        """
+        Remove documents by id from index.
+        """
         index = cls.load_index(index_name)
         cls._mock_elastic[index_name] = [d for d in index if "id" not in d or d["id"] not in doc_ids]
         cls._write_to_file()
@@ -316,14 +319,18 @@ class MockSearchEngine(SearchEngine):
         MockSearchEngine.load_index(self.index_name)
 
     def index(self, sources):  # pylint: disable=arguments-differ
-        """ Add/update documents to the index """
+        """
+        Add/update documents to the index.
+        """
         if not MockSearchEngine._disabled:
             doc_ids = [s["id"] for s in sources if "id" in s]
             MockSearchEngine.remove_documents(self.index_name, doc_ids)
             MockSearchEngine.add_documents(self.index_name, sources)
 
     def remove(self, doc_ids):  # pylint: disable=arguments-differ
-        """ Remove documents with given ids from the index """
+        """
+        Remove documents with given ids from the index.
+        """
         if not MockSearchEngine._disabled:
             MockSearchEngine.remove_documents(self.index_name, doc_ids)
 
@@ -334,7 +341,9 @@ class MockSearchEngine(SearchEngine):
                exclude_dictionary=None,
                agg_terms=None,
                **kwargs):  # pylint: disable=too-many-arguments
-        """ Perform search upon documents within index """
+        """
+        Perform search upon documents within index.
+        """
         if MockSearchEngine._disabled:
             return {
                 "took": 10,

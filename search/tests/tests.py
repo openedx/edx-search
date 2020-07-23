@@ -329,7 +329,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             {
                 "id": "i4x://edX/DemoX/google-document/e3369ea4aa0749a7ba29c461d1c819a4",
                 "content": {"name": test_string}
-            }
+            },
         ])
 
         response = self.searcher.search(test_string)
@@ -347,7 +347,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         """ Make sure that filters work """
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"},
-            {"id": "FAKE_ID_2", "test_value": "2"}
+            {"id": "FAKE_ID_2", "test_value": "2"},
         ])
 
         response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
@@ -370,7 +370,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([
             {"id": "FAKE_ID_1"},
             {"id": "FAKE_ID_2", "filter_field": "orange"},
-            {"id": "FAKE_ID_3", "filter_field": ["orange", "blue"]}
+            {"id": "FAKE_ID_3", "filter_field": ["orange", "blue"]},
         ])
 
         response = self.searcher.search(filter_dictionary={"filter_field": "orange"})
@@ -390,7 +390,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "filter_field": "my_filter_value"},
             {"id": "FAKE_ID_2", "test_value": "2"},
-            {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"}
+            {"id": "FAKE_ID_3", "test_value": "3", "filter_field": "not_my_filter_value"},
         ])
 
         response = self.searcher.search(filter_dictionary={"filter_field": "my_filter_value"})
@@ -407,7 +407,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         """ Make sure that date ranges can be searched """
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "start_date": datetime(2010, 1, 1)},
-            {"id": "FAKE_ID_2", "test_value": "2", "start_date": datetime(2100, 1, 1)}
+            {"id": "FAKE_ID_2", "test_value": "2", "start_date": datetime(2100, 1, 1)},
         ])
 
         response = self.searcher.search()
@@ -430,7 +430,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "age": 20},
             {"id": "FAKE_ID_2", "test_value": "2", "age": 30},
-            {"id": "FAKE_ID_3", "test_value": "3", "age": 40}
+            {"id": "FAKE_ID_3", "test_value": "3", "age": 40},
         ])
 
         def test_age_range_field(begin, end, expect):
@@ -494,7 +494,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "age": 20},
             {"id": "FAKE_ID_2", "test_value": "2", "age": 30},
-            {"id": "FAKE_ID_3", "test_value": "3", "not_age": 40}
+            {"id": "FAKE_ID_3", "test_value": "3", "not_age": 40},
         ])
 
         response = self.searcher.search()
@@ -529,7 +529,7 @@ class MockSearchTests(TestCase, SearcherMixin):
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
                 }
-            }
+            },
         ])
 
         response = self.searcher.search(query_string="Little Darling")
@@ -580,7 +580,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             {"course": "ABC", "id": "FAKE_ID_3"},
             {"course": "XYZ", "id": "FAKE_ID_11"},
             {"course": "XYZ", "id": "FAKE_ID_12"},
-            {"course": "XYZ", "id": "FAKE_ID_13"}
+            {"course": "XYZ", "id": "FAKE_ID_13"},
         ])
 
         response = self.searcher.search()
@@ -593,7 +593,9 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertIn("FAKE_ID_12", result_ids)
         self.assertIn("FAKE_ID_13", result_ids)
 
-        response = self.searcher.search(exclude_ids=["FAKE_ID_1", "FAKE_ID_2", "FAKE_ID_11", "FAKE_ID_12"])
+        response = self.searcher.search(
+            exclude_ids=["FAKE_ID_1", "FAKE_ID_2", "FAKE_ID_11", "FAKE_ID_12"]
+        )
         self.assertEqual(response["total"], 2)
         result_ids = [r["data"]["id"] for r in response["results"]]
         self.assertNotIn("FAKE_ID_1", result_ids)
@@ -628,7 +630,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([
             {"course": "ABC", "org": "edX", "id": "FAKE_ID_1"},
             {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"},
-            {"course": "LMN", "org": "MITX", "id": "FAKE_ID_3"}
+            {"course": "LMN", "org": "MITX", "id": "FAKE_ID_3"},
         ])
 
         response = self.searcher.search()
@@ -675,7 +677,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"},
             {"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"},
             {"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"},
-            {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"}
+            {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"},
         ])
 
         response = self.searcher.search()
@@ -737,7 +739,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             {"course": "XYZ", "org": "edX", "id": "FAKE_ID_2"},
             {"course": "DEF", "org": "MITX", "id": "FAKE_ID_3"},
             {"course": "GHI", "org": "HarvardX", "id": "FAKE_ID_4"},
-            {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"}
+            {"course": "LMN", "org": "edX", "id": "FAKE_ID_5"},
         ])
 
         response = self.searcher.search(exclude_dictionary={"org": []})
@@ -770,7 +772,7 @@ class MockSearchTests(TestCase, SearcherMixin):
             {"id": "FAKE_ID_4", "subject": "history", "org": "Harvard"},
             {"id": "FAKE_ID_5", "subject": "mathematics", "org": "Harvard"},
             {"id": "FAKE_ID_6", "subject": "physics", "org": "Harvard"},
-            {"id": "FAKE_ID_7", "no_subject": "not_a_subject", "org": "Harvard"}
+            {"id": "FAKE_ID_7", "no_subject": "not_a_subject", "org": "Harvard"},
         ])
 
     def test_aggregation_search(self):

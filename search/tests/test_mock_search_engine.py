@@ -97,7 +97,7 @@ class MockSpecificSearchTests(TestCase, SearcherMixin):
         high_date = datetime(2100, 1, 1)
         self.searcher.index([
             {"id": "FAKE_ID_1", "test_value": "1", "start_date": low_date},
-            {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date}
+            {"id": "FAKE_ID_2", "test_value": "2", "start_date": high_date},
         ])
 
         response = self.searcher.search(
