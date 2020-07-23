@@ -1,5 +1,7 @@
-""" Elastic Search implementation for courseware search index """
-
+"""
+Elastic Search implementation for courseware search index
+"""
+import copy
 import logging
 
 from django.conf import settings
@@ -22,23 +24,84 @@ RESERVED_CHARACTERS = "+=><!(){}[]^~*:\\/&|?"
 
 def _translate_hits(es_response):
     """
-    Provide resultset in our desired format from elasticsearch results
+    Provide result set in our desired format from elasticsearch results.
+
+    {
+    'aggs': {
+        'language': {'other': 0, 'terms': {}, 'total': 0.0},
+        'modes': {'other': 0, 'terms': {'honor': 3, 'other': 1, 'verified': 2}, 'total': 6.0},
+        'org': {'other': 0, 'terms': {'OrgA': 2, 'OrgB': 2}, 'total': 4.0}
+        },
+    'max_score': 1.0,
+    'results': [
+        {
+            '_id': 'edX/DemoX/Demo_Course_1',
+            '_index': 'test_index',
+            '_type': '_doc',
+            'data': {
+                'content': {
+                    'display_name': 'edX Demonstration Course',
+                    'number': 'DemoX',
+                    'overview': 'Long overview page',
+                    'short_description': 'Short description'
+                },
+                'course': 'edX/DemoX/Demo_Course',
+                'effort': '5:30',
+                'enrollment_start': '2014-01-01T00:00:00',
+                'id': 'edX/DemoX/Demo_Course_1',
+                'image_url': '/c4x/edX/DemoX/asset/images_course_image.jpg',
+                'modes': ['honor', 'verified'],
+                'number': 'DemoX',
+                'org': 'OrgA',
+                'start': '2014-02-01T00:00:00'
+            },
+            'score': 1.0
+        },
+        {
+            '_id': 'edX/DemoX/Demo_Course_2',
+            '_index': 'test_index',
+            '_type': '_doc',
+            'data': {
+                'content': {
+                    'display_name': 'edX Demonstration Course',
+                    'number': 'DemoX',
+                    'overview': 'Long overview page',
+                    'short_description': 'Short description'
+                },
+                'course': 'edX/DemoX/Demo_Course',
+                'effort': '5:30',
+                'enrollment_start': '2014-01-01T00:00:00',
+                'id': 'edX/DemoX/Demo_Course_2',
+                'image_url': '/c4x/edX/DemoX/asset/images_course_image.jpg',
+                'modes': ['honor'],
+                'number': 'DemoX',
+                'org': 'OrgA',
+                'start': '2014-02-01T00:00:00'
+            },
+            'score': 1.0
+        },
+    ],
+    'took': 2,
+    'total': 5
+    }
+
     """
 
     def translate_result(result):
         """
         Any conversion from ES result syntax into our search engine syntax
         """
-        result["data"] = result.pop("_source")
-        result["score"] = result.pop("_score")
-        return result
+        translated_result = copy.copy(result)
+        translated_result["data"] = translated_result.pop("_source")
+        translated_result["score"] = translated_result.pop("_score")
+        return translated_result
 
     def translate_agg_bucket(bucket, agg_result):
         """
         Any conversion from ES aggregations result into our search engine syntax
 
         agg_result argument needs for getting total number of
-        documents per bucket
+        documents per bucket.
 
         :param bucket: string
         :param agg_result: dict
@@ -60,7 +123,7 @@ def _translate_hits(es_response):
             "other": agg_item["sum_other_doc_count"],
         }
 
-    results = [translate_result(hit) for hit in es_response["hits"]["hits"]]
+    results = list(map(translate_result, es_response["hits"]["hits"]))
     response = {
         "took": es_response["took"],
         "total": es_response["hits"]["total"]["value"],
@@ -79,34 +142,34 @@ def _translate_hits(es_response):
 
 def _get_filter_field(field_name, field_value):
     """
-    Return field to apply into filter, if an array then use a range,
-    otherwise look for a term match
+    Return field to apply into filter.
+
+    If an array then use a range, otherwise look for a term match.
     """
-    filter_field = {"term": {field_name: field_value}, }
+    filter_query_field = {"term": {field_name: field_value}}
     if isinstance(field_value, ValueRange):
         range_values = {}
         if field_value.lower:
             range_values["gte"] = field_value.lower_string
         if field_value.upper:
             range_values["lte"] = field_value.upper_string
-        filter_field = {
+        filter_query_field = {
             "range": {
                 field_name: range_values
             }
         }
     elif _is_iterable(field_value):
-        filter_field = {
+        filter_query_field = {
             "terms": {
                 field_name: field_value
             },
         }
-    return filter_field
+    return filter_query_field
 
 
 def _process_field_queries(field_dictionary):
     """
-    We have a field_dictionary - we match the values using a "term" filter
-    in elasticsearch
+    Prepare ES query which must be in the ES record set.
     """
     return [
         _get_filter_field(field, field_value)
@@ -116,46 +179,39 @@ def _process_field_queries(field_dictionary):
 
 def _process_filters(filter_dictionary):
     """
-    Method which build list for filtering, adds expression
-    if field doesn't exists in document.
+    Build list for filtering.
+
+    Match records where filtered fields may not exists.
     """
-    filter_expression = []
-    for field in filter_dictionary:
-        if filter_dictionary[field]:
-            filter_expression.extend([
-                _get_filter_field(field, filter_dictionary[field])
-            ])
-        filter_expression.extend([
-            {
-                "bool": {
-                    "must_not": {"exists": {"field": field}, },
-                },
+    for field, value in filter_dictionary.items():
+        if value:
+            yield _get_filter_field(field, value)
+        yield {
+            "bool": {
+                "must_not": {"exists": {"field": field}},
             },
-        ])
-    return filter_expression
+        }
 
 
 def _process_exclude_dictionary(exclude_dictionary):
     """
-    Based on values in the exclude_dictionary generate a list of term queries
-    that will filter out unwanted results
+    Build a list of term fields which will be excluded from result set.
     """
-    # not_properties will hold the generated term queries.
-    not_properties = []
     for exclude_property, exclude_values in exclude_dictionary.items():
         if not isinstance(exclude_values, list):
-            exclude_values = [exclude_values]
-        not_properties.extend([
-            {"term": {exclude_property: exclude_value}, }
+            exclude_values = (exclude_values,)
+        yield from (
+            {"term": {exclude_property: exclude_value}}
             for exclude_value in exclude_values
-        ])
-
-    return not_properties
+        )
 
 
 def _get_total_doc_key(bucket_name):
     """
-    Method is needed for the subsequent counting of documents per bucket
+    Returns additional bucket name for passed bucket.
+
+    Additional buckets are needed for the subsequent counting of
+    documents per bucket.
     :param bucket_name: string
     :return: string
     """
@@ -167,8 +223,8 @@ def _process_aggregation_terms(agg_terms):
     We have a list of terms with which we return aggregated result.
     """
     elastic_aggs = {}
-    for bucket, item in agg_terms.items():
-        agg_term = {agg_option: item[agg_option] for agg_option in item}
+    for bucket, options in agg_terms.items():
+        agg_term = {agg_option: options[agg_option] for agg_option in options}
         agg_term["field"] = bucket
         elastic_aggs[bucket] = {
             "terms": agg_term
@@ -215,15 +271,12 @@ class ElasticSearchEngine(SearchEngine):
         """
         Logs indexing errors and raises a general ElasticSearch Exception
         """
-        raise exceptions.ElasticsearchException(', '.join(
-            [str(indexing_error) for indexing_error in indexing_errors]
-        ))
+        raise exceptions.ElasticsearchException(', '.join(map(str, indexing_errors)))
 
     @property
     def mappings(self):
         """
-        Interfaces with the elasticsearch mappings for the index
-        prevents multiple loading of the same mappings from ES when called more than once
+        Get mapping of current index.
 
         Mappings format in elasticsearch is as follows:
         {
@@ -248,7 +301,7 @@ class ElasticSearchEngine(SearchEngine):
         }
 
         We cache the properties of each index, if they are not available,
-        we'll load them again from Elasticsearch should be changed
+        we'll load them again from Elasticsearch
         """
         # Try loading the mapping from the cache.
         mapping = ElasticSearchEngine.get_mappings(self.index_name)
@@ -266,8 +319,9 @@ class ElasticSearchEngine(SearchEngine):
 
     def _clear_mapping(self):
         """
-        Remove the cached mappings, so that they get loaded from ES next time
-        they are requested
+        Remove the cached mappings.
+
+        Next time ES mappings is are requested.
         """
         ElasticSearchEngine.set_mappings(self.index_name, {})
 
@@ -280,10 +334,14 @@ class ElasticSearchEngine(SearchEngine):
 
     def _check_mappings(self, body):
         """
-        We desire to index content so that anything we want to be textually searchable(and therefore needing to be
-        analysed), but the other fields are designed to be filters, and only require an exact match. So, we want to
-        set up the mappings for these fields as "not_analyzed" - this will allow our filters to work faster because
-        they only have to work off exact matches
+        Put mapping to the index.
+
+        We desire to index content so that anything we want to be textually
+        searchable(and therefore needing to be analysed), but the other fields
+        are designed to be filters, and only require an exact match. So, we want
+        to set up the mappings for these fields as "not_analyzed" - this will
+        allow our filters to work faster because they only have to work off
+        exact matches.
         """
 
         # Make fields other than content be indexed as unanalyzed terms - content
@@ -293,7 +351,10 @@ class ElasticSearchEngine(SearchEngine):
 
         def field_property(field_name, field_value):
             """
-            Prepares field as property syntax for providing correct mapping desired for field
+            Build fields as ES syntax.
+
+            Prepares field as property syntax for providing correct
+            mapping desired for field.
 
             Mappings format in elasticsearch is as follows:
             {
@@ -319,7 +380,7 @@ class ElasticSearchEngine(SearchEngine):
 
             We can only add new ones, but the format is the same
             """
-            prop_val = {"type": "keyword", }
+            prop_val = {"type": "keyword"}
             if field_name in field_properties:
                 prop_val = field_properties[field_name]
             elif isinstance(field_value, dict):
@@ -337,15 +398,16 @@ class ElasticSearchEngine(SearchEngine):
         if new_properties:
             self._es.indices.put_mapping(
                 index=self.index_name,
-                body={"properties": new_properties, }
+                body={"properties": new_properties}
             )
             self._clear_mapping()
 
     def index(self, sources, **kwargs):
         """
         Implements call to add documents to the ES index.
-        Note the call to _check_mappings which will setup fields
-        with the desired mappings
+
+        Note the call to _check_mappings which will setup fields with
+        the desired mappings.
         """
 
         try:
@@ -361,13 +423,14 @@ class ElasticSearchEngine(SearchEngine):
                 }
                 actions.append(action)
             # bulk() returns a tuple with summary information
-            # number of successfully executed actions and number of errors if stats_only is set to True.
+            # number of successfully executed actions and number of errors
+            # if stats_only is set to True.
             _, indexing_errors = bulk(self._es, actions, **kwargs)
             if indexing_errors:
                 ElasticSearchEngine.log_indexing_error(indexing_errors)
         # Broad exception handler to protect around bulk call
         except exceptions.ElasticsearchException as ex:
-            log.exception("error while indexing - %s", str(ex))
+            log.exception("Error during ES bulk operation.")
             raise
 
     def remove(self, doc_ids, **kwargs):
@@ -390,23 +453,18 @@ class ElasticSearchEngine(SearchEngine):
             valid_errors = [error for error in ex.errors if error["delete"]["status"] != 404]
 
             if valid_errors:
-                log.exception(
-                    "An error occurred while removing documents from the index: %s",
-                    str(valid_errors)
-                )
+                log.exception("An error occurred while removing documents from the index: %r", valid_errors)
                 raise
 
-    def search(
-            self,
-            query_string=None,
-            field_dictionary=None,
-            filter_dictionary=None,
-            exclude_dictionary=None,
-            agg_terms=None,
-            exclude_ids=None,
-            use_field_match=False,
-            **kwargs
-    ):  # pylint: disable=arguments-differ, unused-argument
+    def search(self,
+               query_string=None,
+               field_dictionary=None,
+               filter_dictionary=None,
+               exclude_dictionary=None,
+               agg_terms=None,
+               exclude_ids=None,
+               use_field_match=False,
+               **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Implements call to search the index for the desired content.
 
@@ -518,7 +576,7 @@ class ElasticSearchEngine(SearchEngine):
         # within the "content" node
         if query_string:
             query_string = query_string.translate(
-                query_string.maketrans('', '', RESERVED_CHARACTERS)
+                query_string.maketrans("", "", RESERVED_CHARACTERS)
             )
 
             elastic_queries.append({
@@ -530,10 +588,10 @@ class ElasticSearchEngine(SearchEngine):
 
         if field_dictionary:
             # strict match of transferred fields
-            elastic_queries += _process_field_queries(field_dictionary)
+            elastic_queries.extend(_process_field_queries(field_dictionary))
 
         if filter_dictionary:
-            elastic_filters += _process_filters(filter_dictionary)
+            elastic_filters.extend(_process_filters(filter_dictionary))
 
         # Support deprecated argument of exclude_ids
         if exclude_ids:
@@ -569,23 +627,24 @@ class ElasticSearchEngine(SearchEngine):
             }
 
         if exclude_dictionary:
+            excluded_fields = list(_process_exclude_dictionary(exclude_dictionary))
             if query.get("bool"):
-                query["bool"]["must_not"] = _process_exclude_dictionary(exclude_dictionary)
+                query["bool"]["must_not"] = excluded_fields
             else:
                 query = {
                     "bool": {
-                        "must_not": _process_exclude_dictionary(exclude_dictionary)
+                        "must_not": excluded_fields
                     }
                 }
 
-        body = {"query": query, }
+        body = {"query": query}
         if agg_terms:
             body["aggs"] = _process_aggregation_terms(agg_terms)
 
         try:
             es_response = self._es.search(index=self.index_name, body=body, **kwargs)
         except exceptions.ElasticsearchException as ex:
-            log.exception("error while searching index - %s", str(ex))
+            log.exception("error while searching index - %r", ex)
             raise
 
         return _translate_hits(es_response)

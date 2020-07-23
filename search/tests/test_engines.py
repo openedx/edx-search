@@ -107,7 +107,7 @@ class FileBackedMockSearchTests(MockSearchTests):
                 "my_integer_value": 172,
                 "my_float_value": 57.654,
                 "my_string_value": "If the officials just blew it, would they come out and admit it?"
-            }
+            },
         ])
 
         # now search should be successful
@@ -143,7 +143,7 @@ class FileBackedMockSearchTests(MockSearchTests):
                 "my_integer_value": 172,
                 "my_float_value": 57.654,
                 "my_string_value": "If the officials just blew it, would they come out and admit it?"
-            }
+            },
         ])
         response = self.searcher.search(query_string="deflated")
         self.assertEqual(response["total"], 1)

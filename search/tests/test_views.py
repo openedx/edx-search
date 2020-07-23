@@ -107,7 +107,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "Here comes the sun"
                 }
-            }
+            },
         ])
 
         # Test no events called  yet after setup
@@ -170,7 +170,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
                 }
-            }
+            },
         ])
 
         # Test no events called  yet after setup
@@ -249,7 +249,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
                 }
-            }
+            },
         ])
 
         # Test no events called  yet after setup
@@ -344,7 +344,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "Little Darling, it's been a long long lonely winter"
                 }
-            }
+            },
         ])
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 101})
@@ -388,7 +388,7 @@ class BadSearchTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "Here comes the sun"
                 }
-            }
+            },
         ])
 
         code, results = post_request({"search_string": "sun"})
@@ -450,7 +450,7 @@ class ElasticSearchUrlTest(TestCase, SearcherMixin):
                 "content": {
                     "text": "It looks like k means something different in this context."
                 }
-            }
+            },
         ])
 
     @ddt.data(

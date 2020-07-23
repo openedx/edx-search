@@ -15,15 +15,16 @@ DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 
 def course_discovery_filter_fields():
     """
-    Look up the desired list of course discovery filter fields
+    Look up the desired list of course discovery filter fields.
     """
     return getattr(settings, "COURSE_DISCOVERY_FILTERS", DEFAULT_FILTER_FIELDS)
 
 
 def course_discovery_aggregations():
     """
-    Discovery aggregations to include, by default we specify each filter
-    field with unspecified size attribute
+    Discovery aggregations to include bucket names.
+
+    By default we specify each filter field with unspecified size attribute.
     """
     return getattr(
         settings,
@@ -34,8 +35,9 @@ def course_discovery_aggregations():
 
 class NoSearchEngineError(Exception):
     """
-    NoSearchEngineError exception to be thrown if no search
-    engine is specified
+    NoSearchEngineError exception.
+
+    It is thrown if no search engine is specified.
     """
 
 
@@ -76,7 +78,7 @@ def perform_search(
         result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
 
     results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
-    results["results"] = [r for r in results["results"] if r["data"]]
+    results["results"] = [r for r in results["results"] if r["data"] is not None]
 
     return results
 

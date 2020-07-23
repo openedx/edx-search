@@ -229,8 +229,10 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
 
     def test_aggregating(self):
         """
-        Test that aggregation results are incorporated
-        (org and modes are default aggregations)
+        Tests bucket aggregation results.
+
+        Test that aggregation results are incorporated (org and modes are
+        default aggregations).
         """
         DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor", "verified"]})
         DemoCourse.get_and_index(self.searcher, {"org": "OrgA", "modes": ["honor"]})
