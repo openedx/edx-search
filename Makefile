@@ -29,7 +29,7 @@ test.run_elasticsearch:
 test.stop_elasticsearch:
 	docker-compose stop
 
-test: clean test.run_elasticsearch
+test_with_es: clean test.run_elasticsearch
 	coverage run --source='.' manage.py test
 	make test.stop_elasticsearch
 
