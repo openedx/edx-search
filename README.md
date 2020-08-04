@@ -256,7 +256,7 @@ Also, SearchResultProcessor overriders can override the member `should_remove` w
 #### Testing
 Tests use an Elasticsearch Docker container. To run tests locally use command:
 ```
-make test
+make test_with_es
 ```
 To simply run the container without starting the tests, run:
 ```
