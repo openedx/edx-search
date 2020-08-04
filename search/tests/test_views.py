@@ -424,9 +424,15 @@ class BadIndexTest(TestCase, SearcherMixin):
 @override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 @ddt.ddt
 class ElasticSearchUrlTest(TestCase, SearcherMixin):
-    """Elastic-specific tests"""
+    """
+    Elastic-specific tests
+    """
+
     def setUp(self):
         super(ElasticSearchUrlTest, self).setUp()
+        patcher = patch('search.views.track')
+        self.mock_tracker = patcher.start()
+        self.addCleanup(patcher.stop)
         self.searcher.index([
             {
                 "course": "ABC/DEF/GHI",
