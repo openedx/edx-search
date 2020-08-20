@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.conf import settings
 
-from .utils import _load_class, DateRange
+from .utils import DateRange, _load_class
 
 
 class SearchFilterGenerator:

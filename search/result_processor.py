@@ -1,12 +1,12 @@
 """ overridable result processor object to allow additional properties to be exposed """
 
 import inspect
-from itertools import chain
 import json
 import logging
 import re
 import shlex
 import textwrap
+from itertools import chain
 
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder

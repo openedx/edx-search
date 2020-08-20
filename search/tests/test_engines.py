@@ -15,9 +15,10 @@ from elasticsearch import exceptions
 from elasticsearch.helpers import BulkIndexError
 from mock import patch
 
-from search.api import perform_search, NoSearchEngineError
+from search.api import NoSearchEngineError, perform_search
 from search.elastic import RESERVED_CHARACTERS
-from search.tests.mock_search_engine import MockSearchEngine, json_date_to_datetime
+from search.tests.mock_search_engine import (MockSearchEngine,
+                                             json_date_to_datetime)
 from search.tests.tests import MockSearchTests
 from search.tests.utils import ErroringElasticImpl, SearcherMixin
 

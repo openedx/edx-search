@@ -1,17 +1,17 @@
 """ Implementation of search interface to be used for tests where ElasticSearch is unavailable """
 
 import copy
-from datetime import datetime
 import json
 import os
-import pytz
+from datetime import datetime
 
+import pytz
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 
 from search.elastic import RESERVED_CHARACTERS
 from search.search_engine_base import SearchEngine
-from search.utils import ValueRange, DateRange, _is_iterable
+from search.utils import DateRange, ValueRange, _is_iterable
 
 
 def json_date_to_datetime(json_date_string_value):

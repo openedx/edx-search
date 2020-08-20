@@ -4,8 +4,9 @@ from django.test.utils import override_settings
 
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import post_discovery_request
-from .test_views import MockSearchUrlTest
+
 from .test_course_discovery import DemoCourse
+from .test_views import MockSearchUrlTest
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods

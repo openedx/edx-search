@@ -1,17 +1,18 @@
 """ High-level view tests"""
 
 from datetime import datetime
-import ddt
 
-from django.urls import Resolver404, resolve
+import ddt
 from django.test import TestCase
 from django.test.utils import override_settings
-from mock import patch, call
+from django.urls import Resolver404, resolve
+from mock import call, patch
 
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
-from search.tests.utils import post_discovery_request, post_request, SearcherMixin
+from search.tests.utils import (SearcherMixin, post_discovery_request,
+                                post_request)
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error

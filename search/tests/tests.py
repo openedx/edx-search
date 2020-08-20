@@ -13,10 +13,10 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
-from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine
-from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
-from search.utils import ValueRange, DateRange
+from search.search_engine_base import SearchEngine
+from search.tests.utils import TEST_INDEX_NAME, SearcherMixin
+from search.utils import DateRange, ValueRange
 
 from .mock_search_engine import MockSearchEngine
 

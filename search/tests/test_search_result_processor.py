@@ -2,9 +2,9 @@
 """ Tests for result processors """
 
 import ddt
-
 from django.test import TestCase
 from django.test.utils import override_settings
+
 from search.result_processor import SearchResultProcessor
 
 

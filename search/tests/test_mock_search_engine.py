@@ -6,10 +6,10 @@ import pytz
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from search.tests.mock_search_engine import _find_field, _filter_intersection, json_date_to_datetime
+from search.tests.mock_search_engine import (_filter_intersection, _find_field,
+                                             json_date_to_datetime)
 from search.tests.utils import SearcherMixin
 from search.utils import DateRange
-
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
 # pylint: disable=too-many-public-methods

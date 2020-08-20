@@ -5,8 +5,8 @@ from datetime import datetime
 from django.conf import settings
 
 from .filter_generator import SearchFilterGenerator
-from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
+from .search_engine_base import SearchEngine
 from .utils import DateRange
 
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired

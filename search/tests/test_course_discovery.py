@@ -8,16 +8,17 @@
 
 import copy
 from datetime import datetime
-import ddt
 
+import ddt
 from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
 
-from search.api import course_discovery_search, NoSearchEngineError
+from search.api import NoSearchEngineError, course_discovery_search
 from search.elastic import ElasticSearchEngine, QueryParseError
-from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
+from search.tests.utils import TEST_INDEX_NAME, SearcherMixin
+
 from .mock_search_engine import MockSearchEngine
 
 

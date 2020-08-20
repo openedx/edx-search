@@ -1,7 +1,7 @@
 """ Utility classes to support others """
 
-import importlib
 import collections
+import importlib
 
 
 def _load_class(class_path, default):

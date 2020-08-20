@@ -6,7 +6,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
-from elasticsearch.helpers import bulk, BulkIndexError
+from elasticsearch.helpers import BulkIndexError, bulk
 
 from search.api import QueryParseError
 from search.search_engine_base import SearchEngine

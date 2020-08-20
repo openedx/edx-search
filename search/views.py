@@ -8,9 +8,10 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
-
 from eventtracking import tracker as track
-from .api import QueryParseError, perform_search, course_discovery_search, course_discovery_filter_fields
+
+from .api import (QueryParseError, course_discovery_filter_fields,
+                  course_discovery_search, perform_search)
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger

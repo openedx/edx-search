@@ -1,12 +1,13 @@
 """ Test utilities """
 
 import json
+
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
+
+from search.elastic import ElasticSearchEngine
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.elastic import ElasticSearchEngine
-
 
 TEST_INDEX_NAME = "test_index"
 
