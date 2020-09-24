@@ -23,13 +23,13 @@ requirements:
 validate: clean
 	tox
 
-test.run_elasticsearch:
+test.start_elasticsearch:
 	docker-compose up -d
 
 test.stop_elasticsearch:
 	docker-compose stop
 
-test_with_es: clean test.run_elasticsearch
+test_with_es: clean test.start_elasticsearch
 	coverage run --source='.' manage.py test
 	make test.stop_elasticsearch
 

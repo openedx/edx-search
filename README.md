@@ -260,7 +260,7 @@ make test_with_es
 ```
 To simply run the container without starting the tests, run:
 ```
-make test.run_elasticsearch
+make test.start_elasticsearch
 ```
 To stop an Elasticsearch Docker container, run:
 ```

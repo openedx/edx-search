@@ -34,7 +34,7 @@ class SearchEngine:
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               agg_terms=None,
+               aggregation_terms=None,
                **kwargs):  # pylint: disable=too-many-arguments
         """
         Search for matching documents within the search index.

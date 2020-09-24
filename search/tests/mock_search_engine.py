@@ -150,7 +150,7 @@ def _process_exclude_dictionary(documents_to_search, exclude_dictionary):
     return documents_to_search
 
 
-def _count_aggregated_values(documents, agg_terms):
+def _count_aggregated_values(documents, aggregation_terms):
     """
     Calculate the counts for the aggregations provided:
 
@@ -194,7 +194,7 @@ def _count_aggregated_values(documents, agg_terms):
 
         return total, terms
 
-    for agg in agg_terms:
+    for agg in aggregation_terms:
         total, terms = process_aggregation(agg)
         aggregations[agg] = {
             "total": total,
@@ -339,7 +339,7 @@ class MockSearchEngine(SearchEngine):
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               agg_terms=None,
+               aggregation_terms=None,
                **kwargs):  # pylint: disable=too-many-arguments
         """
         Perform search upon documents within index.
@@ -412,7 +412,7 @@ class MockSearchEngine(SearchEngine):
             "results": results
         }
 
-        if agg_terms:
-            response["aggs"] = _count_aggregated_values(documents_to_search, agg_terms)
+        if aggregation_terms:
+            response["aggs"] = _count_aggregated_values(documents_to_search, aggregation_terms)
 
         return response

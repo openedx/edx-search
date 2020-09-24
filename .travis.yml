@@ -16,7 +16,7 @@ cache:
   - directories:
     - $HOME/.cache/pip
 
-before_install: make test.run_elasticsearch
+before_install: make test.start_elasticsearch
 
 install:
   - pip install -r requirements/travis.txt

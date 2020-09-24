@@ -783,11 +783,11 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.assertEqual(response["total"], 7)
         self.assertNotIn("aggs", response)
 
-        agg_terms = {
+        aggregation_terms = {
             "subject": {},
             "org": {}
         }
-        response = self.searcher.search(agg_terms=agg_terms)
+        response = self.searcher.search(aggregation_terms=aggregation_terms)
         self.assertEqual(response["total"], 7)
         self.assertIn("aggs", response)
         aggregation_results = response["aggs"]
@@ -808,13 +808,13 @@ class MockSearchTests(TestCase, SearcherMixin):
         """ Test that aggregation works well alongside filtered results """
         self._index_for_aggs()
 
-        agg_terms = {
+        aggregation_terms = {
             "subject": {},
             "org": {}
         }
         response = self.searcher.search(
             field_dictionary={"org": "Harvard"},
-            agg_terms=agg_terms
+            aggregation_terms=aggregation_terms
         )
         self.assertEqual(response["total"], 4)
         self.assertIn("aggs", response)
@@ -834,7 +834,7 @@ class MockSearchTests(TestCase, SearcherMixin):
 
         response = self.searcher.search(
             field_dictionary={"subject": ["physics", "history"]},
-            agg_terms=agg_terms
+            aggregation_terms=aggregation_terms
         )
         self.assertEqual(response["total"], 3)
         self.assertIn("aggs", response)

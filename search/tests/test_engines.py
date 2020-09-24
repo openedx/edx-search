@@ -56,11 +56,11 @@ class ElasticSearchTests(MockSearchTests):
         self.assertEqual(response["total"], 7)
         self.assertNotIn("aggs", response)
 
-        agg_terms = {
+        aggregation_terms = {
             "subject": {"size": 2},
             "org": {"size": 2}
         }
-        response = self.searcher.search(agg_terms=agg_terms)
+        response = self.searcher.search(aggregation_terms=aggregation_terms)
         self.assertEqual(response["total"], 7)
         self.assertIn("aggs", response)
         aggregation_results = response["aggs"]
