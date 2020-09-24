@@ -218,12 +218,12 @@ def _get_total_doc_key(bucket_name):
     return "total_{}_docs".format(bucket_name)
 
 
-def _process_aggregation_terms(agg_terms):
+def _process_aggregation_terms(aggregation_terms):
     """
     We have a list of terms with which we return aggregated result.
     """
     elastic_aggs = {}
-    for bucket, options in agg_terms.items():
+    for bucket, options in aggregation_terms.items():
         agg_term = {agg_option: options[agg_option] for agg_option in options}
         agg_term["field"] = bucket
         elastic_aggs[bucket] = {
@@ -461,7 +461,7 @@ class ElasticSearchEngine(SearchEngine):
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
-               agg_terms=None,
+               aggregation_terms=None,
                exclude_ids=None,
                use_field_match=False,
                **kwargs):  # pylint: disable=arguments-differ, unused-argument
@@ -485,7 +485,7 @@ class ElasticSearchEngine(SearchEngine):
             documents which have any of these fields and for which the value matches
             one of the specified values shall be filtered out of the result set
 
-            agg_terms (dict): dictionary of terms to include within search
+            aggregation_terms (dict): dictionary of terms to include within search
             aggregation list - key is the term desired to aggregate upon, and the value is a
             dictionary of extended information to include. Supported right now is a
             size specification for a cap upon how many aggregation results to return (can
@@ -638,8 +638,8 @@ class ElasticSearchEngine(SearchEngine):
                 }
 
         body = {"query": query}
-        if agg_terms:
-            body["aggs"] = _process_aggregation_terms(agg_terms)
+        if aggregation_terms:
+            body["aggs"] = _process_aggregation_terms(aggregation_terms)
 
         try:
             es_response = self._es.search(index=self.index_name, body=body, **kwargs)
