@@ -10,7 +10,7 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-from .api import QueryParseError, perform_search, course_discovery_search, course_discovery_filter_fields
+from .api import perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
@@ -123,11 +123,6 @@ def do_search(request, course_id=None):
         }
         log.debug(str(invalid_err))
 
-    except QueryParseError:
-        results = {
-            "error": _('Your query seems malformed. Check for unmatched quotes.')
-        }
-
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except
         results = {
@@ -213,11 +208,6 @@ def course_discovery(request):
             "error": str(invalid_err)
         }
         log.debug(str(invalid_err))
-
-    except QueryParseError:
-        results = {
-            "error": _('Your query seems malformed. Check for unmatched quotes.')
-        }
 
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except

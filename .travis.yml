@@ -8,27 +8,21 @@ envs:
 - TOXENV=django22
 - TOXENV=quality
 
-addons:
-  apt:
-    packages:
-      - openjdk-8-jdk
+services:
+  - docker
 
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
     - $HOME/.cache/pip
 
-before_install:
-  - export JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
-  - export PATH=${PATH/\/usr\/local\/lib\/jvm\/openjdk11\/bin/$JAVA_HOME\/bin}
-  - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.5.2.zip
-  - unzip elasticsearch-1.5.2.zip
-  - elasticsearch-1.5.2/bin/elasticsearch -d
+before_install: make test.start_elasticsearch
 
 install:
   - pip install -r requirements/travis.txt
 
-script: tox
+# sleep needs for waiting on elasticsearch
+script: sleep 10 && tox
 
 after_success: codecov
 

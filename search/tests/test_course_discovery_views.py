@@ -17,7 +17,8 @@ from .test_course_discovery import DemoCourse
     "enrollment_end": {"type": "date"}
 })
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
-@override_settings(COURSEWARE_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
+@override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 class DiscoveryUrlTest(MockSearchUrlTest):
     """
     Make sure that requests to the url get routed to the correct view handler

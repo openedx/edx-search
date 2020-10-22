@@ -1,0 +1,25 @@
+version: '2.2'
+services:
+
+  test_elasticsearch:
+    image: elasticsearch:7.8.0
+    container_name: test_elasticsearch
+    environment:
+      - node.name=test_elasticsearch
+      - cluster.name=docker-cluster
+      - cluster.initial_master_nodes=test_elasticsearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - http.port=9200
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+volumes:
+  data01:
+    driver: local
