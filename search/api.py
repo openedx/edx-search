@@ -84,6 +84,9 @@ def _hack_filter_discovery_results(results):
     This is a hack function that should be refactored into the LMS.
     See RED-637.
     """
+    if not getattr(settings, 'TAHOE_ENABLE_HAS_ACCESS_FILTER', True):
+        return results
+
     from lms.djangoapps.courseware.access import has_access  # pylint: disable=import-error
     from crum import get_current_request  # pylint: disable=import-error
     from opaque_keys.edx.keys import CourseKey  # pylint: disable=import-error

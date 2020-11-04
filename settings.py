@@ -100,6 +100,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
+TAHOE_ENABLE_HAS_ACCESS_FILTER = False  # Turn off the hack during tests
+
 ############################## EVENT TRACKING #################################
 
 TRACK_MAX_EVENT = 50000
