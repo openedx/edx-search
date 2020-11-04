@@ -84,20 +84,15 @@ def _hack_filter_discovery_results(results):
     This is a hack function that should be refactored into the LMS.
     See RED-637.
     """
-    from lms.djangoapps.courseware.access import has_access
-    from crum import get_current_request
-    from opaque_keys.edx.keys import CourseKey
-    from xmodule.modulestore.django import modulestore
+    from lms.djangoapps.courseware.access import has_access  # pylint: disable=import-error
+    from crum import get_current_request  # pylint: disable=import-error
+    from opaque_keys.edx.keys import CourseKey  # pylint: disable=import-error
 
-    ms = modulestore()
     user = get_current_request().user
 
     for result in results["results"]:
-        if not has_access(
-            user,
-            'see_in_catalog',
-            CourseKey.from_string(result['data']['id'])
-        ):
+        course_key = CourseKey.from_string(result['data']['id'])
+        if not has_access(user, 'see_in_catalog', course_key):
             result["data"] = None
 
     # Count and remove the results that has no access
@@ -109,7 +104,7 @@ def _hack_filter_discovery_results(results):
     # This is not the smartest hack, and customers could report issues
     # The solution is most likely to just remove the facet numbers
     results["total"] = max(0, results["total"] - access_denied_count)
-    for name, facet in list(results["facets"].items()):
+    for _name, facet in list(results["facets"].items()):
         results["total"] = max(0, results["total"] - access_denied_count)
         facet["other"] = max(0, facet.get("other", 0) - access_denied_count)
         facet["terms"] = {
