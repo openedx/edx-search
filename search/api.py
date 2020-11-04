@@ -96,7 +96,7 @@ def _hack_filter_discovery_results(results):
         if not has_access(
             user,
             'see_in_catalog',
-            ms.get_course(CourseKey.from_string(result['data']['id']), depth=0)
+            CourseKey.from_string(result['data']['id'])
         ):
             result["data"] = None
 
