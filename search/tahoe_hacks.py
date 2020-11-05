@@ -2,8 +2,6 @@
 Module for Tahoe hacks for the edx-search repository.
 """
 
-from django.conf import settings
-
 
 def has_access_for_results(results):
     """
@@ -12,9 +10,6 @@ def has_access_for_results(results):
     This is a hack function that should be refactored into the LMS.
     See RED-637.
     """
-    if not getattr(settings, 'TAHOE_ENABLE_HAS_ACCESS_FILTER', True):
-        return results
-
     from lms.djangoapps.courseware.access import has_access
     from crum import get_current_request
     from opaque_keys.edx.keys import CourseKey
