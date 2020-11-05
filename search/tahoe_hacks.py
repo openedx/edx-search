@@ -13,12 +13,15 @@ def has_access_for_results(results):
     from lms.djangoapps.courseware.access import has_access
     from crum import get_current_request
     from opaque_keys.edx.keys import CourseKey
+    from xmodule.modulestore.django import modulestore
 
+    module_store = modulestore()
     user = get_current_request().user
 
     for result in results["results"]:
         course_key = CourseKey.from_string(result['data']['id'])
-        if not has_access(user, 'see_in_catalog', course_key):
+        course = module_store.get_course(course_key, depth=0)
+        if not has_access(user, 'see_in_catalog', course):
             result["data"] = None
 
     # Count and remove the results that has no access
