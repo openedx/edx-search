@@ -5,7 +5,7 @@ python:
 
 envs:
 # - TOXENV=django111
-- TOXENV=py35-django20
+- TOXENV=py35-django22
 # - TOXENV=django21
 # - TOXENV=django22
 - TOXENV=quality
