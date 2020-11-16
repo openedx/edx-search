@@ -318,7 +318,7 @@ class MockSearchEngine(SearchEngine):
         super(MockSearchEngine, self).__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
-    def index(self, sources):  # pylint: disable=arguments-differ
+    def index(self, sources, **kwargs):
         """
         Add/update documents to the index.
         """
