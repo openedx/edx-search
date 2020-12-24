@@ -83,7 +83,7 @@ class SearchResultProcessor:
         for matched_string in {match.group() for match in matches}:
             match_in = match_in.replace(
                 matched_string,
-                getattr(settings, "SEARCH_MATCH_DECORATION", u"<b>{}</b>").format(matched_string)
+                getattr(settings, "SEARCH_MATCH_DECORATION", "<b>{}</b>").format(matched_string)
             )
         return match_in
 

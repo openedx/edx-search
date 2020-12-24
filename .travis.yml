@@ -1,12 +1,10 @@
 language: python
 
 python:
-- 3.5
-- 3.8
-
+  - '3.8'
 envs:
-- TOXENV=django22
-- TOXENV=quality
+  - TOXENV=django22
+  - TOXENV=quality
 
 services:
   - docker
@@ -14,7 +12,7 @@ services:
 # Cache the pip directory. "cache: pip" doesn't work due to install override. See https://github.com/travis-ci/travis-ci/issues/3239.
 cache:
   - directories:
-    - $HOME/.cache/pip
+      - $HOME/.cache/pip
 
 before_install: make test.start_elasticsearch
 
@@ -34,5 +32,5 @@ deploy:
   distributions: sdist bdist_wheel
   on:
     tags: true
-    python: 3.5
-    condition: '$TOXENV = django22'
+    python: 3.8
+    condition: $TOXENV = django22
