@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
 # pylint: disable=too-few-public-methods
@@ -96,7 +95,7 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
         return isinstance(self.searcher, ElasticSearchEngine)
 
     def setUp(self):
-        super(TestMockCourseDiscoverySearch, self).setUp()
+        super().setUp()
         # ignore unexpected-keyword-arg; ES python client documents that it can be used
         # pylint: disable=unexpected-keyword-arg
         if self._is_elastic:
@@ -125,7 +124,7 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable
             MockSearchEngine.destroy()
 
         self._searcher = None
-        super(TestMockCourseDiscoverySearch, self).tearDown()
+        super().tearDown()
 
     def test_course_list(self):
         """ No arguments to course_discovery_search should show all available courses"""

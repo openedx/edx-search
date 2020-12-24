@@ -92,13 +92,13 @@ def _filter_intersection(documents_to_search, dictionary_object, include_blanks=
                 and (field_value.upper is None or compare_value <= field_value.upper)
             )
         if _is_iterable(compare_value) and not _is_iterable(field_value):
-            return any((item == field_value for item in compare_value))
+            return any(item == field_value for item in compare_value)
 
         if _is_iterable(field_value) and not _is_iterable(compare_value):
-            return any((item == compare_value for item in field_value))
+            return any(item == compare_value for item in field_value)
 
         if _is_iterable(compare_value) and _is_iterable(field_value):
-            return any((str(item) in field_value for item in compare_value))
+            return any(str(item) in field_value for item in compare_value)
 
         return compare_value == field_value
 
@@ -266,7 +266,7 @@ class MockSearchEngine(SearchEngine):
         """ load the index dict from the contents of the backing file """
         file_name = cls._backing_file()
         if file_name and os.path.exists(file_name):
-            with open(file_name, "r") as dict_file:
+            with open(file_name) as dict_file:
                 cls._mock_elastic = json.load(dict_file)
 
     @staticmethod
@@ -315,7 +315,7 @@ class MockSearchEngine(SearchEngine):
         cls._write_to_file()
 
     def __init__(self, index=None):
-        super(MockSearchEngine, self).__init__(index)
+        super().__init__(index)
         MockSearchEngine.load_index(self.index_name)
 
     def index(self, sources, **kwargs):

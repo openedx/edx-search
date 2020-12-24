@@ -52,11 +52,11 @@ class ForceRefreshElasticSearchEngine(ElasticSearchEngine):
 
     def index(self, sources, **kwargs):
         kwargs["refresh"] = True
-        super(ForceRefreshElasticSearchEngine, self).index(sources, **kwargs)
+        super().index(sources, **kwargs)
 
     def remove(self, doc_ids, **kwargs):
         kwargs["refresh"] = True
-        super(ForceRefreshElasticSearchEngine, self).remove(doc_ids, **kwargs)
+        super().remove(doc_ids, **kwargs)
 
 
 class ErroringSearchEngine(MockSearchEngine):

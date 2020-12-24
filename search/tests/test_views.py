@@ -1,12 +1,12 @@
 """ High-level view tests"""
 
 from datetime import datetime
+from unittest.mock import patch, call
 import ddt
 
 from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
-from mock import patch, call
 
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
@@ -30,7 +30,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self.mock_tracker.reset_mock()
 
     def setUp(self):
-        super(MockSearchUrlTest, self).setUp()
+        super().setUp()
         MockSearchEngine.destroy()
         self._searcher = None
         patcher = patch('search.views.track')
@@ -40,7 +40,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
     def tearDown(self):
         MockSearchEngine.destroy()
         self._searcher = None
-        super(MockSearchUrlTest, self).tearDown()
+        super().tearDown()
 
     def assert_no_events_were_emitted(self):
         """Ensures no events were emitted since the last event related assertion"""
@@ -360,12 +360,12 @@ class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
     def setUp(self):
-        super(BadSearchTest, self).setUp()
+        super().setUp()
         MockSearchEngine.destroy()
 
     def tearDown(self):
         MockSearchEngine.destroy()
-        super(BadSearchTest, self).tearDown()
+        super().tearDown()
 
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
@@ -404,12 +404,12 @@ class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
     def setUp(self):
-        super(BadIndexTest, self).setUp()
+        super().setUp()
         MockSearchEngine.destroy()
 
     def tearDown(self):
         MockSearchEngine.destroy()
-        super(BadIndexTest, self).tearDown()
+        super().tearDown()
 
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
@@ -429,7 +429,7 @@ class ElasticSearchUrlTest(TestCase, SearcherMixin):
     """
 
     def setUp(self):
-        super(ElasticSearchUrlTest, self).setUp()
+        super().setUp()
         patcher = patch('search.views.track')
         self.mock_tracker = patcher.start()
         self.addCleanup(patcher.stop)
