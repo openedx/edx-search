@@ -25,7 +25,7 @@ class DiscoveryUrlTest(MockSearchUrlTest):
     """
 
     def setUp(self):
-        super(DiscoveryUrlTest, self).setUp()
+        super().setUp()
         DemoCourse.reset_count()
         DemoCourse.get_and_index(
             self.searcher, {"org": "OrgA", "content": {"short_description": "Find this one with the right parameter"}}

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """ Tests for result processors """
 
 import ddt
@@ -123,52 +122,52 @@ class SearchResultProcessorTests(TestCase):
         """ test that we return an excerpt """
         test_result = {
             "content": {
-                "notes": u"Here is a الاستحسان about edx",
+                "notes": "Here is a الاستحسان about edx",
                 "name": "edX search a lot",
             }
         }
-        srp = SearchResultProcessor(test_result, u"الاستحسان")
-        self.assertEqual(srp.excerpt, u"Here is a <b>الاستحسان</b> about edx")
+        srp = SearchResultProcessor(test_result, "الاستحسان")
+        self.assertEqual(srp.excerpt, "Here is a <b>الاستحسان</b> about edx")
 
-        srp = SearchResultProcessor(test_result, u"edx")
+        srp = SearchResultProcessor(test_result, "edx")
         self.assertIn(
-            u"Here is a الاستحسان about <b>edx</b>",
+            "Here is a الاستحسان about <b>edx</b>",
             srp.excerpt
         )
 
     def test_too_long_excerpt(self):
         """ test that we shorten an excerpt that is too long appropriately """
         test_string = (
-            u"Here is a note about الاستحسان and it is very long - more than the desirable length of 100"
-            u" characters - indeed this should show up but it should trim the characters around in"
-            u" order to show the selected text in bold"
+            "Here is a note about الاستحسان and it is very long - more than the desirable length of 100"
+            " characters - indeed this should show up but it should trim the characters around in"
+            " order to show the selected text in bold"
         )
         test_result = {
             "content": {
                 "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result, u"الاستحسان")
-        test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
+        srp = SearchResultProcessor(test_result, "الاستحسان")
+        test_string_compare = SearchResultProcessor.decorate_matches(test_string, "الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertIn(u"note about <b>الاستحسان</b> and it is", excerpt)
+        self.assertIn("note about <b>الاستحسان</b> and it is", excerpt)
 
         test_string = (
-            u"Here is a note about stuff and it is very long - more than the desirable length of 100"
-            u" characters - indeed this should show up but it should trim the الاستحسان characters around in"
-            u" order to show the selected text in bold"
+            "Here is a note about stuff and it is very long - more than the desirable length of 100"
+            " characters - indeed this should show up but it should trim the الاستحسان characters around in"
+            " order to show the selected text in bold"
         )
         test_result = {
             "content": {
                 "notes": test_string,
             }
         }
-        srp = SearchResultProcessor(test_result, u"الاستحسان")
-        test_string_compare = SearchResultProcessor.decorate_matches(test_string, u"الاستحسان")
+        srp = SearchResultProcessor(test_result, "الاستحسان")
+        test_string_compare = SearchResultProcessor.decorate_matches(test_string, "الاستحسان")
         excerpt = srp.excerpt
         self.assertNotEqual(excerpt, test_string_compare)
-        self.assertIn(u"should trim the <b>الاستحسان</b> characters around", excerpt)
+        self.assertIn("should trim the <b>الاستحسان</b> characters around", excerpt)
 
     def test_excerpt_front(self):
         """ test that we process correctly when match is at the front of the excerpt """
@@ -217,34 +216,34 @@ class SearchResultProcessorTests(TestCase):
         self.assertEqual(srp.excerpt[-33:], "Match upon last word - <b>Dog</b>")
 
     @ddt.data(
-        (u'"never disappear"', u"leads to your door Will <b>never disappear</b>"),
-        (u'"I\'ve seen"', u"<b>I've seen</b> that road before It always"),
+        ('"never disappear"', "leads to your door Will <b>never disappear</b>"),
+        ('"I\'ve seen"', "<b>I've seen</b> that road before It always"),
         (
-            u'"long and winding" leads',
-            u'The <b>long and winding</b> road That <b>leads</b> to your door'
+            '"long and winding" leads',
+            'The <b>long and winding</b> road That <b>leads</b> to your door'
         ),
-        (u'"search"', u"इसको <b>search</b> करें| Lead"),
-        (u'"हिंदी में"', u"It always leads me here यह एक <b>हिंदी में</b>"),
-        (u'"इसको search"', u"वाक्य है| <b>इसको search</b> करें| Lead me"),
+        ('"search"', "इसको <b>search</b> करें| Lead"),
+        ('"हिंदी में"', "It always leads me here यह एक <b>हिंदी में</b>"),
+        ('"इसको search"', "वाक्य है| <b>इसको search</b> करें| Lead me"),
         # Match at the beginning
-        (u'"The long"', u'<b>The long</b> and winding road That'),
+        ('"The long"', '<b>The long</b> and winding road That'),
         # Match at the end
-        (u'"rain washed away"', u'windy night That the <b>rain washed away</b>'),
+        ('"rain washed away"', 'windy night That the <b>rain washed away</b>'),
     )
     @ddt.unpack
     def test_excerpt_quoted(self, search_phrase, expected_excerpt):
         test_result = {
             "content": {
                 "notes": (
-                    u"The long and winding road "
-                    u"That leads to your door "
-                    u"Will never disappear "
-                    u"I've seen that road before "
-                    u"It always leads me here "
-                    u"यह एक हिंदी में लिखा हुआ वाक्य है| इसको search करें| "
-                    u"Lead me to you door "
-                    u"The wild and windy night "
-                    u"That the rain washed away "
+                    "The long and winding road "
+                    "That leads to your door "
+                    "Will never disappear "
+                    "I've seen that road before "
+                    "It always leads me here "
+                    "यह एक हिंदी में लिखा हुआ वाक्य है| इसको search करें| "
+                    "Lead me to you door "
+                    "The wild and windy night "
+                    "That the rain washed away "
                 ),
             }
         }
@@ -271,7 +270,7 @@ class TestSearchResultProcessor(SearchResultProcessor):
         if "course" not in self._results_fields or "id" not in self._results_fields:
             raise ValueError("expect this error when not providing a course and/or id")
 
-        return u"/courses/{course_id}/jump_to/{location}".format(
+        return "/courses/{course_id}/jump_to/{location}".format(
             course_id=self._results_fields["course"],
             location=self._results_fields["id"],
         )

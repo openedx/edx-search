@@ -215,7 +215,7 @@ def _get_total_doc_key(bucket_name):
     :param bucket_name: string
     :return: string
     """
-    return "total_{}_docs".format(bucket_name)
+    return f"total_{bucket_name}_docs"
 
 
 def _process_aggregation_terms(aggregation_terms):
@@ -250,7 +250,7 @@ class ElasticSearchEngine(SearchEngine):
         """
         Name-formatter for cache_item_name
         """
-        return "elastic_search_mappings_{}".format(index_name)
+        return f"elastic_search_mappings_{index_name}"
 
     @classmethod
     def get_mappings(cls, index_name):
@@ -326,7 +326,7 @@ class ElasticSearchEngine(SearchEngine):
         ElasticSearchEngine.set_mappings(self.index_name, {})
 
     def __init__(self, index=None):
-        super(ElasticSearchEngine, self).__init__(index)
+        super().__init__(index)
         es_config = getattr(settings, "ELASTIC_SEARCH_CONFIG", [{}])
         self._es = getattr(settings, "ELASTIC_SEARCH_IMPL", Elasticsearch)(es_config)
         if not self._es.indices.exists(index=self.index_name):
@@ -429,7 +429,7 @@ class ElasticSearchEngine(SearchEngine):
             if indexing_errors:
                 ElasticSearchEngine.log_indexing_error(indexing_errors)
         # Broad exception handler to protect around bulk call
-        except exceptions.ElasticsearchException as ex:
+        except exceptions.ElasticsearchException:
             log.exception("Error during ES bulk operation.")
             raise
 

@@ -4,12 +4,57 @@
 #
 #    make upgrade
 #
-certifi==2020.6.20        # via elasticsearch
-django==2.2.15            # via -r requirements/base.in, event-tracking
-elasticsearch==7.8.1      # via -r requirements/base.in
-event-tracking==0.3.3     # via -r requirements/base.in
-pymongo==3.11.0           # via event-tracking
-pytz==2020.1              # via django, event-tracking
-six==1.15.0               # via event-tracking
-sqlparse==0.3.1           # via django
-urllib3==1.25.10          # via elasticsearch
+amqp==5.0.2
+    # via kombu
+billiard==3.6.3.0
+    # via celery
+celery==5.0.5
+    # via event-tracking
+certifi==2020.12.5
+    # via elasticsearch
+click-didyoumean==0.0.3
+    # via celery
+click-plugins==1.1.1
+    # via celery
+click-repl==0.1.6
+    # via celery
+click==7.1.2
+    # via
+    #   celery
+    #   click-didyoumean
+    #   click-plugins
+    #   click-repl
+django==2.2.17
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/base.in
+    #   event-tracking
+elasticsearch==7.10.1
+    # via -r requirements/base.in
+event-tracking==1.0.3
+    # via -r requirements/base.in
+kombu==5.0.2
+    # via celery
+prompt-toolkit==3.0.10
+    # via click-repl
+pymongo==3.11.2
+    # via event-tracking
+pytz==2020.5
+    # via
+    #   celery
+    #   django
+    #   event-tracking
+six==1.15.0
+    # via
+    #   click-repl
+    #   event-tracking
+sqlparse==0.4.1
+    # via django
+urllib3==1.26.2
+    # via elasticsearch
+vine==5.0.0
+    # via
+    #   amqp
+    #   celery
+wcwidth==0.2.5
+    # via prompt-toolkit
