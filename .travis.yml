@@ -4,6 +4,9 @@ python:
   - '3.8'
 envs:
   - TOXENV=django22
+  - TOXENV=django30
+  - TOXENV=django31
+  - TOXENV=django32
   - TOXENV=quality
 
 services:
