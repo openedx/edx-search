@@ -30,7 +30,7 @@ jobs:
     - name: Run Tests
       run: |
         make test.start_elasticsearch
-        tox -e ${{ matrix.toxenv }}
+        sleep 10 && tox -e ${{ matrix.toxenv }}
 
     - name: Run Coverage
       if: matrix.python-version == '3.8' && matrix.toxenv=='django22'
