@@ -76,28 +76,39 @@ def perform_search(
     return results
 
 
-def _hack_filter_discovery_results(results):
+def hack_course_is_accessible_to_current_user(course_id, access_action):
+    """
+    Check if the currently logged-in user has access to a course.
+
+    This is a hack function that should be refactored into the LMS.
+    See RED-637.
+    """
+    from lms.djangoapps.courseware.access import has_access
+    from crum import get_current_request
+    from opaque_keys.edx.keys import CourseKey
+    from xmodule.modulestore.django import modulestore
+
+    ms = modulestore()
+    user = get_current_request().user
+
+    return has_access(
+        user,
+        access_action,
+        ms.get_course(CourseKey.from_string(course_id), depth=0),
+    )
+
+
+def hack_filter_discovery_results(results):
     """
     Filter CourseDiscovery search results.
 
     This is a hack function that should be refactored into the LMS.
     See RED-637.
     """
-    from courseware.access import has_access
-    from crum import get_current_request
-    from opaque_keys.edx.keys import CourseKey
-    from xmodule.modulestore.django import modulestore
     import six
 
-    ms = modulestore()
-    user = get_current_request().user
-
     for result in results["results"]:
-        if not has_access(
-            user,
-            'see_in_catalog',
-            ms.get_course(CourseKey.from_string(result['data']['id']), depth=0)
-        ):
+        if not hack_course_is_accessible_to_current_user(result['data']['id'], 'see_in_catalog'):
             result["data"] = None
 
     # Count and remove the results that has no access
@@ -110,7 +121,6 @@ def _hack_filter_discovery_results(results):
     # The solution is most likely to just remove the facet numbers
     results["total"] = max(0, results["total"] - access_denied_count)
     for name, facet in six.iteritems(results["facets"]):
-        results["total"] = max(0, results["total"] - access_denied_count)
         facet["other"] = max(0, facet.get("other", 0) - access_denied_count)
         facet["terms"] = {
             term: max(0, count - access_denied_count)
@@ -153,4 +163,4 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         facet_terms=course_discovery_facets(),
     )
 
-    return _hack_filter_discovery_results(results)
+    return hack_filter_discovery_results(results)
