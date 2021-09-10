@@ -149,7 +149,7 @@ class FileBackedMockSearchTests(MockSearchTests):
 
         # copy content, and then erase file so that backed file is not present and work is disabled
         initial_file_content = None
-        with open("testfile.pkl") as dict_file:
+        with open("testfile.pkl", encoding='utf-8') as dict_file:
             initial_file_content = json.load(dict_file)
         os.remove("testfile.pkl")
 

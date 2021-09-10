@@ -27,7 +27,7 @@ def _process_pagination_values(request):
         max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", 100)
         # The parens below are superfluous, but make it much clearer to the reader what is going on
         if not (0 < size <= max_page_size):  # pylint: disable=superfluous-parens
-            raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))  # lint-amnesty, pylint: disable=unicode-format-string
+            raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))
 
         if "page_index" in request.POST:
             page = int(request.POST["page_index"])
@@ -126,10 +126,10 @@ def do_search(request, course_id=None):
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except
         results = {
-            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)  # lint-amnesty, pylint: disable=unicode-format-string
+            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }
         log.exception(
-            'Search view exception when searching for %s for user %s: %r',  # lint-amnesty, pylint: disable=unicode-format-string
+            'Search view exception when searching for %s for user %s: %r',
             search_term,
             request.user.id,
             err
@@ -212,10 +212,10 @@ def course_discovery(request):
     # Allow for broad exceptions here - this is an entry point from external reference
     except Exception as err:  # pylint: disable=broad-except
         results = {
-            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)  # lint-amnesty, pylint: disable=unicode-format-string
+            "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }
         log.exception(
-            'Search view exception when searching for %s for user %s: %r',  # lint-amnesty, pylint: disable=unicode-format-string
+            'Search view exception when searching for %s for user %s: %r',
             search_term,
             request.user.id,
             err
