@@ -233,7 +233,7 @@ class MockSearchEngine(SearchEngine):
 
         cls._file_name_override = None
         cls.destroy()
-        cls.__disabled = False
+        cls.__disabled = False  # pylint: disable=unused-private-member
 
     @classmethod
     def _backing_file(cls, create_if_missing=False):
@@ -258,7 +258,7 @@ class MockSearchEngine(SearchEngine):
         """ write the index dict to the backing file """
         file_name = cls._backing_file(create_if_missing)
         if file_name:
-            with open(file_name, "w+") as dict_file:
+            with open(file_name, "w+", encoding='utf-8') as dict_file:
                 json.dump(cls._mock_elastic, dict_file, cls=DjangoJSONEncoder)
 
     @classmethod
@@ -266,7 +266,7 @@ class MockSearchEngine(SearchEngine):
         """ load the index dict from the contents of the backing file """
         file_name = cls._backing_file()
         if file_name and os.path.exists(file_name):
-            with open(file_name) as dict_file:
+            with open(file_name, encoding='utf-8') as dict_file:
                 cls._mock_elastic = json.load(dict_file)
 
     @staticmethod
