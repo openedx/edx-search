@@ -22,6 +22,20 @@ class TestHackFilterDiscoveryResults(TestCase):
         self.assertEqual(results['access_denied_count'], 0)  # All courses should be allowed
         self.assertEqual(len(results['results']), 4)  # Result count should match `total`
 
+    @patch('xmodule.modulestore.django.get_course', Mock(return_value=None))
+    def test_non_courses(self):
+        """
+        Test for deleted/non-existent courses.
+
+        modulestore().get_course() may return `None` despite the course being indexed in ElasticSearch.
+        In this case, the course should be treated as if `has_access()` returned False.
+        """
+        pre_results = get_mock_course_discovery_search_results()
+        results = has_access_for_results(pre_results)
+        self.assertEqual(results['total'], 0)  # `None` courses should be considered as without access
+        self.assertEqual(results['access_denied_count'], 4)  # All courses should be allowed
+        self.assertEqual(len(results['results']), 0)  # Result count should match `total`
+
     @patch('lms.djangoapps.courseware.access.has_access')
     def test_allow_two_out_of_four(self, mock_has_access):
         """
