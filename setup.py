@@ -13,7 +13,8 @@ def load_requirements(*requirements_paths):
     requirements = set()
     for path in requirements_paths:
         requirements.update(
-            line.split('#')[0].strip() for line in open(path).readlines()
+            line.split('#')[0].strip()
+            for line in open(path, encoding='utf-8').readlines()  # pylint: disable=consider-using-with
             if is_requirement(line.strip())
         )
     return list(requirements)
