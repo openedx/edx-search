@@ -21,7 +21,7 @@ def has_access_for_results(results):
     for result in results["results"]:
         course_key = CourseKey.from_string(result['data']['id'])
         course = module_store.get_course(course_key, depth=0)
-        if not access.has_access(user, 'see_in_catalog', course):
+        if not (course and access.has_access(user, 'see_in_catalog', course)):
             result["data"] = None
 
     # Count and remove the results that has no access
