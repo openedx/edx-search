@@ -32,7 +32,7 @@ def is_requirement(line):
 
 setup(
     name='edx-search',
-    version='1.3.4-appsembler5',
+    version='1.3.4-appsembler6',
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
