@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """ Setup to allow pip installs of edx-search module """
+import os
+import re
 
 from setuptools import setup
 
@@ -29,9 +31,26 @@ def is_requirement(line):
     return line and not line.startswith(('-r', '#', '-e', 'git+', '-c'))
 
 
+def get_version(*file_paths):
+    """
+    Extract the version string from the file at the given relative path fragments.
+    """
+    filename = os.path.join(os.path.dirname(__file__), *file_paths)
+    with open(filename, encoding='utf-8') as opened_file:
+        version_file = opened_file.read()
+        version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                                  version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError('Unable to find version string.')
+
+
+VERSION = get_version('edxsearch', '__init__.py')
+
+
 setup(
     name='edx-search',
-    version='3.1.0',
+    version=VERSION,
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
@@ -52,6 +71,6 @@ setup(
         'Framework :: Django :: 3.1',
         'Framework :: Django :: 3.2',
     ],
-    packages=['search', 'search.tests'],
+    packages=['search', 'search.tests', 'edxsearch'],
     install_requires=load_requirements('requirements/base.in')
 )
