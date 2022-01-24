@@ -1,4 +1,4 @@
-.PHONY: clean quality requirements validate test test-python quality-python
+.PHONY: clean quality requirements validate test test-python quality-python check_keywords
 
 clean:
 	find . -name '__pycache__' -exec rm -rf {} +
@@ -53,3 +53,6 @@ test-python: clean ## run tests using pytest and generate coverage report
 	pytest
 
 test: test-python ## run tests and generate coverage report
+
+check_keywords: ## Scan the Django models in all installed apps in this project for restricted field names
+	python manage.py check_reserved_keywords --override_file db_keyword_overrides.yml
