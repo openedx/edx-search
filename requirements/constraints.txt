@@ -16,5 +16,5 @@
 # ddt >= 1.4.0 causing test failures
 ddt < 1.4.0
 
-# pip-tools fetches latest version of click which is in-compatible with celery & more packages
-click < 8.0
+# greater version breaking quality build. fix in separate PR.
+pylint==2.10.2
