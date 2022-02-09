@@ -12,7 +12,7 @@ asgiref==3.5.0
     # via
     #   -r requirements/testing.txt
     #   django
-astroid==2.9.3
+astroid==2.7.3
     # via
     #   pylint
     #   pylint-celery
@@ -148,6 +148,7 @@ pycodestyle==2.8.0
     # via -r requirements/quality.in
 pylint==2.10.2
     # via
+    #   -c requirements/constraints.txt
     #   edx-lint
     #   pylint-celery
     #   pylint-django
@@ -208,10 +209,6 @@ tomli==2.0.1
     #   -r requirements/testing.txt
     #   coverage
     #   pytest
-typing-extensions==4.0.1
-    # via
-    #   astroid
-    #   pylint
 urllib3==1.26.8
     # via
     #   -r requirements/testing.txt
@@ -226,7 +223,7 @@ wcwidth==0.2.5
     # via
     #   -r requirements/testing.txt
     #   prompt-toolkit
-wrapt==1.13.3
+wrapt==1.12.1
     # via astroid
 
 # The following packages are considered to be unsafe in a requirements file:

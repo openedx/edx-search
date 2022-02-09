@@ -14,7 +14,7 @@ asgiref==3.5.0
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   django
-astroid==2.9.3
+astroid==2.7.3
     # via
     #   -r requirements/quality.txt
     #   pylint
@@ -231,8 +231,9 @@ py==1.11.0
     #   tox
 pycodestyle==2.8.0
     # via -r requirements/quality.txt
-pylint==2.12.2
+pylint==2.10.2
     # via
+    #   -c requirements/constraints.txt
     #   -r requirements/quality.txt
     #   edx-lint
     #   pylint-celery
@@ -331,11 +332,6 @@ tomli==2.0.1
     #   pytest
 tox==3.24.5
     # via -r requirements/ci.txt
-typing-extensions==4.0.1
-    # via
-    #   -r requirements/quality.txt
-    #   astroid
-    #   pylint
 urllib3==1.26.8
     # via
     #   -r requirements/ci.txt
@@ -363,7 +359,7 @@ wheel==0.37.1
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
-wrapt==1.13.3
+wrapt==1.12.1
     # via
     #   -r requirements/quality.txt
     #   astroid
