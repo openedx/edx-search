@@ -4,45 +4,60 @@
 #
 #    make upgrade
 #
-amqp==5.0.6
+amqp==5.0.9
     # via kombu
+asgiref==3.5.0
+    # via django
 billiard==3.6.4.0
     # via celery
-celery==5.1.2
+celery==5.2.3
     # via event-tracking
-certifi==2021.5.30
+certifi==2021.10.8
     # via elasticsearch
-click==7.1.2
+click==8.0.3
     # via
-    #   -c requirements/constraints.txt
     #   celery
     #   click-didyoumean
     #   click-plugins
     #   click-repl
-click-didyoumean==0.0.3
+click-didyoumean==0.3.0
     # via celery
 click-plugins==1.1.1
     # via celery
 click-repl==0.2.0
     # via celery
-django==2.2.24
+django==3.2.12
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
+    #   django-crum
+    #   edx-django-utils
     #   event-tracking
+django-crum==0.7.9
+    # via edx-django-utils
+django-waffle==2.3.0
+    # via edx-django-utils
+edx-django-utils==4.5.0
+    # via event-tracking
 elasticsearch==7.13.4
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
-event-tracking==1.1.0
+event-tracking==2.0.0
     # via -r requirements/base.in
-kombu==5.1.0
+kombu==5.2.3
     # via celery
-prompt-toolkit==3.0.20
+newrelic==7.4.0.172
+    # via edx-django-utils
+pbr==5.8.1
+    # via stevedore
+prompt-toolkit==3.0.27
     # via click-repl
-pymongo==3.12.0
+psutil==5.9.0
+    # via edx-django-utils
+pymongo==3.12.3
     # via event-tracking
-pytz==2021.1
+pytz==2021.3
     # via
     #   celery
     #   django
@@ -51,9 +66,11 @@ six==1.16.0
     # via
     #   click-repl
     #   event-tracking
-sqlparse==0.4.1
+sqlparse==0.4.2
     # via django
-urllib3==1.26.6
+stevedore==3.5.0
+    # via edx-django-utils
+urllib3==1.26.8
     # via elasticsearch
 vine==5.0.0
     # via
