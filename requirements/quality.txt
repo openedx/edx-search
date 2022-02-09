@@ -4,15 +4,19 @@
 #
 #    make upgrade
 #
-amqp==5.0.6
+amqp==5.0.9
     # via
     #   -r requirements/testing.txt
     #   kombu
+asgiref==3.5.0
+    # via
+    #   -r requirements/testing.txt
+    #   django
 astroid==2.7.3
     # via
     #   pylint
     #   pylint-celery
-attrs==21.2.0
+attrs==21.4.0
     # via
     #   -r requirements/testing.txt
     #   pytest
@@ -20,17 +24,16 @@ billiard==3.6.4.0
     # via
     #   -r requirements/testing.txt
     #   celery
-celery==5.1.2
+celery==5.2.3
     # via
     #   -r requirements/testing.txt
     #   event-tracking
-certifi==2021.5.30
+certifi==2021.10.8
     # via
     #   -r requirements/testing.txt
     #   elasticsearch
-click==7.1.2
+click==8.0.3
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/testing.txt
     #   celery
     #   click-didyoumean
@@ -39,7 +42,7 @@ click==7.1.2
     #   click-repl
     #   code-annotations
     #   edx-lint
-click-didyoumean==0.0.3
+click-didyoumean==0.3.0
     # via
     #   -r requirements/testing.txt
     #   celery
@@ -53,9 +56,9 @@ click-repl==0.2.0
     # via
     #   -r requirements/testing.txt
     #   celery
-code-annotations==1.2.0
+code-annotations==1.3.0
     # via edx-lint
-coverage==5.5
+coverage[toml]==6.3.1
     # via
     #   -r requirements/quality.in
     #   -r requirements/testing.txt
@@ -64,32 +67,46 @@ ddt==1.3.1
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/testing.txt
-django==2.2.24
+django==3.2.12
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/testing.txt
+    #   django-crum
+    #   edx-django-utils
     #   event-tracking
-edx-lint==5.1.0
+django-crum==0.7.9
+    # via
+    #   -r requirements/testing.txt
+    #   edx-django-utils
+django-waffle==2.3.0
+    # via
+    #   -r requirements/testing.txt
+    #   edx-django-utils
+edx-django-utils==4.5.0
+    # via
+    #   -r requirements/testing.txt
+    #   event-tracking
+edx-lint==5.2.1
     # via -r requirements/quality.in
 elasticsearch==7.13.4
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/testing.txt
-event-tracking==1.1.0
+event-tracking==2.0.0
     # via -r requirements/testing.txt
 iniconfig==1.1.1
     # via
     #   -r requirements/testing.txt
     #   pytest
-isort==5.9.3
+isort==5.10.1
     # via pylint
-jinja2==3.0.1
+jinja2==3.0.3
     # via code-annotations
-kombu==5.1.0
+kombu==5.2.3
     # via
     #   -r requirements/testing.txt
     #   celery
-lazy-object-proxy==1.6.0
+lazy-object-proxy==1.7.1
     # via astroid
 markupsafe==2.0.1
     # via jinja2
@@ -97,65 +114,76 @@ mccabe==0.6.1
     # via pylint
 mock==4.0.3
     # via -r requirements/testing.txt
-packaging==21.0
+newrelic==7.4.0.172
+    # via
+    #   -r requirements/testing.txt
+    #   edx-django-utils
+packaging==21.3
     # via
     #   -r requirements/testing.txt
     #   pytest
-pbr==5.6.0
-    # via stevedore
-platformdirs==2.3.0
+pbr==5.8.1
+    # via
+    #   -r requirements/testing.txt
+    #   stevedore
+platformdirs==2.4.1
     # via pylint
 pluggy==1.0.0
     # via
     #   -r requirements/testing.txt
     #   pytest
-prompt-toolkit==3.0.20
+prompt-toolkit==3.0.27
     # via
     #   -r requirements/testing.txt
     #   click-repl
-py==1.10.0
+psutil==5.9.0
+    # via
+    #   -r requirements/testing.txt
+    #   edx-django-utils
+py==1.11.0
     # via
     #   -r requirements/testing.txt
     #   pytest
-pycodestyle==2.7.0
+pycodestyle==2.8.0
     # via -r requirements/quality.in
 pylint==2.10.2
     # via
+    #   -c requirements/constraints.txt
     #   edx-lint
     #   pylint-celery
     #   pylint-django
     #   pylint-plugin-utils
 pylint-celery==0.3
     # via edx-lint
-pylint-django==2.4.4
+pylint-django==2.5.0
     # via edx-lint
-pylint-plugin-utils==0.6
+pylint-plugin-utils==0.7
     # via
     #   pylint-celery
     #   pylint-django
-pymongo==3.12.0
+pymongo==3.12.3
     # via
     #   -r requirements/testing.txt
     #   event-tracking
-pyparsing==2.4.7
+pyparsing==3.0.7
     # via
     #   -r requirements/testing.txt
     #   packaging
-pytest==6.2.5
+pytest==7.0.0
     # via
     #   -r requirements/testing.txt
     #   pytest-cov
-pytest-cov==2.12.1
+pytest-cov==3.0.0
     # via -r requirements/testing.txt
 python-slugify==5.0.2
     # via code-annotations
-pytz==2021.1
+pytz==2021.3
     # via
     #   -r requirements/testing.txt
     #   celery
     #   django
     #   event-tracking
-pyyaml==5.4.1
+pyyaml==6.0
     # via code-annotations
 six==1.16.0
     # via
@@ -163,21 +191,25 @@ six==1.16.0
     #   click-repl
     #   edx-lint
     #   event-tracking
-sqlparse==0.4.1
+sqlparse==0.4.2
     # via
     #   -r requirements/testing.txt
     #   django
-stevedore==3.4.0
-    # via code-annotations
+stevedore==3.5.0
+    # via
+    #   -r requirements/testing.txt
+    #   code-annotations
+    #   edx-django-utils
 text-unidecode==1.3
     # via python-slugify
 toml==0.10.2
+    # via pylint
+tomli==2.0.1
     # via
     #   -r requirements/testing.txt
-    #   pylint
+    #   coverage
     #   pytest
-    #   pytest-cov
-urllib3==1.26.6
+urllib3==1.26.8
     # via
     #   -r requirements/testing.txt
     #   elasticsearch
