@@ -126,7 +126,7 @@ pbr==5.8.1
     # via
     #   -r requirements/testing.txt
     #   stevedore
-platformdirs==2.4.1
+platformdirs==2.5.0
     # via pylint
 pluggy==1.0.0
     # via
