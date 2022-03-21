@@ -142,9 +142,9 @@ class SearchResultProcessor:
             match_phrases,
             DESIRED_EXCERPT_LENGTH
         )
-        excerpt_text = ELLIPSIS.join(matches)
 
-        for match_word in match_phrases:
-            excerpt_text = SearchResultProcessor.decorate_matches(excerpt_text, match_word)
+        for i, _ in enumerate(matches):
+            for match_word in match_phrases:
+                matches[i] = SearchResultProcessor.decorate_matches(matches[i], match_word)
 
-        return excerpt_text
+        return ELLIPSIS.join(matches)
