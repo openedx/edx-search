@@ -1,7 +1,7 @@
 """ Utility classes to support others """
 
 import importlib
-import collections
+from collections.abc import Iterable
 
 
 def _load_class(class_path, default):
@@ -21,7 +21,7 @@ def _load_class(class_path, default):
 
 def _is_iterable(item):
     """ Checks if an item is iterable (list, tuple, generator), but not string """
-    return isinstance(item, collections.Iterable) and not isinstance(item, str)
+    return isinstance(item, Iterable) and not isinstance(item, str)
 
 
 class ValueRange:

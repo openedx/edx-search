@@ -4,7 +4,7 @@ import ddt
 
 from django.test import TestCase
 from django.test.utils import override_settings
-from search.result_processor import SearchResultProcessor
+from search.result_processor import SearchResultProcessor, ELLIPSIS
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -249,6 +249,23 @@ class SearchResultProcessorTests(TestCase):
         }
         srp = SearchResultProcessor(test_result, search_phrase)
         self.assertIn(expected_excerpt, srp.excerpt)
+
+    def test_excerpt_ellipsis_undecorated(self):
+        """
+        Multiple matches are joined with `ELLIPSIS` as a separator.
+        This verifies that the `ELLIPSIS` is not decorated with the HTML `<b>` tag when it matches the search phrase.
+
+        E.g. when `a` was in the search phrases before, it was resulting in text like `<sp<b>a</b>n`, which is not valid
+        HTML.
+        """
+        test_result = {
+            "content": {
+                "a": "Just a line of text.",
+                "b": "Just a line of different text.",
+            }
+        }
+        srp = SearchResultProcessor(test_result, 'Just a line')
+        self.assertIn(ELLIPSIS, srp.excerpt)
 
 
 class TestSearchResultProcessor(SearchResultProcessor):
