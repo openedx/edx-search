@@ -267,6 +267,30 @@ class SearchResultProcessorTests(TestCase):
         srp = SearchResultProcessor(test_result, 'Just a line')
         self.assertIn(ELLIPSIS, srp.excerpt)
 
+    @ddt.data(
+        ("shouldn't", "This <b>shouldn't</b> have failed."),
+        ("shouldn\'t", " This <b>shouldn't</b> have failed."),
+        ('"shouldn\'t have"', "This <b>shouldn't have</b> failed."),
+        ("shouldn\\'t\\'ve", "<b>shouldn't've</b> failed."),  # An even number of apostrophes needs to be escaped.
+        ('"shouldn\'t\'ve failed"', "<b>shouldn't've failed</b>."),
+        ("shou\'dn\'t\'ve", "This <b>shou'dn't've</b> failed."),
+        ('"shou\'dn\'t\'ve failed"', "This <b>shou'dn't've failed</b>."),
+    )
+    @ddt.unpack
+    def test_excerpt_apostrophe(self, search_phrase, expected_excerpt):
+        test_result = {
+            "content": {
+                "notes": (
+                    "This should not have failed. "
+                    "This shouldn't have failed. "
+                    "This shouldn't've failed. "
+                    "This shou'dn't've failed."
+                )
+            }
+        }
+        srp = SearchResultProcessor(test_result, search_phrase)
+        self.assertIn(expected_excerpt, srp.excerpt)
+
 
 class TestSearchResultProcessor(SearchResultProcessor):
     """
