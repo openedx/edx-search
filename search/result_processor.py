@@ -131,7 +131,12 @@ class SearchResultProcessor:
             return None
 
         match_phrases = [self._match_phrase]
-        separate_phrases = list(shlex.split(self._match_phrase))
+        try:
+            separate_phrases = list(shlex.split(self._match_phrase))
+        # This can happen when the phrase contains an apostrophe - the POSIX mode does not allow unclosed quotations.
+        except ValueError:
+            separate_phrases = list(shlex.split(self._match_phrase, posix=False))
+
         if len(separate_phrases) > 1:
             match_phrases.extend(separate_phrases)
         else:
