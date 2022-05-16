@@ -99,6 +99,14 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     if not getattr(settings, "SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING", False):
         use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
 
+    # Here we check if there is a filter value for 'catalog_visibility'
+    # And then check if there a value in exclude dict
+    # If not then we only return courses with 'catalog_visibility' set to 'both'
+    # By excluding all other possible values which are "none" or "about"
+    if "catalog_visibility" not in use_field_dictionary:
+        if "catalog_visibility" not in exclude_dictionary:
+            exclude_dictionary["catalog_visibility"] = ["none", "about"]
+
     searcher = SearchEngine.get_search_engine(
         getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
     )
