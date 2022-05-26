@@ -141,3 +141,50 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         code, results = post_discovery_request({"search_string": "sun"})
         self.assertGreater(code, 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
+
+    @override_settings(COURSE_DISCOVERY_FILTERS=["catalog_visibility"])
+    def test_course_hidden_not_returned(self):
+        """It Tests that courses with 'catalog_visibility' set to 'none' or 'about' wont return """
+        DemoCourse.reset_count()
+        DemoCourse.get_and_index(
+            self.searcher,
+            {"content": {"short_description": "Find this one with the right parameter"}},
+        )
+        DemoCourse.get_and_index(
+            self.searcher,
+            {
+                "catalog_visibility": "both",
+                "content": {"short_description": "Find this one with the right parameter"},
+            },
+        )
+        DemoCourse.get_and_index(
+            self.searcher,
+            {
+                "catalog_visibility": "none",
+                "content": {"short_description": "Find this one with the right parameter"},
+            },
+        )
+
+        DemoCourse.get_and_index(
+            self.searcher,
+            {
+                "catalog_visibility": "about",
+                "content": {"short_description": "Find this one with the right parameter"},
+            },
+        )
+
+        _, results = post_discovery_request({})
+        # It should return two: since it should exclude if "catalog_visibility"
+        # is set to "both" or "about", it shall ignore when "catalog_visibility"
+        # doesn't exist
+        self.assertEqual(results["total"], 2)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertIn(DemoCourse.DEMO_COURSE_ID + "_1", result_ids)
+        self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
+
+        # If we add a filter filed for "catalog_visibility" set to "both"
+        # It should return 1, since it must exist and match.
+        _, results = post_discovery_request({"catalog_visibility": "both"})
+        self.assertEqual(results["total"], 1)
+        result_ids = [r["data"]["id"] for r in results["results"]]
+        self.assertIn(DemoCourse.DEMO_COURSE_ID + "_2", result_ids)
