@@ -6,17 +6,6 @@ from django.conf import settings
 
 from .utils import _load_class
 
-# .. toggle_name: default_elastic_search
-# .. toggle_implementation: WaffleSwitch
-# .. toggle_default: False
-# .. toggle_description: This flag forces the use of ElasticSearch. It prevents errors from switching to OpenSearch before roll out.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2022-7-11
-# .. toggle_target_removal_date: None
-# .. toggle_tickets: TNL-9899
-# .. toggle_warnings: This temporary feature toggle does not have a target removal date.
-DEFAULT_ELASTIC_SEARCH = WaffleSwitch('default_elastic_search', __name__)
-
 class SearchEngine:
     """
     Base abstract SearchEngine object.
@@ -69,10 +58,22 @@ class SearchEngine:
         """
         Returns the desired implementor (defined in settings).
         """
+
+        # .. toggle_name: default_elastic_search
+        # .. toggle_implementation: WaffleSwitch
+        # .. toggle_default: False
+        # .. toggle_description: This flag forces the use of ElasticSearch. It prevents errors from switching to OpenSearch before roll out.
+        # .. toggle_use_cases: temporary
+        # .. toggle_creation_date: 2022-7-11
+        # .. toggle_target_removal_date: None
+        # .. toggle_tickets: TNL-9899
+        # .. toggle_warnings: This temporary feature toggle does not have a target removal date.
+        DEFAULT_ELASTIC_SEARCH_SWITCH = WaffleSwitch('default_elastic_search', __name__)
+
         search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
         if search_engin_class:
             return search_engine_class(index=index)
         # TNL-9899
-        if DEFAULT_ELASTIC_SEARCH:
+        if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
             return _load_class("search.elastic.ElasticSearchEngine", None)
         return None
