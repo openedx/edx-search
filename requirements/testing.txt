@@ -55,7 +55,7 @@ code-annotations==1.3.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==6.4.1
+coverage[toml]==6.4.2
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -172,7 +172,7 @@ sqlparse==0.4.2
     # via
     #   -r requirements/base.txt
     #   django
-stevedore==3.5.0
+stevedore==4.0.0
     # via
     #   -r requirements/base.txt
     #   code-annotations

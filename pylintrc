@@ -48,7 +48,9 @@ disable =
 	too-many-arguments,
 	too-many-locals,
 	unused-wildcard-import,
-	duplicate-code,test-inherits-tests
+	duplicate-code,
+	test-inherits-tests,
+	feature-toggle-needs-doc,
 
 [REPORTS]
 output-format = text

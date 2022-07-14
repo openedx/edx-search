@@ -16,10 +16,7 @@ from .utils import _load_class
 # .. toggle_target_removal_date: None
 # .. toggle_tickets: TNL-9899
 # .. toggle_warnings: This temporary feature toggle does not have a target removal date.
-WAFFLE_NAMESPACE = 'edx_search'
-DEFAULT_ELASTIC_SEARCH_SWITCH = WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
-    f'{WAFFLE_NAMESPACE}.default_elastic_search', __name__
-)
+DEFAULT_ELASTIC_SEARCH_SWITCH = WaffleSwitch('edx_search.default_elastic_search', __name__)
 
 
 class SearchEngine:

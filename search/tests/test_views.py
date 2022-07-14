@@ -7,6 +7,7 @@ import ddt
 from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
+from waffle.testutils import override_switch
 
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
@@ -367,6 +368,7 @@ class BadSearchTest(TestCase, SearcherMixin):
         MockSearchEngine.destroy()
         super().tearDown()
 
+    @override_switch("edx_search.default_elastic_search", active=False)
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
@@ -399,6 +401,7 @@ class BadSearchTest(TestCase, SearcherMixin):
             searcher.search(query_string="test search")
 
 
+@override_switch("edx_search.default_elastic_search", active=False)
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
 class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
