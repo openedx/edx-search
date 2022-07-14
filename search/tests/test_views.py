@@ -400,8 +400,38 @@ class BadSearchTest(TestCase, SearcherMixin):
         with self.assertRaises(Exception):
             searcher.search(query_string="test search")
 
+    # The following test is the same as the previous test, but with the
+    # DEFAULT_ELASTIC_SEARCH_SWITCH waffle switch enabled.
+    @override_switch("edx_search.default_elastic_search", active=True)
+    def test_search_from_url_with_default_elastic_search(self):
+        """ ensure that we get the error back when the backend fails """
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        searcher.index([
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            },
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
+                }
+            },
+            {
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Here comes the sun"
+                }
+            },
+        ])
 
-@override_switch("edx_search.default_elastic_search", active=False)
+        code, results = post_request({"search_string": "sun"})
+        self.assertGreater(code, 499)
+        self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
+
+
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
 class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
@@ -414,11 +444,43 @@ class BadIndexTest(TestCase, SearcherMixin):
         MockSearchEngine.destroy()
         super().tearDown()
 
+    @override_switch("edx_search.default_elastic_search", active=False)
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(Exception):
             searcher.index([{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+
+    # The following test is the same as the previous test, but with the
+    # DEFAULT_ELASTIC_SEARCH_SWITCH waffle switch enabled.
+    @override_switch("edx_search.default_elastic_search", active=True)
+    def test_search_from_url_with_default_elastic_search(self):
+        """ ensure that we get the error back when the backend fails """
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        searcher.index([
+            {
+                "id": "FAKE_ID_1",
+                "content": {
+                    "text": "Little Darling, it's been a long long lonely winter"
+                }
+            },
+            {
+                "id": "FAKE_ID_2",
+                "content": {
+                    "text": "Little Darling, it's been a year since sun been gone"
+                }
+            },
+            {
+                "id": "FAKE_ID_3",
+                "content": {
+                    "text": "Here comes the sun"
+                }
+            },
+        ])
+
+        code, results = post_request({"search_string": "sun"})
+        self.assertGreater(code, 499)
+        self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
