@@ -457,27 +457,7 @@ class BadIndexTest(TestCase, SearcherMixin):
     def test_search_from_url_with_default_elastic_search(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        searcher.index([
-            {
-                "id": "FAKE_ID_1",
-                "content": {
-                    "text": "Little Darling, it's been a long long lonely winter"
-                }
-            },
-            {
-                "id": "FAKE_ID_2",
-                "content": {
-                    "text": "Little Darling, it's been a year since sun been gone"
-                }
-            },
-            {
-                "id": "FAKE_ID_3",
-                "content": {
-                    "text": "Here comes the sun"
-                }
-            },
-        ])
-
+        searcher.index([{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
         code, results = post_request({"search_string": "sun"})
         self.assertGreater(code, 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
