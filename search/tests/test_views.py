@@ -463,6 +463,19 @@ class BadIndexTest(TestCase, SearcherMixin):
     #     self.assertEqual(searcher, testSearch(index=None)))
 
 
+# class BadEngineTest(TestCase, SearcherMixin):
+#     """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled, 
+#     make sure ElasticSearch is used by default. """
+
+#     def setUp(self):
+#         super().setUp()
+#         MockSearchEngine.destroy()
+
+#     def tearDown(self):
+#         MockSearchEngine.destroy()
+#         super().tearDown()
+
+
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
