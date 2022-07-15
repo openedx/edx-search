@@ -13,7 +13,7 @@ from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import post_request, SearcherMixin
-from search.utils import _load_class
+# from search.utils import _load_class
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
