@@ -75,7 +75,8 @@ class SearchEngine:
         if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
             search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
             return search_engine_class(index=index)
-        search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
-        if search_engine_class:
-            return search_engine_class(index=index)
+        else:
+            search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
+            if search_engine_class:
+                return search_engine_class(index=index)
         return None

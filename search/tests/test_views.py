@@ -453,7 +453,7 @@ class BadIndexTest(TestCase, SearcherMixin):
 
     # The following test is the same as the previous test, but with the
     # DEFAULT_ELASTIC_SEARCH_SWITCH waffle switch enabled.
-    @override_settings(SEARCH_ENGINE="non-existant.search_engine")
+    @override_settings(SEARCH_ENGINE="non_existant.search_engine")
     @override_switch("edx_search.default_elastic_search", active=True)
     def test_search_from_url_with_default_elastic_search(self):
         """ ensure that we get the error back when the backend fails """
