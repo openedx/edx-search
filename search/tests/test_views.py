@@ -459,7 +459,8 @@ class BadIndexTest(TestCase, SearcherMixin):
     def test_search_from_url_with_default_elastic_search(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        self.assertEqual(searcher, _load_class("search.elastic.ElasticSearchEngine", None))
+        testSearch = _load_class("search.elastic.ElasticSearchEngine", None)
+        self.assertEqual(searcher, testSearch(index=None)))
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
