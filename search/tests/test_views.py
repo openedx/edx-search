@@ -445,7 +445,6 @@ class BadIndexTest(TestCase, SearcherMixin):
         MockSearchEngine.destroy()
         super().tearDown()
 
-    @override_switch("edx_search.default_elastic_search", active=False)
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
