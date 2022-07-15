@@ -76,7 +76,7 @@ class SearchEngine:
             if search_engine_class:
                 return search_engine_class(index=index)
         # TNL-9899
-        except:
+        except SearchEngine.DoesNotExist:
             if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
                 search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
                 return search_engine_class(index=index)
