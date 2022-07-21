@@ -11,7 +11,7 @@ from waffle.testutils import override_switch
 
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.tests.tests import TEST_INDEX_NAME
+from search.tests.tests import TEST_INDEX_NAME, ELASTIC_SEARCH_NAME
 from search.tests.utils import post_request, SearcherMixin
 # from search.utils import _load_class
 
@@ -358,6 +358,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
 @override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
+@override_switch("edx_search.default_elastic_search", active=False)
 class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -369,7 +370,6 @@ class BadSearchTest(TestCase, SearcherMixin):
         MockSearchEngine.destroy()
         super().tearDown()
 
-    @override_switch("edx_search.default_elastic_search", active=False)
     def test_search_from_url(self):
         """ ensure that we get the error back when the backend fails """
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
@@ -434,6 +434,7 @@ class BadSearchTest(TestCase, SearcherMixin):
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
+@override_switch("edx_search.default_elastic_search", active=False)
 class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -462,17 +463,27 @@ class BadIndexTest(TestCase, SearcherMixin):
     #     self.assertEqual(searcher, testSearch(index=None)))
 
 
-# class BadEngineTest(TestCase, SearcherMixin):
-#     """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled, 
-#     make sure ElasticSearch is used by default. """
+@override_settings(SEARCH_ENGINE="nonexistentengine")
+@override_switch("edx_search.default_elastic_search", active=True)
+class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
+    """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled,
+    make sure ElasticSearch is used by default. """
 
-#     def setUp(self):
-#         super().setUp()
-#         MockSearchEngine.destroy()
+    def setUp(self):
+        super().setUp()
+        MockSearchEngine.destroy()
 
-#     def tearDown(self):
-#         MockSearchEngine.destroy()
-#         super().tearDown()
+    def tearDown(self):
+        MockSearchEngine.destroy()
+        super().tearDown()
+
+    def test_search(self):
+        """ ensure we use ElasticSearch when an invalid engine is called """
+        with self.assertRasies(Exception):
+            searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+            default_searcher = SearchEngine.get_search_engine(ELASTIC_SEARCH_NAME)
+            self.assertEqual(searcher, default_searcher)
+
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")

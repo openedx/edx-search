@@ -9,6 +9,7 @@ from search.elastic import ElasticSearchEngine
 
 
 TEST_INDEX_NAME = "test_index"
+ELASTIC_SEARCH_NAME = "search.elastic.ElasticSearchEngine"
 
 
 def post_request(body, course_id=None):

@@ -14,7 +14,7 @@ from elasticsearch import Elasticsearch
 
 from search.search_engine_base import SearchEngine
 from search.elastic import ElasticSearchEngine
-from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
+from search.tests.utils import SearcherMixin, TEST_INDEX_NAME, ELASTIC_SEARCH_NAME
 from search.utils import ValueRange, DateRange
 
 from .mock_search_engine import MockSearchEngine
