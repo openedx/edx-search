@@ -479,7 +479,7 @@ class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
 
     def test_search(self):
         """ ensure we use ElasticSearch when an invalid engine is called """
-        with self.assertRasies(Exception):
+        with self.assertRaises(Exception):
             searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
             default_searcher = SearchEngine.get_search_engine(ELASTIC_SEARCH_NAME)
             self.assertEqual(searcher, default_searcher)
