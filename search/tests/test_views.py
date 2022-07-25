@@ -422,7 +422,7 @@ class BadIndexTest(TestCase, SearcherMixin):
 
 
 @override_settings(SEARCH_ENGINE="nonexistentengine")
-@override_switch("edx_search.default_elastic_search", active=True)
+@override_switch("edx_search.default_elastic_search", True)
 class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
     """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled,
     make sure ElasticSearch is used by default. """
@@ -437,7 +437,8 @@ class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
 
     def test_search(self):
         """ ensure we use ElasticSearch when the switch is on """
-        self.assertTrue(DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled())
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        self.assertTrue(searcher)
         # searcher = SearchEngine.get_search_engine("index")
         # elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
         # default_searcher = elastic_engine_class(index=TEST_INDEX_NAME)
