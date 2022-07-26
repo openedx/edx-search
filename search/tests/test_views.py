@@ -437,12 +437,12 @@ class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
 
     def test_search(self):
         """ ensure we use ElasticSearch when the switch is on """
-        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        self.assertTrue(searcher)
-        # searcher = SearchEngine.get_search_engine("index")
-        # elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
-        # default_searcher = elastic_engine_class(index=TEST_INDEX_NAME)
-        # self.assertEqual(searcher, type(default_searcher))
+        # searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        # self.assertTrue(searcher)
+        searcher = SearchEngine.get_search_engine("index")
+        elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
+        default_searcher = elastic_engine_class(index=TEST_INDEX_NAME)
+        self.assertEqual(searcher, type(default_searcher))
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")

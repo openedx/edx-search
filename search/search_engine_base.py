@@ -17,7 +17,7 @@ from .utils import _load_class
 # .. toggle_target_removal_date: None
 # .. toggle_tickets: TNL-9899
 # .. toggle_warnings: This temporary feature toggle does not have a target removal date.
-DEFAULT_ELASTIC_SEARCH_SWITCH = WaffleSwitch('edx_search.default_elastic_search', __name__)
+DEFAULT_ELASTIC_SEARCH_SWITCH = 'edx_search.default_elastic_search'
 
 
 class SearchEngine:
@@ -73,11 +73,9 @@ class SearchEngine:
         Returns the desired implementor (defined in settings).
         """
         # TNL-9899
-        # if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
-        if switch_is_active('edx_search.default_elastic_search'):
-            return True
-            # search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
-            # return search_engine_class(index=index)
+        if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
+            search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
+            return search_engine_class(index=index)
         search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
         return search_engine_class(index=index) if search_engine_class else None
         # try:
