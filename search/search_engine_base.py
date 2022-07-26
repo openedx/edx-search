@@ -71,6 +71,7 @@ class SearchEngine:
         """
         Returns the desired implementor (defined in settings).
         """
+        return True
         # TNL-9899
         if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
             return True
