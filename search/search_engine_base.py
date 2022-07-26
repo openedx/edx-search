@@ -1,6 +1,7 @@
 """ Abstract SearchEngine with factory method """
 # This will get called by tests, but pylint thinks that it is not used
 
+from waffle import switch_is_active
 from edx_toggles.toggles import WaffleSwitch
 from django.conf import settings
 
@@ -73,7 +74,7 @@ class SearchEngine:
         """
         # TNL-9899
         # if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
-        if waffle.switch_is_active('edx_search.default_elastic_search'):
+        if switch_is_active('edx_search.default_elastic_search'):
             return True
             # search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
             # return search_engine_class(index=index)
