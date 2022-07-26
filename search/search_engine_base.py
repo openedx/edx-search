@@ -71,9 +71,9 @@ class SearchEngine:
         """
         Returns the desired implementor (defined in settings).
         """
-        return True
         # TNL-9899
-        if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
+        # if DEFAULT_ELASTIC_SEARCH_SWITCH.is_enabled():
+        if waffle.switch_is_active('edx_search.default_elastic_search'):
             return True
             # search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
             # return search_engine_class(index=index)
