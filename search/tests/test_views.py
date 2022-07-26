@@ -7,7 +7,7 @@ import ddt
 from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
-from waffle.testutils import override_waffle_switch
+from waffle.testutils import override_switch
 
 from search.search_engine_base import SearchEngine
 from search.utils import _load_class
@@ -357,7 +357,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
 @override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
-@override_waffle_switch("edx_search.default_elastic_search", active=False)
+@override_switch("edx_search.default_elastic_search", active=False)
 class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -402,7 +402,7 @@ class BadSearchTest(TestCase, SearcherMixin):
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
-@override_waffle_switch("edx_search.default_elastic_search", active=False)
+@override_switch("edx_search.default_elastic_search", active=False)
 class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -422,7 +422,7 @@ class BadIndexTest(TestCase, SearcherMixin):
 
 
 @override_settings(SEARCH_ENGINE="nonexistentengine")
-@override_waffle_switch("edx_search.default_elastic_search", True)
+@override_switch("edx_search.default_elastic_search", True)
 class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
     """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled,
     make sure ElasticSearch is used by default. """
