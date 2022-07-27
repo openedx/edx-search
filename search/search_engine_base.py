@@ -1,7 +1,7 @@
 """ Abstract SearchEngine with factory method """
 # This will get called by tests, but pylint thinks that it is not used
 
-from waffle import switch_is_active  # lint-amnesty, pylint: disable=invalid-django-waffle-import
+from waffle import switch_is_active
 from django.conf import settings
 
 from .utils import _load_class

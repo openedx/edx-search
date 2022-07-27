@@ -51,7 +51,6 @@ disable =
 	duplicate-code,
 	test-inherits-tests,
 	feature-toggle-needs-doc,
-	illegal-waffle-usage,
 
 [REPORTS]
 output-format = text
