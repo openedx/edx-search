@@ -438,8 +438,6 @@ class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
 
     def test_search_default(self):
         """ ensure we default to ElasticSearch when the switch is on """
-        # searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        # self.assertTrue(searcher)
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
         elastic_searcher = elastic_engine_class(index="elastic")
