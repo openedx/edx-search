@@ -84,4 +84,6 @@ class SearchEngine:
             if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
                 search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
                 return search_engine_class(index=index)
-            return None
+            else:
+                raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
+ 
