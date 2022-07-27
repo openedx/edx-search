@@ -10,6 +10,7 @@ from datetime import datetime
 from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
+from waffle.testutils import override_switch
 from elasticsearch import Elasticsearch
 
 from search.search_engine_base import SearchEngine
@@ -25,6 +26,7 @@ from .mock_search_engine import MockSearchEngine
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(MOCK_SEARCH_BACKING_FILE=None)
+@override_switch(DEFAULT_ELASTIC_SEARCH_SWITCH, active=False)
 class MockSearchTests(TestCase, SearcherMixin):
     """ Test operation of search activities """
     @property
