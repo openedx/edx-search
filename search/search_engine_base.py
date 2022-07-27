@@ -72,16 +72,16 @@ class SearchEngine:
         Returns the desired implementor (defined in settings).
         """
         # TNL-9899
-        if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
-            search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
-            return search_engine_class(index=index)
-        search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
-        return search_engine_class(index=index) if search_engine_class else None
-        # try:
-        #     search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
-        #     return search_engine_class(index=index) if search_engine_class else None
-        # finally:
-        #     if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
-        #         search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
-        #         return search_engine_class(index=index)
-        #     return None
+        # if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
+        #     search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
+        #     return search_engine_class(index=index)
+        # search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
+        # return search_engine_class(index=index) if search_engine_class else None
+        try:
+            search_engine_class = _load_class(getattr(settings, "SEARCH_ENGINE", None), None)
+            return search_engine_class(index=index) if search_engine_class else None
+        finally:
+            if switch_is_active(DEFAULT_ELASTIC_SEARCH_SWITCH):
+                search_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
+                return search_engine_class(index=index)
+            return None
