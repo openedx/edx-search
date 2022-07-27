@@ -86,4 +86,3 @@ class SearchEngine:
                 return search_engine_class(index=index)
             else:
                 raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
- 
