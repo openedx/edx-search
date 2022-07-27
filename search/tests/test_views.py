@@ -11,7 +11,7 @@ from waffle.testutils import override_switch
 
 from search.search_engine_base import SearchEngine
 from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
-from search.utils import _load_class
+# from search.utils import _load_class
 from search.elastic import ElasticSearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
