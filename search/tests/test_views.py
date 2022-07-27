@@ -7,11 +7,13 @@ import ddt
 from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
+from waffle.testutils import override_switch
 
 from search.search_engine_base import SearchEngine
+from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
+from search.elastic import ElasticSearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.tests.tests import TEST_INDEX_NAME
-from search.tests.utils import post_request, SearcherMixin
+from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -356,6 +358,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
 @override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
+@override_switch(DEFAULT_ELASTIC_SEARCH_SWITCH, active=False)
 class BadSearchTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -400,6 +403,7 @@ class BadSearchTest(TestCase, SearcherMixin):
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringIndexEngine")
+@override_switch(DEFAULT_ELASTIC_SEARCH_SWITCH, active=False)
 class BadIndexTest(TestCase, SearcherMixin):
     """ Make sure that we can error message when there is a problem """
 
@@ -416,6 +420,26 @@ class BadIndexTest(TestCase, SearcherMixin):
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
         with self.assertRaises(Exception):
             searcher.index([{"id": "FAKE_ID_3", "content": {"text": "Here comes the sun"}}])
+
+
+@override_settings(SEARCH_ENGINE="nonexistentengine")
+@override_switch(DEFAULT_ELASTIC_SEARCH_SWITCH, active=True)
+class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
+    """ When the DEFAULT_ELASTIC_SEARCH_SWITCH is enabled,
+    make sure ElasticSearch is used by default. """
+
+    def setUp(self):
+        super().setUp()
+        MockSearchEngine.destroy()
+
+    def tearDown(self):
+        MockSearchEngine.destroy()
+        super().tearDown()
+
+    def test_search_with_switch(self):
+        """ ensure we use ElasticSearch when the switch is on """
+        searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        self.assertTrue(isinstance(searcher, ElasticSearchEngine))
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
