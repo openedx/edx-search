@@ -2,7 +2,7 @@
 # This will get called by tests, but pylint thinks that it is not used
 
 from waffle import switch_is_active
-from edx_toggles.toggles import WaffleSwitch
+# from edx_toggles.toggles import WaffleSwitch
 from django.conf import settings
 
 from .utils import _load_class
