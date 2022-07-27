@@ -67,6 +67,7 @@ class MockSearchTests(TestCase, SearcherMixin):
 
     def test_factory_creator(self):
         """ Make sure that search object implements SearchEngine interface """
+        self.assertEqual(type(self.searcher), type(SearchEngine))
         self.assertTrue(isinstance(self.searcher, SearchEngine))
 
     def test_abstract_impl(self):
