@@ -12,6 +12,7 @@ from waffle.testutils import override_switch
 from search.search_engine_base import SearchEngine
 from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
 from search.utils import _load_class
+from search.elastic import ElasticSearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
 
@@ -437,11 +438,13 @@ class DefaultElasticSearchSwitchTest(TestCase, SearcherMixin):
         super().tearDown()
 
     def test_search_default(self):
-        """ ensure we default to ElasticSearch when the switch is on """
+        """ ensure we use ElasticSearch when the switch is on """
+        # searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
+        # elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
+        # elastic_searcher = elastic_engine_class(index="elastic")
+        # self.assertEqual(type(searcher), type(elastic_searcher))
         searcher = SearchEngine.get_search_engine(TEST_INDEX_NAME)
-        elastic_engine_class = _load_class("search.elastic.ElasticSearchEngine", None)
-        elastic_searcher = elastic_engine_class(index="elastic")
-        self.assertEqual(type(searcher), type(elastic_searcher))
+        self.assertTrue(isinstance(searcher, ElasticSearchEngine))
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
