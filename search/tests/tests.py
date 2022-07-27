@@ -14,6 +14,7 @@ from waffle.testutils import override_switch
 from elasticsearch import Elasticsearch
 
 from search.search_engine_base import SearchEngine
+from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
 from search.elastic import ElasticSearchEngine
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from search.utils import ValueRange, DateRange
