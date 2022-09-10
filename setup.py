@@ -54,7 +54,7 @@ setup(
     description='Search and index routines for index access',
     author='edX',
     author_email='oscm@edx.org',
-    url='https://github.com/edx/edx-search',
+    url='https://github.com/openedx/edx-search',
     license='AGPL',
     classifiers=[
         'Development Status :: 3 - Alpha',
