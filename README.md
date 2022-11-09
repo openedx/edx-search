@@ -34,6 +34,15 @@ where
 
 3. `search` - the operation to find matching documents within the index. `doc_type` is supported as an optional keyword parameter to return results only with a certain doc_type
 
+## Configuring for multi-tenancy
+
+The modules exposes a setting `ELASTIC_SEARCH_INDEX_PREFIX` to enable so that the indices for multiple clients do not collide.
+
+```python
+SearchEngine(index_name="test")
+```
+
+When invoked, this line will create an index named `test` on Elastic Search. Setting `ELASTIC_SEARCH_INDEX_PREFIX="client1_"` will instead create the index `client1_test`.
 
 ## Index documents
 Index documents are passed to the search application as python dictionaries, along with a `doc_type` document type, which is also optionally supported as a way to return only certain document types from a search.
