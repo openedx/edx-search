@@ -304,16 +304,16 @@ class ElasticSearchEngine(SearchEngine):
         we'll load them again from Elasticsearch
         """
         # Try loading the mapping from the cache.
-        mapping = ElasticSearchEngine.get_mappings(self.index_name)
+        mapping = ElasticSearchEngine.get_mappings(self._prefixed_index_name)
 
         # Fall back to Elasticsearch
         if not mapping:
             mapping = self._es.indices.get_mapping(
-                index=self.index_name
-            ).get(self.index_name, {}).get("mappings", {})
+                index=self._prefixed_index_name
+            ).get(self._prefixed_index_name, {}).get("mappings", {})
             # Cache the mapping, if one was retrieved
             if mapping:
-                ElasticSearchEngine.set_mappings(self.index_name, mapping)
+                ElasticSearchEngine.set_mappings(self._prefixed_index_name, mapping)
 
         return mapping
 
@@ -323,14 +323,21 @@ class ElasticSearchEngine(SearchEngine):
 
         Next time ES mappings is are requested.
         """
-        ElasticSearchEngine.set_mappings(self.index_name, {})
+        ElasticSearchEngine.set_mappings(self._prefixed_index_name, {})
 
     def __init__(self, index=None):
         super().__init__(index)
         es_config = getattr(settings, "ELASTIC_SEARCH_CONFIG", [{}])
         self._es = getattr(settings, "ELASTIC_SEARCH_IMPL", Elasticsearch)(es_config)
-        if not self._es.indices.exists(index=self.index_name):
-            self._es.indices.create(index=self.index_name)
+        params = None
+
+        if not self._es.indices.exists(index=self._prefixed_index_name):
+            self._es.indices.create(index=self._prefixed_index_name, params=params)
+
+    @property
+    def _prefixed_index_name(self):
+        prefix = getattr(settings, "ELASTICSEARCH_INDEX_PREFIX", "")
+        return prefix + self.index_name
 
     def _check_mappings(self, body):
         """
@@ -396,9 +403,10 @@ class ElasticSearchEngine(SearchEngine):
         }
 
         if new_properties:
+
             self._es.indices.put_mapping(
-                index=self.index_name,
-                body={"properties": new_properties}
+                index=self._prefixed_index_name,
+                body={"properties": new_properties},
             )
             self._clear_mapping()
 
@@ -417,7 +425,7 @@ class ElasticSearchEngine(SearchEngine):
                 id_ = source.get("id")
                 log.debug("indexing object with id %s", id_)
                 action = {
-                    "_index": self.index_name,
+                    "_index": self._prefixed_index_name,
                     "_id": id_,
                     "_source": source
                 }
@@ -437,14 +445,13 @@ class ElasticSearchEngine(SearchEngine):
         """
         Implements call to remove the documents from the index
         """
-
         try:
             actions = []
             for doc_id in doc_ids:
                 log.debug("Removing document with id %s", doc_id)
                 action = {
                     "_op_type": "delete",
-                    "_index": self.index_name,
+                    "_index": self._prefixed_index_name,
                     "_id": doc_id
                 }
                 actions.append(action)
@@ -568,7 +575,6 @@ class ElasticSearchEngine(SearchEngine):
         """
 
         log.debug("searching index with %s", query_string)
-
         elastic_queries = []
         elastic_filters = []
 
@@ -642,7 +648,7 @@ class ElasticSearchEngine(SearchEngine):
             body["aggs"] = _process_aggregation_terms(aggregation_terms)
 
         try:
-            es_response = self._es.search(index=self.index_name, body=body, **kwargs)
+            es_response = self._es.search(index=self._prefixed_index_name, body=body, **kwargs)
         except exceptions.ElasticsearchException as ex:
             log.exception("error while searching index - %r", ex)
             raise

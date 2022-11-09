@@ -27,6 +27,11 @@ from .mock_search_engine import MockSearchEngine
 @override_settings(MOCK_SEARCH_BACKING_FILE=None)
 class MockSearchTests(TestCase, SearcherMixin):
     """ Test operation of search activities """
+
+    @property
+    def index_name(self):
+        return TEST_INDEX_NAME
+    
     @property
     def _is_elastic(self):
         """ check search engine implementation, to manage cleanup differently """
@@ -39,11 +44,11 @@ class MockSearchTests(TestCase, SearcherMixin):
         if self._is_elastic:
             _elasticsearch = Elasticsearch()
             # Make sure that we are fresh
-            _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+            _elasticsearch.indices.delete(index=self.index_name, ignore=[400, 404])
 
             config_body = {}
             # ignore unexpected-keyword-arg; ES python client documents that it can be used
-            _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
+            _elasticsearch.indices.create(index=self.index_name, ignore=400, body=config_body)
         else:
             MockSearchEngine.destroy()
         self._searcher = None
@@ -55,7 +60,7 @@ class MockSearchTests(TestCase, SearcherMixin):
         if self._is_elastic:
             _elasticsearch = Elasticsearch()
             # ignore unexpected-keyword-arg; ES python client documents that it can be used
-            _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+            _elasticsearch.indices.delete(index=self.index_name, ignore=[400, 404])
         else:
             MockSearchEngine.destroy()
 
