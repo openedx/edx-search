@@ -266,3 +266,5 @@ To stop an Elasticsearch Docker container, run:
 ```
 make test.stop_elasticsearch
 ```
+
+Added to trigger tests only
