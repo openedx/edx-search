@@ -7,18 +7,35 @@
 import json
 import os
 from datetime import datetime
-
 from unittest.mock import patch
+
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
 from elasticsearch.helpers import BulkIndexError
-
-from search.api import perform_search, NoSearchEngineError
+from search.api import NoSearchEngineError, perform_search
 from search.elastic import RESERVED_CHARACTERS
-from search.tests.mock_search_engine import MockSearchEngine, json_date_to_datetime
+from search.tests.mock_search_engine import (MockSearchEngine,
+                                             json_date_to_datetime)
 from search.tests.tests import MockSearchTests
-from search.tests.utils import ErroringElasticImpl, SearcherMixin
+from search.tests.utils import (TEST_INDEX_NAME, ErroringElasticImpl,
+                                SearcherMixin)
+
+
+@override_settings(ELASTIC_SEARCH_INDEX_PREFIX='prefixed_')
+@override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
+class ElasticSearchPrefixTests(MockSearchTests):
+    """
+    Override that runs the same tests for ElasticSearchTests,
+    but with a prefixed index name.
+    """
+
+    @property
+    def index_name(self):
+        """
+        The search index name to be used for this test.
+        """
+        return f"prefixed_{TEST_INDEX_NAME}"
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
