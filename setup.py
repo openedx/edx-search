@@ -70,6 +70,8 @@ setup(
         'Framework :: Django :: 3.0',
         'Framework :: Django :: 3.1',
         'Framework :: Django :: 3.2',
+        'Framework :: Django :: 4.0',
+        'Framework :: Django :: 4.2',
     ],
     packages=['search', 'search.tests', 'edxsearch'],
     install_requires=load_requirements('requirements/base.in')
