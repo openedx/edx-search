@@ -43,5 +43,4 @@ jobs:
       uses: codecov/codecov-action@v3
       with:
         fail_ci_if_error: true
-        version: "v0.1.15"
-        files: htmlcov/index.html
+        files: htmlcov/index.xml
