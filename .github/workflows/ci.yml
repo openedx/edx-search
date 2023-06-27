@@ -38,6 +38,9 @@ jobs:
         TOXENV: ${{ matrix.toxenv }}
       run: sleep 10 && tox
 
+    - name: Check generated files
+      run: ls
+    
     - name: Run Coverage
       if: matrix.python-version == '3.8' && matrix.toxenv=='django42'
       uses: codecov/codecov-action@v3
