@@ -654,6 +654,9 @@ class ElasticSearchEngine(SearchEngine):
             body["aggs"] = _process_aggregation_terms(aggregation_terms)
 
         try:
+            #Here we set the sort by number asnc 
+            #Ref: https://www.elastic.co/guide/en/elasticsearch/reference/7.17/getting-started.html
+            body["sort"] = [{"number":"asc"}]
             es_response = self._es.search(index=self._prefixed_index_name, body=body, **kwargs)
         except exceptions.ElasticsearchException as ex:
             log.exception("error while searching index - %r", ex)
