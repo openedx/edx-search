@@ -1,4 +1,4 @@
-.PHONY: clean quality requirements validate test test-python quality-python
+.PHONY: clean quality requirements validate test test-python quality-python install-local
 
 clean:
 	find . -name '__pycache__' -exec rm -rf {} +
@@ -55,3 +55,7 @@ test-python: clean ## run tests using pytest and generate coverage report
 	pytest
 
 test: test-python ## run tests and generate coverage report
+
+install-local: ## installs your local edx-search into the LMS and CMS python virtualenvs
+	docker exec -t edx.devstack.lms bash -c '. /edx/app/edxapp/venvs/edxapp/bin/activate && cd /edx/app/edxapp/edx-platform && pip uninstall -y edx-search && pip install -e /edx/src/edx-search && pip freeze | grep edx-search'
+	docker exec -t edx.devstack.cms bash -c '. /edx/app/edxapp/venvs/edxapp/bin/activate && cd /edx/app/edxapp/edx-platform && pip uninstall -y edx-search && pip install -e /edx/src/edx-search && pip freeze | grep edx-search'
