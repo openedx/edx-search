@@ -63,8 +63,8 @@ def perform_course_search(
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
 
-    results = searcher.search_string(
-        search_term,
+    results = searcher.search(
+        query_string=search_term,
         field_dictionary=field_dictionary,
         filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
