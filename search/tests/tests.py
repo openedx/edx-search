@@ -130,6 +130,15 @@ class MockSearchTests(TestCase, SearcherMixin):
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 3)
 
+    def test_log_params(self):
+        """ Test that if you turn on detailed logging, search doesn't explode. """
+        test_string = "A test string"
+        self.searcher.index([{"content": {"name": test_string}}])
+
+        # search string
+        response = self.searcher.search(query_string=test_string, log_search_params=True)
+        self.assertEqual(response["total"], 1)
+
     def test_field(self):
         """ test matching on a field """
         test_string = "A test string"

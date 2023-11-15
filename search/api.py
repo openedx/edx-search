@@ -62,6 +62,7 @@ def perform_course_search(
     )
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
+    log_search_params = getattr(settings, "SEARCH_COURSEWARE_CONTENT_LOG_PARAMS", False)
 
     results = searcher.search(
         query_string=search_term,
@@ -70,6 +71,7 @@ def perform_course_search(
         exclude_dictionary=exclude_dictionary,
         size=size,
         from_=from_,
+        log_search_params=log_search_params,
     )
 
     # post-process the result
