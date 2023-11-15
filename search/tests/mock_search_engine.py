@@ -340,6 +340,7 @@ class MockSearchEngine(SearchEngine):
                filter_dictionary=None,
                exclude_dictionary=None,
                aggregation_terms=None,
+               log_search_params=False,
                **kwargs):  # pylint: disable=too-many-arguments
         """
         Perform search upon documents within index.

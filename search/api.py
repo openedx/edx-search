@@ -41,7 +41,7 @@ class NoSearchEngineError(Exception):
     """
 
 
-def perform_search(
+def perform_course_search(
         search_term,
         user=None,
         size=10,
@@ -62,14 +62,16 @@ def perform_search(
     )
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
+    log_search_params = getattr(settings, "SEARCH_COURSEWARE_CONTENT_LOG_PARAMS", False)
 
-    results = searcher.search_string(
-        search_term,
+    results = searcher.search(
+        query_string=search_term,
         field_dictionary=field_dictionary,
         filter_dictionary=filter_dictionary,
         exclude_dictionary=exclude_dictionary,
         size=size,
         from_=from_,
+        log_search_params=log_search_params,
     )
 
     # post-process the result
