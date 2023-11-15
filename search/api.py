@@ -41,7 +41,7 @@ class NoSearchEngineError(Exception):
     """
 
 
-def perform_search(
+def perform_course_search(
         search_term,
         user=None,
         size=10,

@@ -10,7 +10,7 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-from .api import perform_search, course_discovery_search, course_discovery_filter_fields
+from .api import perform_course_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
@@ -96,7 +96,7 @@ def do_search(request, course_id=None):
             }
         )
 
-        results = perform_search(
+        results = perform_course_search(
             search_term,
             user=request.user,
             size=size,
