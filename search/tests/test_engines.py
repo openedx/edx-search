@@ -13,7 +13,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
 from elasticsearch.helpers import BulkIndexError
-from search.api import NoSearchEngineError, perform_course_search
+from search.api import NoSearchEngineError, perform_search
 from search.elastic import RESERVED_CHARACTERS
 from search.tests.mock_search_engine import (MockSearchEngine,
                                              json_date_to_datetime)
@@ -238,7 +238,7 @@ class TestNone(TestCase):
     def test_perform_search(self):
         """ search opertaion should yeild an exception with no search engine """
         with self.assertRaises(NoSearchEngineError):
-            perform_course_search("abc test")
+            perform_search("abc test")
 
 
 @override_settings(SEARCH_ENGINE="search.elastic.ElasticSearchEngine")
