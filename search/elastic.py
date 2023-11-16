@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 RESERVED_CHARACTERS = "+=><!(){}[]^~*:\\/&|?"
 
 
-def _translate_hits(es_response):
+def _translate_hits(es_response, log_hit_data=False):
     """
     Provide result set in our desired format from elasticsearch results.
 
@@ -123,11 +123,14 @@ def _translate_hits(es_response):
             "other": agg_item["sum_other_doc_count"],
         }
 
-    results = list(map(translate_result, es_response["hits"]["hits"]))
+    hits_result = es_response["hits"]["hits"]
+    total = es_response["hits"]["total"]["value"]
+    max_score = es_response["hits"]["max_score"]
+    results = list(map(translate_result, hits_result))
     response = {
         "took": es_response["took"],
-        "total": es_response["hits"]["total"]["value"],
-        "max_score": es_response["hits"]["max_score"],
+        "total": total,
+        "max_score": max_score,
         "results": results,
     }
     if "aggregations" in es_response:
@@ -136,6 +139,9 @@ def _translate_hits(es_response):
             for bucket in es_response["aggregations"]
             if "total_" not in bucket
         }
+
+    if log_hit_data:
+        log.info(f"elastic search results: total {total}, max_score {max_score}, raw hit count {len(hits_result)}")
 
     return response
 
@@ -663,4 +669,4 @@ class ElasticSearchEngine(SearchEngine):
             log.exception("error while searching index - %r", ex)
             raise
 
-        return _translate_hits(es_response)
+        return _translate_hits(es_response, log_hit_data=log_search_params)
