@@ -114,6 +114,7 @@ def do_search(request, course_id=None):
                 "page_size": size,
                 "page_number": page,
                 "results_count": results["total"],
+                "filtering_time_in_seconds": results["filtering_time_in_seconds"],
             }
         )
 

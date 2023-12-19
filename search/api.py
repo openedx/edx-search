@@ -82,7 +82,7 @@ def perform_search(
 
     # post-process the result
     start = time.time()
-q
+
     for result in results["results"]:
         result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
 
@@ -90,12 +90,15 @@ q
     results["results"] = [r for r in results["results"] if r["data"] is not None]
 
     end = time.time()
+    filtering_time_in_seconds = end - start
 
     log.info("ES result timings: %s", {
         'es_query_time_in_ms': results['took'],
-        'filtering_time_in_seconds': end - start,
+        'filtering_time_in_seconds': filtering_time_in_seconds,
         'es_has_timed_out': results['timed_out'],
     })
+
+    results['filtering_time_in_seconds'] = filtering_time_in_seconds
     return results
 
 
