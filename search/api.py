@@ -9,6 +9,11 @@ from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 from .utils import DateRange
 
+import logging
+import time
+
+log = logging.getLogger(__name__)
+
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
 
@@ -74,13 +79,23 @@ def perform_search(
         log_search_params=log_search_params,
     )
 
+
     # post-process the result
+    start = time.time()
+q
     for result in results["results"]:
         result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
 
     results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
     results["results"] = [r for r in results["results"] if r["data"] is not None]
 
+    end = time.time()
+
+    log.info("ES result timings: %s", {
+        'es_query_time_in_ms': results['took'],
+        'filtering_time_in_seconds': end - start,
+        'es_has_timed_out': results['timed_out'],
+    })
     return results
 
 
