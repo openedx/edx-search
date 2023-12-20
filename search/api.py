@@ -107,7 +107,6 @@ def perform_search(
 
     log.info("ES result timings: %s", {
         "es_query_time_in_ms": results["took"],
-        "es_has_timed_out": results["timed_out"],
         "processing_time_in_seconds": processing_time_in_seconds,
         "search_time_in_seconds": search_time_in_seconds,
         "filter_generation_time_in_seconds": filter_generation_time_in_seconds,
