@@ -69,6 +69,10 @@ def perform_search(
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
     log_search_params = getattr(settings, "SEARCH_COURSEWARE_CONTENT_LOG_PARAMS", False)
 
+    search_time = {
+        "start": time.time()
+    }
+
     results = searcher.search(
         query_string=search_term,
         field_dictionary=field_dictionary,
@@ -79,26 +83,32 @@ def perform_search(
         log_search_params=log_search_params,
     )
 
+    processing_time = {
+        "start": time.time()
+    }
 
     # post-process the result
-    start = time.time()
-
     for result in results["results"]:
         result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
 
     results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
     results["results"] = [r for r in results["results"] if r["data"] is not None]
 
-    end = time.time()
-    filtering_time_in_seconds = end - start
+    processing_time['end'] = time.time()
+    search_time['end'] = time.time()
+
+    processing_time_in_seconds = processing_time['end'] - processing_time['start']
+    search_time_in_seconds = search_time['end'] - search_time['start']
 
     log.info("ES result timings: %s", {
-        'es_query_time_in_ms': results['took'],
-        'filtering_time_in_seconds': filtering_time_in_seconds,
-        'es_has_timed_out': results['timed_out'],
+        "es_query_time_in_ms": results["took"],
+        "es_has_timed_out": results["timed_out"],
+        "processing_time_in_seconds": processing_time_in_seconds,
+        "search_time_in_seconds": search_time_in_seconds,
     })
 
-    results['filtering_time_in_seconds'] = filtering_time_in_seconds
+    results["processing_time_in_seconds"] = processing_time_in_seconds
+    results["search_time_in_seconds"] = search_time_in_seconds
     return results
 
 
