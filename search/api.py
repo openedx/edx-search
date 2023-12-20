@@ -57,10 +57,14 @@ def perform_search(
     """
     # field_, filter_ and exclude_dictionary(s) can be overridden by calling application
     # field_dictionary includes course if course_id provided
+    filter_generation_time = {
+        "start": time.time()
+    }
     (field_dictionary, filter_dictionary, exclude_dictionary) = SearchFilterGenerator.generate_field_filters(
         user=user,
         course_id=course_id
     )
+    filter_generation_time['end'] = time.time()
 
     searcher = SearchEngine.get_search_engine(
         getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
@@ -99,16 +103,19 @@ def perform_search(
 
     processing_time_in_seconds = processing_time['end'] - processing_time['start']
     search_time_in_seconds = search_time['end'] - search_time['start']
+    filter_generation_time_in_seconds = filter_generation_time['end'] - filter_generation_time['start']
 
     log.info("ES result timings: %s", {
         "es_query_time_in_ms": results["took"],
         "es_has_timed_out": results["timed_out"],
         "processing_time_in_seconds": processing_time_in_seconds,
         "search_time_in_seconds": search_time_in_seconds,
+        "filter_generation_time_in_seconds": filter_generation_time_in_seconds,
     })
 
     results["processing_time_in_seconds"] = processing_time_in_seconds
     results["search_time_in_seconds"] = search_time_in_seconds
+    results["filter_generation_time_in_seconds"] = filter_generation_time_in_seconds
     return results
 
 

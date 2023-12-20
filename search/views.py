@@ -115,7 +115,8 @@ def do_search(request, course_id=None):
                 "page_number": page,
                 "results_count": results["total"],
                 "processing_time_in_seconds": results["processing_time_in_seconds"],
-                "search_time_in_seconds": results["search_time_in_seconds"]
+                "search_time_in_seconds": results["search_time_in_seconds"],
+                "filter_generation_time_in_seconds": results["filter_generation_time_in_seconds"],
             }
         )
 
