@@ -102,7 +102,7 @@ def perform_search(
     search_time_in_seconds = search_time['end'] - search_time['start']
     filter_generation_time_in_seconds = filter_generation_time['end'] - filter_generation_time['start']
 
-    eventtracking.track("edx.course.search.executed", {
+    track.emit("edx.course.search.executed", {
         "search_term": search_term,
         "processing_time_in_seconds": processing_time_in_seconds,
         "search_time_in_seconds": search_time_in_seconds,
