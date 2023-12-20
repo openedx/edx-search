@@ -113,7 +113,7 @@ def do_search(request, course_id=None):
                 "search_term": search_term,
                 "page_size": size,
                 "page_number": page,
-                "results_count": results["total"]
+                "results_count": results["total"],
             }
         )
 
