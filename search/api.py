@@ -1,17 +1,15 @@
 """ search business logic implementations """
 
 from datetime import datetime
-import logging
 import time
 
 from django.conf import settings
 
+from eventtracking import tracker as track
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 from .utils import DateRange
-
-log = logging.getLogger(__name__)
 
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
@@ -104,19 +102,12 @@ def perform_search(
     search_time_in_seconds = search_time['end'] - search_time['start']
     filter_generation_time_in_seconds = filter_generation_time['end'] - filter_generation_time['start']
 
-    timing_results = {
-        "name": "edx_search.search_timings",
-        "cluster_query_time_in_ms": results["took"],
+    eventtracking.track("edx.course.search.executed", {
+        "search_term": search_term,
         "processing_time_in_seconds": processing_time_in_seconds,
         "search_time_in_seconds": search_time_in_seconds,
         "filter_generation_time_in_seconds": filter_generation_time_in_seconds,
-    }
-
-    log.info(f"edx-search search timings {timing_results}")
-
-    results["processing_time_in_seconds"] = processing_time_in_seconds
-    results["search_time_in_seconds"] = search_time_in_seconds
-    results["filter_generation_time_in_seconds"] = filter_generation_time_in_seconds
+    })
     return results
 
 
