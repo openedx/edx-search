@@ -105,12 +105,15 @@ def perform_search(
     search_time_in_seconds = search_time['end'] - search_time['start']
     filter_generation_time_in_seconds = filter_generation_time['end'] - filter_generation_time['start']
 
-    log.info("ES result timings: %s", {
-        "es_query_time_in_ms": results["took"],
+    timing_results = {
+        "name": "edx_search.search_timings",
+        "cluster_query_time_in_ms": results["took"],
         "processing_time_in_seconds": processing_time_in_seconds,
         "search_time_in_seconds": search_time_in_seconds,
         "filter_generation_time_in_seconds": filter_generation_time_in_seconds,
-    })
+    }
+
+    log.info(f"edx-search search timings {timing_results}")
 
     results["processing_time_in_seconds"] = processing_time_in_seconds
     results["search_time_in_seconds"] = search_time_in_seconds
