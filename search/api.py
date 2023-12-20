@@ -1,6 +1,8 @@
 """ search business logic implementations """
 
 from datetime import datetime
+import logging
+import time
 
 from django.conf import settings
 
@@ -8,9 +10,6 @@ from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
 from .utils import DateRange
-
-import logging
-import time
 
 log = logging.getLogger(__name__)
 
