@@ -1,13 +1,13 @@
 """ search business logic implementations """
 
 from datetime import datetime
-
 from django.conf import settings
 
+from eventtracking import tracker as track
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
-from .utils import DateRange
+from .utils import DateRange, Timer
 
 # Default filters that we support, override using COURSE_DISCOVERY_FILTERS setting if desired
 DEFAULT_FILTER_FIELDS = ["org", "modes", "language"]
@@ -52,10 +52,13 @@ def perform_search(
     """
     # field_, filter_ and exclude_dictionary(s) can be overridden by calling application
     # field_dictionary includes course if course_id provided
+    filter_generation_timer = Timer()
+    filter_generation_timer.start()
     (field_dictionary, filter_dictionary, exclude_dictionary) = SearchFilterGenerator.generate_field_filters(
         user=user,
         course_id=course_id
     )
+    filter_generation_timer.stop()
 
     searcher = SearchEngine.get_search_engine(
         getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
@@ -63,6 +66,9 @@ def perform_search(
     if not searcher:
         raise NoSearchEngineError("No search engine specified in settings.SEARCH_ENGINE")
     log_search_params = getattr(settings, "SEARCH_COURSEWARE_CONTENT_LOG_PARAMS", False)
+
+    search_timer = Timer()
+    search_timer.start()
 
     results = searcher.search(
         query_string=search_term,
@@ -74,6 +80,9 @@ def perform_search(
         log_search_params=log_search_params,
     )
 
+    processing_timer = Timer()
+    processing_timer.start()
+
     # post-process the result
     for result in results["results"]:
         result["data"] = SearchResultProcessor.process_result(result["data"], search_term, user)
@@ -81,7 +90,36 @@ def perform_search(
     results["access_denied_count"] = len([r for r in results["results"] if r["data"] is None])
     results["results"] = [r for r in results["results"] if r["data"] is not None]
 
+    processing_timer.stop()
+    search_timer.stop()
+
+    emit_api_timing_event(search_term, course_id, filter_generation_timer, processing_timer, search_timer)
     return results
+
+
+def emit_api_timing_event(search_term, course_id, filter_generation_timer, processing_timer, search_timer):
+    """
+    Emit the timing events for the search API
+    """
+    track.emit("edx.course.search.executed", {
+        "search_term": search_term,
+        "course_id": course_id,
+        "filter_generation_time": {
+            "start": filter_generation_timer.start_time,
+            "end": filter_generation_timer.end_time,
+            "elapsed": filter_generation_timer.elapsed_time,
+        },
+        "processing_time": {
+            "start": processing_timer.start_time_string,
+            "end": processing_timer.start_time_string,
+            "elapsed": processing_timer.elapsed_time,
+        },
+        "search_time": {
+            "start": search_timer.start_time_string,
+            "end": search_timer.start_time_string,
+            "elapsed": search_timer.elapsed_time,
+        },
+    })
 
 
 def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None):
