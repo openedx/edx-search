@@ -110,13 +110,13 @@ def emit_api_timing_event(search_term, course_id, filter_generation_timer, proce
             "elapsed": filter_generation_timer.elapsed_time,
         },
         "processing_time": {
-            "start": processing_timer.start_time_string,
-            "end": processing_timer.start_time_string,
+            "start": processing_timer.start_time,
+            "end": processing_timer.end_time,
             "elapsed": processing_timer.elapsed_time,
         },
         "search_time": {
-            "start": search_timer.start_time_string,
-            "end": search_timer.start_time_string,
+            "start": search_timer.start_time,
+            "end": search_timer.end_time,
             "elapsed": search_timer.elapsed_time,
         },
     })
