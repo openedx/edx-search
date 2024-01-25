@@ -1,4 +1,4 @@
-.PHONY: clean quality requirements validate test test-with-es quality-python install-local
+.PHONY: clean quality requirements validate test quality-python install-local
 
 clean:
 	find . -name '__pycache__' -exec rm -rf {} +
@@ -24,15 +24,25 @@ requirements:
 validate: clean
 	tox
 
-test.start_elasticsearch:
-	docker-compose up -d
+test.up_elasticsearch:
+	docker-compose up test_elasticsearch -d
 
-test.stop_elasticsearch:
-	docker-compose stop
+test.down_elasticsearch:
+	docker-compose down test_elasticsearch
 
-test_with_es: clean test.start_elasticsearch
+test_with_es: clean test.up_elasticsearch
 	coverage run --source='.' manage.py test
-	make test.stop_elasticsearch
+	make test.down_elasticsearch
+
+test.up_opensearch:
+	docker-compose up test_opensearch -d
+
+test.down_opensearch:
+	docker-compose down test_opensearch
+
+test_with_os: clean test.up_opensearch
+	coverage run --source='.' manage.py test
+	make test.down_opensearch
 
 upgrade: export CUSTOM_COMPILE_COMMAND=make upgrade
 upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
@@ -51,7 +61,7 @@ upgrade: ## update the requirements/*.txt files with the latest packages satisfy
 	sed '/^[dD]jango==/d' requirements/testing.txt > requirements/testing.tmp
 	mv requirements/testing.tmp requirements/testing.txt
 
-test: test_with_es ## run tests and generate coverage report
+test: test_with_es test_with_os ## run tests and generate coverage report
 
 install-local: ## installs your local edx-search into the LMS and CMS python virtualenvs
 	docker exec -t edx.devstack.lms bash -c '. /edx/app/edxapp/venvs/edxapp/bin/activate && cd /edx/app/edxapp/edx-platform && pip uninstall -y edx-search && pip install -e /edx/src/edx-search && pip freeze | grep edx-search'

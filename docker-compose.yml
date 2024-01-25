@@ -10,16 +10,32 @@ services:
       - cluster.initial_master_nodes=test_elasticsearch
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - http.port=9200
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - data01:/usr/share/elasticsearch/data
+      - test_elasticsearch:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
 
+  test_opensearch:
+    image: opensearchproject/opensearch:1.2.0
+    container_name: test_opensearch
+    environment:
+      - node.name=test_opensearch
+      - cluster.name=docker-cluster
+      - cluster.initial_master_nodes=test_opensearch
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "plugins.security.disabled=true"
+    ports:
+      - "9201:9200"
+    volumes:
+      - test_opensearch:/usr/share/opensearch/data
+
 volumes:
-  data01:
+  test_elasticsearch:
+    driver: local
+  test_opensearch:
     driver: local

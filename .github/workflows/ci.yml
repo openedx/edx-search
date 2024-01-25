@@ -25,7 +25,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Start Elasticsearch
-      run: make test.start_elasticsearch
+      run: make test.up_elasticsearch
 
     - name: Install pip
       run: pip install -r requirements/pip.txt
