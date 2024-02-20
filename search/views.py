@@ -1,6 +1,5 @@
 """ handle requests for courseware search http requests """
 # This contains just the url entry points to use if desired, which currently has only one
-# pylint: disable=too-few-public-methods
 
 import logging
 
@@ -14,7 +13,7 @@ from .api import perform_search, course_discovery_search, course_discovery_filte
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
-log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+log = logging.getLogger(__name__)
 
 
 def _process_pagination_values(request):
@@ -123,8 +122,7 @@ def do_search(request, course_id=None):
         }
         log.debug(str(invalid_err))
 
-    # Allow for broad exceptions here - this is an entry point from external reference
-    except Exception as err:  # pylint: disable=broad-except
+    except Exception as err:
         results = {
             "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }
@@ -209,8 +207,7 @@ def course_discovery(request):
         }
         log.debug(str(invalid_err))
 
-    # Allow for broad exceptions here - this is an entry point from external reference
-    except Exception as err:  # pylint: disable=broad-except
+    except Exception as err:
         results = {
             "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }

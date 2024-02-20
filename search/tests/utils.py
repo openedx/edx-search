@@ -73,14 +73,13 @@ class ErroringSearchEngine(MockSearchEngine):
 class ErroringIndexEngine(MockSearchEngine):
     """ Override to generate search engine error to test """
 
-    def index(self, sources, **kwargs):  # pylint: disable=unused-argument, arguments-differ
+    def index(self, sources, **kwargs):
         raise Exception("There is a problem here")
 
 
 class ErroringElasticImpl(Elasticsearch):
     """ Elasticsearch implementation that throws exceptions"""
 
-    # pylint: disable=unused-argument
     def search(self, **kwargs):  # pylint: disable=arguments-differ
         """ this will definitely fail """
         raise exceptions.ElasticsearchException("This search operation failed")

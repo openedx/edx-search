@@ -7,8 +7,6 @@ from django.test.utils import override_settings
 from search.result_processor import SearchResultProcessor, ELLIPSIS
 
 
-# Any class that inherits from TestCase will cause too-many-public-methods pylint error
-# pylint: disable=too-many-public-methods
 @ddt.ddt
 class SearchResultProcessorTests(TestCase):
     """ Tests to check SearchResultProcessor is working as desired """
@@ -297,7 +295,6 @@ class TestSearchResultProcessor(SearchResultProcessor):
     Override the SearchResultProcessor so that we get the additional (inferred) properties
     and can identify results that should be removed due to access restriction
     """
-    # pylint: disable=no-self-use
     @property
     def additional_property(self):
         """ additional property that should appear within processed results """

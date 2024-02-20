@@ -190,7 +190,7 @@ def _count_aggregated_values(documents, aggregation_terms):
         for document in aggregated_documents:
             add_agg_value(document[aggregate])
 
-        total = sum([terms[term] for term in terms])
+        total = sum([terms[term] for term in terms])    # pylint: disable=consider-using-generator
 
         return total, terms
 
