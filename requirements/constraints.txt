@@ -18,3 +18,5 @@ ddt < 1.4.0
 
 # greater version breaking quality build. fix in separate PR.
 pylint==2.10.2
+
+backports-zoneinfo[tzdata]==0.2.1 ; python_version < "3.9"
