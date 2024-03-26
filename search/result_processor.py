@@ -17,7 +17,7 @@ DESIRED_EXCERPT_LENGTH = 100
 ELLIPSIS = '<span class="search-results-ellipsis"></span>'
 
 # log appears to be standard name used for logger
-log = logging.getLogger(__name__)  # pylint: disable=invalid-name
+log = logging.getLogger(__name__)
 
 
 class SearchResultProcessor:
@@ -87,8 +87,7 @@ class SearchResultProcessor:
             )
         return match_in
 
-    # disabling pylint violations because overriders will want to use these
-    def should_remove(self, user):  # pylint: disable=unused-argument, no-self-use
+    def should_remove(self, user):  # pylint: disable=unused-argument
         """
         Override this in a class in order to add in last-chance access checks to the search process
         Your application will want to make this decision
@@ -116,7 +115,7 @@ class SearchResultProcessor:
         try:
             srp.add_properties()
         # protect around any problems introduced by subclasses within their properties
-        except Exception as ex:  # pylint: disable=broad-except
+        except Exception as ex:
             log.exception("error processing properties for %s - %s: will remove from results",
                           json.dumps(dictionary, cls=DjangoJSONEncoder), str(ex))
             return None

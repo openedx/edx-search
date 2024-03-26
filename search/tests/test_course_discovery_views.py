@@ -7,11 +7,8 @@ from search.tests.utils import post_discovery_request
 from .test_views import MockSearchUrlTest
 from .test_course_discovery import DemoCourse
 
-# Any class that inherits from TestCase will cause too-many-public-methods pylint error
-# pylint: disable=too-many-public-methods
 
-
-@override_settings(ELASTIC_FIELD_MAPPINGS={  # pylint: disable=too-many-ancestors
+@override_settings(ELASTIC_FIELD_MAPPINGS={
     "start_date": {"type": "date"},
     "enrollment_start": {"type": "date"},
     "enrollment_end": {"type": "date"}

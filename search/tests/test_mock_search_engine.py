@@ -11,10 +11,6 @@ from search.tests.utils import SearcherMixin
 from search.utils import DateRange
 
 
-# Any class that inherits from TestCase will cause too-many-public-methods pylint error
-# pylint: disable=too-many-public-methods
-
-
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 class MockSpecificSearchTests(TestCase, SearcherMixin):

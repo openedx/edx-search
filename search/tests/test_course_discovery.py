@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-ancestors
 """ Tests for search functionalty """
 
 import copy
@@ -84,7 +82,7 @@ class DemoCourse:
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
 @override_settings(COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME)
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
-class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):  # pylint: disable=too-many-public-methods
+class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):
     """
     Tests course discovery activities
     """

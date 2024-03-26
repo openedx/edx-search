@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
-# pylint: disable=too-few-public-methods
 """ Tests for search functionality """
 
 import json

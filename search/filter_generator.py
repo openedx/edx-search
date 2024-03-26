@@ -14,8 +14,6 @@ class SearchFilterGenerator:
     Users of this search app will override this class and update setting for SEARCH_FILTER_GENERATOR
     """
 
-    # disabling pylint violations because overriders will want to use these
-    # pylint: disable=unused-argument, no-self-use
     def filter_dictionary(self, **kwargs):
         """ base implementation which filters via start_date """
         return {"start_date": DateRange(None, datetime.utcnow())}
