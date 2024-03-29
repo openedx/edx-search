@@ -469,6 +469,7 @@ class ElasticSearchEngine(SearchEngine):
                 log.exception("An error occurred while removing documents from the index: %r", valid_errors)
                 raise
 
+    # pylint: disable=arguments-renamed, unused-argument
     def search(self,
                query_string=None,
                field_dictionary=None,
@@ -478,7 +479,7 @@ class ElasticSearchEngine(SearchEngine):
                exclude_ids=None,
                use_field_match=False,
                log_search_params=False,
-               **kwargs):  # pylint: disable=arguments-differ, unused-argument
+               **kwargs):
         """
         Implements call to search the index for the desired content.
 
