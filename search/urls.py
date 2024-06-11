@@ -11,5 +11,6 @@ COURSE_ID_PATTERN = getattr(settings, "COURSE_ID_PATTERN", r'(?P<course_id>[^/+]
 urlpatterns = [
     path('', views.do_search, name='do_search'),
     re_path(r'^{}$'.format(COURSE_ID_PATTERN), views.do_search, name='do_search'),
+    re_path(r'^{}/auto_suggest_search$'.format(COURSE_ID_PATTERN), views.auto_suggest_search, name='auto_suggest_search'),
     path('course_discovery/', views.course_discovery, name='course_discovery'),
 ]

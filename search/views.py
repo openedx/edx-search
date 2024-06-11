@@ -3,13 +3,14 @@
 
 import logging
 
+import meilisearch
 from django.conf import settings
 from django.http import JsonResponse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from eventtracking import tracker as track
-from .api import perform_search, course_discovery_search, course_discovery_filter_fields
+from .api import perform_search, course_discovery_search, course_discovery_filter_fields, auto_suggest_search_api
 from .initializer import SearchInitializer
 
 # log appears to be standard name used for logger
@@ -219,3 +220,14 @@ def course_discovery(request):
         )
 
     return JsonResponse(results, status=status_code)
+
+
+def auto_suggest_search(request, course_id=None):
+    q = request.GET.get('q', None)
+    limit = request.GET.get('limit', 30)
+
+    search_results = auto_suggest_search_api(q, course_id=course_id, limit=limit)
+
+    return JsonResponse({
+        "results": search_results
+    })
