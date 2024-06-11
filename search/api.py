@@ -162,36 +162,98 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     return results
 
 
+def _elasticsearch_auto_suggest_search_api(term, course_id, limit=30):
+    """
+    Perform an auto-suggest search using the Elasticsearch search engine.
+
+    Args:
+        term (str): The search term.
+        course_id (str): The ID of the course to filter the search results.
+        limit (int, optional): The maximum number of results to return. Defaults to 30.
+
+    Returns:
+        list: A list of dictionaries containing the search results with 'id', 'display_name', and 'usage_key'.
+    """
+    # Create a client instance for MeiliSearch
+    client = meilisearch.Client(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
+
+    # Define the index name
+    index_name = settings.MEILISEARCH_INDEX_PREFIX + "studio_content"
+
+    # Perform the search with specified facets and filters
+    results = client.index(index_name).search(term, {
+        "facets": ["block_type", "tags"],
+        "filter": [f"context_key='{course_id}'"],
+        "limit": limit
+    })
+
+    # Process the search hits to extract relevant fields
+    results = list(map(lambda it: {
+        "id": it["id"],
+        "display_name": it["display_name"],
+        "usage_key": it["usage_key"],
+    }, results["hits"]))
+
+    return results
+
+
+def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
+    """
+    Perform an auto-suggest search using the MeiliSearch search engine.
+
+    Args:
+        term (str): The search term.
+        course_id (str): The ID of the course to filter the search results.
+        limit (int, optional): The maximum number of results to return. Defaults to 30.
+
+    Returns:
+        list: A list of dictionaries containing the search results with 'id' and 'display_name'.
+    """
+    # Get the search engine instance
+    searcher = SearchEngine.get_search_engine(
+        getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
+    )
+
+    # Perform the search with the specified query string, size, and field dictionary
+    results = searcher.search(
+        query_string=term,
+        size=limit,
+        field_dictionary={"course": course_id}
+    )
+
+    # Process the search results to extract relevant fields
+    results = list(map(lambda it: {
+        "id": it["_id"],
+        "display_name": it["data"]["content"]["display_name"],
+    }, results["results"]))
+
+    return results
+
+
 def auto_suggest_search_api(term, course_id, limit=30):
+    """
+    Perform an auto-suggest search using either Elasticsearch or MeiliSearch based on configuration.
+
+    Args:
+        term (str): The search term.
+        course_id (str): The ID of the course to filter the search results.
+        limit (int, optional): The maximum number of results to return. Defaults to 30.
+
+    Returns:
+        dict: A dictionary with 'total' number of results and a list of 'results'.
+    """
+    # Initialize response dictionary
     response = {"total": 0, "results": []}
 
-    if getattr(settings,"MEILISEARCH_ENABLED",False):
-        client = meilisearch.Client(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
-        index_name = settings.MEILISEARCH_INDEX_PREFIX + "studio_content"
-        results = client.index(index_name).search(term, {
-            "facets": ["block_type", "tags"], "filter": [
-                f"context_key='{course_id}'"
-            ], "limit": limit
-        })
-        results = list(map(lambda it: {
-            "id": it["id"],
-            "display_name": it["display_name"],
-            "usage_key": it["usage_key"],
-        }, results["hits"]))
+    # Check which search engine to use based on settings
+    if getattr(settings, "MEILISEARCH_ENABLED", False):
+        # Use Elasticsearch if MEILISEARCH_ENABLED is set to True
+        results = _elasticsearch_auto_suggest_search_api(term, course_id, limit)
     else:
-        searcher = SearchEngine.get_search_engine(
-            getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
-        )
-        results = searcher.search(
-            query_string=term,
-            size=limit,
-            field_dictionary={"course": course_id}
-        )
+        # Use MeiliSearch otherwise
+        results = _meilisearch_auto_suggest_search_api(term, course_id, limit)
 
-        results = list(map(lambda it: {
-            "id": it["_id"],
-            "display_name": it["data"]["content"]["display_name"],
-        }, results["results"]))
-
+    # Update response with the search results
     response.update(results=results)
+
     return response

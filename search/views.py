@@ -223,9 +223,24 @@ def course_discovery(request):
 
 
 def auto_suggest_search(request, course_id=None):
+    """
+    Django view to perform an auto-suggest search and return the results as a JSON response.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+        course_id (str, optional): The ID of the course to filter the search results. Defaults to None.
+
+    Returns:
+        JsonResponse: A JSON response containing the search results.
+    """
+    # Get the search term from the request parameters, defaulting to None if not provided
     term = request.GET.get('term', None)
+
+    # Get the limit for the number of results from the request parameters, defaulting to 30 if not provided
     limit = request.GET.get('limit', 30)
 
+    # Call the search API function to perform the search
     search_results = auto_suggest_search_api(term, course_id=course_id, limit=limit)
 
+    # Return the search results as a JSON response
     return JsonResponse(search_results)
