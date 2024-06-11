@@ -162,36 +162,36 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     return results
 
 
-def auto_suggest_search_api(q, course_id, limit=30):
+def auto_suggest_search_api(term, course_id, limit=30):
     response = {"total": 0, "results": []}
 
-    match (getattr(settings,"MEILISEARCH_ENABLED",False)):
-        case True:
-            client = meilisearch.Client(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
-            index_name = settings.MEILISEARCH_INDEX_PREFIX + "studio_content"
-            results = client.index(index_name).search(q, {
-                "facets": ["block_type", "tags"], "filter": [
-                    f"context_key='{course_id}'"
-                ], "limit": limit
-            })
-            results = list(map(lambda it: {
-                "id": it["id"],
-                "display_name": it["display_name"],
-                "usage_key": it["usage_key"],
-            }, results["hits"]))
-        case False:
-            searcher = SearchEngine.get_search_engine(
-                getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
-            )
-            results = searcher.search(
-                query_string=q,
-                size=limit,
-                field_dictionary={"course": course_id}
-            )
+    if getattr(settings,"MEILISEARCH_ENABLED",False):
+        client = meilisearch.Client(settings.MEILISEARCH_URL, settings.MEILISEARCH_API_KEY)
+        index_name = settings.MEILISEARCH_INDEX_PREFIX + "studio_content"
+        results = client.index(index_name).search(term, {
+            "facets": ["block_type", "tags"], "filter": [
+                f"context_key='{course_id}'"
+            ], "limit": limit
+        })
+        results = list(map(lambda it: {
+            "id": it["id"],
+            "display_name": it["display_name"],
+            "usage_key": it["usage_key"],
+        }, results["hits"]))
+    else:
+        searcher = SearchEngine.get_search_engine(
+            getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
+        )
+        results = searcher.search(
+            query_string=term,
+            size=limit,
+            field_dictionary={"course": course_id}
+        )
 
-            results = list(map(lambda it: {
-                "id": it["_id"],
-                "display_name": it["data"]["content"]["display_name"],
-            }, results["results"]))
+        results = list(map(lambda it: {
+            "id": it["_id"],
+            "display_name": it["data"]["content"]["display_name"],
+        }, results["results"]))
 
-    return results
+    response.update(results=results)
+    return response

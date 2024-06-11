@@ -223,11 +223,9 @@ def course_discovery(request):
 
 
 def auto_suggest_search(request, course_id=None):
-    q = request.GET.get('q', None)
+    term = request.GET.get('term', None)
     limit = request.GET.get('limit', 30)
 
-    search_results = auto_suggest_search_api(q, course_id=course_id, limit=limit)
+    search_results = auto_suggest_search_api(term, course_id=course_id, limit=limit)
 
-    return JsonResponse({
-        "results": search_results
-    })
+    return JsonResponse(search_results)
