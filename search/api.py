@@ -162,7 +162,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     return results
 
 
-def _elasticsearch_auto_suggest_search_api(term, course_id, limit=30):
+def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
     """
     Perform an auto-suggest search using the Elasticsearch search engine.
 
@@ -197,9 +197,9 @@ def _elasticsearch_auto_suggest_search_api(term, course_id, limit=30):
     return results
 
 
-def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
+def _elasticsearch_auto_suggest_search_api(term, course_id, limit=30):
     """
-    Perform an auto-suggest search using the MeiliSearch search engine.
+    Perform an auto-suggest search using either Elasticsearch or MeiliSearch based on configuration.
 
     Args:
         term (str): The search term.
@@ -207,8 +207,9 @@ def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
         limit (int, optional): The maximum number of results to return. Defaults to 30.
 
     Returns:
-        list: A list of dictionaries containing the search results with 'id' and 'display_name'.
+        list: A list of dictionaries containing the search results with 'id', 'display_name' and 'usage_key'.
     """
+
     # Get the search engine instance
     searcher = SearchEngine.get_search_engine(
         getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
@@ -225,6 +226,7 @@ def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
     results = list(map(lambda it: {
         "id": it["_id"],
         "display_name": it["data"]["content"]["display_name"],
+        "usage_key": it["_id"],
     }, results["results"]))
 
     return results
@@ -232,7 +234,7 @@ def _meilisearch_auto_suggest_search_api(term, course_id, limit=30):
 
 def auto_suggest_search_api(term, course_id, limit=30):
     """
-    Perform an auto-suggest search using either Elasticsearch or MeiliSearch based on configuration.
+    Perform an auto-suggest search using the MeiliSearch search engine.
 
     Args:
         term (str): The search term.
@@ -240,18 +242,18 @@ def auto_suggest_search_api(term, course_id, limit=30):
         limit (int, optional): The maximum number of results to return. Defaults to 30.
 
     Returns:
-        dict: A dictionary with 'total' number of results and a list of 'results'.
+        list: A list of dictionaries containing the search results with 'id', 'display_name' and 'usage_key'.
     """
     # Initialize response dictionary
-    response = {"total": 0, "results": []}
+    response = {"results": []}
 
     # Check which search engine to use based on settings
     if getattr(settings, "MEILISEARCH_ENABLED", False):
-        # Use Elasticsearch if MEILISEARCH_ENABLED is set to True
-        results = _elasticsearch_auto_suggest_search_api(term, course_id, limit)
-    else:
         # Use MeiliSearch otherwise
         results = _meilisearch_auto_suggest_search_api(term, course_id, limit)
+    else:
+        # Use Elasticsearch if MEILISEARCH_ENABLED is set to True
+        results = _elasticsearch_auto_suggest_search_api(term, course_id, limit)
 
     # Update response with the search results
     response.update(results=results)
