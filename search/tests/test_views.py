@@ -4,7 +4,7 @@ from datetime import datetime
 from unittest.mock import patch, call
 import ddt
 
-from django.urls import Resolver404, resolve
+from django.urls import Resolver404, resolve, reverse
 from django.test import TestCase
 from django.test.utils import override_settings
 from waffle.testutils import override_switch
@@ -13,7 +13,7 @@ from search.search_engine_base import SearchEngine
 from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
 from search.elastic import ElasticSearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
+from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME, get_request
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
@@ -497,3 +497,18 @@ class ElasticSearchUrlTest(TestCase, SearcherMixin):
         code, results = post_request({"search_string": query}, course_id)
         self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], result_count)
+
+
+class TestAutoSuggestView(TestCase):
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_valid_search_with_meilisearch(self):
+        endpoint = reverse('auto_suggest_search', args={'course-v1:Demo+DM101+2024'})
+        print(endpoint)
+        status, results = get_request(f'{endpoint}?term=open')
+        self.assertTrue(status == 200)
+
+    @override_settings(MEILISEARCH_ENABLED=False)
+    def test_valid_search_with_elastic(self):
+        endpoint = reverse('auto_suggest_search', args={'course-v1:Demo+DM101+2024'})
+        status, results = get_request(f'{endpoint}?term=open')
+        self.assertTrue(status == 200)
