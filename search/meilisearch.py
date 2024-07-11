@@ -53,7 +53,9 @@ INDEX_SETTINGS = {
     },
     f"{prefix}course_team_index": {
         "filterableAttributes": [
-            "course_id"
+            "topic_id",
+            "organization_protected",
+            "course_id",
         ]
     },
     "facets": []
