@@ -51,6 +51,12 @@ INDEX_SETTINGS = {
             "org",
         ]
     },
+    f"{prefix}course_team_index": {
+        "filterableAttributes": [
+            "course_id"
+        ]
+    },
+    "facets": []
 }
 
 
