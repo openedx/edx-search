@@ -4,7 +4,7 @@ from datetime import datetime
 from unittest.mock import patch, call
 import ddt
 
-from django.urls import Resolver404, resolve, reverse
+from django.urls import Resolver404, resolve
 from django.test import TestCase
 from django.test.utils import override_settings
 from waffle.testutils import override_switch
@@ -13,7 +13,7 @@ from search.search_engine_base import SearchEngine
 from search.search_engine_base import DEFAULT_ELASTIC_SEARCH_SWITCH
 from search.elastic import ElasticSearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
-from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME, get_request
+from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
