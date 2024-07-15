@@ -83,12 +83,3 @@ class ErroringElasticImpl(Elasticsearch):
     def search(self, **kwargs):  # pylint: disable=arguments-differ
         """ this will definitely fail """
         raise exceptions.ElasticsearchException("This search operation failed")
-
-
-def get_request(url):
-    """
-    Helper method to get the request and process the response
-    """
-    response = Client().post(url)
-
-    return getattr(response, "status_code", 500), json.loads(getattr(response, "content", None).decode('utf-8'))

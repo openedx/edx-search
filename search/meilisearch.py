@@ -1,5 +1,5 @@
 """
-Meilisearch implementation for courseware search index
+Meilisearch backend
 """
 import copy
 import hashlib
@@ -248,45 +248,10 @@ class MeiliSearchEngine(SearchEngine):
         """
         return f"meili_search_mappings_{index_name}"
 
-    @classmethod
-    def get_mappings(cls, index_name):
-        """
-        Fetch mapped-items structure from cache
-        """
-        return cache.get(cls.get_cache_item_name(index_name), {})
-
-    @classmethod
-    def set_mappings(cls, index_name, mappings):
-        """
-        Set new mapped-items structure into cache
-        """
-        cache.set(cls.get_cache_item_name(index_name), mappings)
-
-    @property
-    def mappings(self):
-        """
-        Get mapping of current index.
-
-        Mappings format in Meilisearch is different from Elasticsearch.
-        """
-        mapping = MeiliSearchEngine.get_mappings(self._prefixed_index_name)
-        if not mapping:
-            # Assuming Meilisearch mappings are pre-defined elsewhere
-            mapping = {}  # Update this if there's a way to fetch mappings
-            if mapping:
-                MeiliSearchEngine.set_mappings(self._prefixed_index_name, mapping)
-        return mapping
-
-    def _clear_mapping(self):
-        """
-        Remove the cached mappings.
-        """
-        MeiliSearchEngine.set_mappings(self._prefixed_index_name, {})
-
     def __init__(self, index=None, options=None):
         super().__init__(index)
-        MEILISEARCH_URL = getattr(settings, "MEILISEARCH_URL", 'http://127.0.0.1:7700')
-        MEILISEARCH_API_KEY = getattr(settings, "MEILISEARCH_API_KEY", "masterKey")
+        MEILISEARCH_URL = getattr(settings, "MEILISEARCH_URL")
+        MEILISEARCH_API_KEY = getattr(settings, "MEILISEARCH_API_KEY")
         self._ms = Client(MEILISEARCH_URL, MEILISEARCH_API_KEY)
         self._index = self._ms.index(self._prefixed_index_name)
         # Ensure index exists
@@ -302,11 +267,6 @@ class MeiliSearchEngine(SearchEngine):
         Property that returns the defined index_name with the configured prefix.
         """
         return prefix + self.index_name
-
-    def _check_mappings(self, body):
-        """
-        Meilisearch doesn't require explicit mappings like Elasticsearch.
-        """
 
     def index(self, sources, **kwargs):
         """

@@ -497,18 +497,3 @@ class ElasticSearchUrlTest(TestCase, SearcherMixin):
         code, results = post_request({"search_string": query}, course_id)
         self.assertTrue(199 < code < 300)
         self.assertEqual(results["total"], result_count)
-
-
-class TestAutoSuggestView(TestCase):
-    @override_settings(MEILISEARCH_ENABLED=True)
-    def test_valid_search_with_meilisearch(self):
-        endpoint = reverse('auto_suggest_search', args={'course-v1:Demo+DM101+2024'})
-        print(endpoint)
-        status, results = get_request(f'{endpoint}?term=open')
-        self.assertTrue(status == 200)
-
-    @override_settings(MEILISEARCH_ENABLED=False)
-    def test_valid_search_with_elastic(self):
-        endpoint = reverse('auto_suggest_search', args={'course-v1:Demo+DM101+2024'})
-        status, results = get_request(f'{endpoint}?term=open')
-        self.assertTrue(status == 200)

@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1
 # This is just a container for running tests
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
 TEMPLATES = [
     {
@@ -105,8 +105,6 @@ SEARCH_ENGINE = os.getenv('SEARCH_ENGINE', 'search.elastic.ElasticSearchEngine')
 
 ################### Using Meilisearch (Beta) ###################
 
-# Enable Studio search features (powered by Meilisearch) (beta, off by default)
-MEILISEARCH_ENABLED = False
 # Meilisearch URL that the python backend can use. Often points to another docker container or k8s service.
 MEILISEARCH_URL = os.getenv('MEILISEARCH_URL', 'http://localhost:7700')
 # URL that browsers (end users) can use to reach Meilisearch. Should be HTTPS in production.
