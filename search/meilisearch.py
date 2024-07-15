@@ -19,47 +19,7 @@ log = logging.getLogger(__name__)
 
 prefix = getattr(settings, "MEILISEARCH_INDEX_PREFIX", "")
 RESERVED_CHARACTERS = "+=><!(){}[]^~*:\\/&|?"
-INDEX_SETTINGS = {
-    f"{prefix}library_index": {
-        "filterableAttributes": [
-            "library",
-            "id"
-        ],
-        "facets": [
-            "library"
-        ]
-    },
-    f"{prefix}courseware_content": {
-        "filterableAttributes": [
-            "id",
-            "course",
-            "org"
-        ],
-        "facets": [
-            "org"
-        ]
-    },
-    f"{prefix}course_info": {
-        "filterableAttributes": [
-            "id",
-            "org",
-            "course",
-            "start",
-            "enrollment_start"
-        ],
-        "facets": [
-            "org",
-        ]
-    },
-    f"{prefix}course_team_index": {
-        "filterableAttributes": [
-            "topic_id",
-            "organization_protected",
-            "course_id",
-        ]
-    },
-    "facets": []
-}
+INDEX_SETTINGS = getattr(settings, "MEILISEARCH_INDEX_SETTINGS", {})
 
 
 def sanitize_id(_id: str | int) -> str:
@@ -83,7 +43,6 @@ def sanitized_id(source: dict, create_usage_key=True) -> dict:
         source["id"] = usage_key.block_id
     except (Exception, InvalidKeyError) as ex:  # pylint: disable=broad-except
         source["id"] = sanitize_id(source["id"])
-        log.info(f"{str(ex)} - {source['id']} - {type(ex)}")
 
     return source
 
