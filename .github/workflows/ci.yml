@@ -31,7 +31,7 @@ jobs:
       run: pip install -r requirements/pip.txt
 
     - name: Install Dependencies
-      run:
+      run: |
         pip install setuptools
         pip install -r requirements/ci.txt
 
