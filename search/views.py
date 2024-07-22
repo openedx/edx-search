@@ -122,7 +122,7 @@ def do_search(request, course_id=None):
         }
         log.debug(str(invalid_err))
 
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-exception-caught
         results = {
             "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }
@@ -207,7 +207,7 @@ def course_discovery(request):
         }
         log.debug(str(invalid_err))
 
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-exception-caught
         results = {
             "error": _('An error occurred when searching for "{search_string}"').format(search_string=search_term)
         }

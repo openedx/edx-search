@@ -385,8 +385,7 @@ class MockSearchEngine(SearchEngine):
             while documents_to_search:
                 current_doc = documents_to_search[0]
                 score = len([d for d in documents_to_search if d == current_doc])
-                if score > max_score:
-                    max_score = score
+                max_score = max(max_score, score)
                 documents_to_search = [d for d in documents_to_search if d != current_doc]
 
                 data = copy.copy(current_doc)
