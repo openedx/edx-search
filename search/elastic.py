@@ -244,7 +244,7 @@ class ElasticSearchEngine(SearchEngine):
     """
     ElasticSearch implementation of SearchEngine abstraction
     """
-
+    backend_name = "elasticsearch"
     @staticmethod
     def get_cache_item_name(index_name):
         """

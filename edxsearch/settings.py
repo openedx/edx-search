@@ -99,3 +99,19 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+################### Using ElasticSearch ###################
+
+SEARCH_ENGINE = os.getenv('SEARCH_ENGINE', 'search.elastic.ElasticSearchEngine')
+
+################### Using Meilisearch (Beta) ###################
+
+# Meilisearch URL that the python backend can use. Often points to another docker container or k8s service.
+MEILISEARCH_URL = os.getenv('MEILISEARCH_URL', 'http://localhost:7700')
+# URL that browsers (end users) can use to reach Meilisearch. Should be HTTPS in production.
+MEILISEARCH_PUBLIC_URL = os.getenv('MEILISEARCH_PUBLIC_URL', 'http://localhost:7700')
+# To support multi-tenancy, you can prefix all indexes with a common key like "sandbox7-"
+# and use a restricted tenant token in place of an API key, so that this Open edX instance
+# can only use the index(es) that start with this prefix.
+# See https://www.meilisearch.com/docs/learn/security/tenant_tokens
+MEILISEARCH_INDEX_PREFIX = os.getenv('MEILISEARCH_INDEX_PREFIX', '')
+MEILISEARCH_API_KEY = os.getenv('MEILISEARCH_API_KEY', 'masterKey')
