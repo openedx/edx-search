@@ -25,10 +25,10 @@ validate: clean
 	tox
 
 test.start_elasticsearch:
-	docker-compose up -d
+	docker compose up -d
 
 test.stop_elasticsearch:
-	docker-compose stop
+	docker compose stop
 
 test_with_es: clean test.start_elasticsearch
 	coverage run --source='.' manage.py test
