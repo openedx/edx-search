@@ -6,13 +6,7 @@ kind: Component
 metadata:
   name: 'edx-search'
   description: "A django application to provide access to search services"
-  links:
-    - url: "https://github.com/openedx/edx-search"
-      title: "openedx/edx-search"
-      icon: "GitHub"
-  annotations:
-    openedx.org/arch-interest-groups: ""
-    openedx.org/release: "main"
+  links: []
 spec:
   owner: group:openedx-unmaintained
   type: 'service'
