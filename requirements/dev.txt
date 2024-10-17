@@ -9,6 +9,11 @@ amqp==5.2.0
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   kombu
+annotated-types==0.7.0
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   pydantic
 asgiref==3.8.1
     # via
     #   -r requirements/quality.txt
@@ -37,6 +42,11 @@ cachetools==5.4.0
     # via
     #   -r requirements/ci.txt
     #   tox
+camel-converter[pydantic]==4.0.1
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   meilisearch
 celery==5.4.0
     # via
     #   -r requirements/quality.txt
@@ -47,6 +57,7 @@ certifi==2024.7.4
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   elasticsearch
+    #   requests
 cffi==1.16.0
     # via
     #   -r requirements/quality.txt
@@ -56,6 +67,11 @@ chardet==5.2.0
     # via
     #   -r requirements/ci.txt
     #   tox
+charset-normalizer==3.4.0
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   requests
 click==8.1.7
     # via
     #   -r requirements/pip-tools.txt
@@ -185,6 +201,11 @@ filelock==3.15.4
     #   -r requirements/ci.txt
     #   tox
     #   virtualenv
+idna==3.10
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   requests
 iniconfig==2.0.0
     # via
     #   -r requirements/quality.txt
@@ -213,6 +234,10 @@ mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   pylint
+meilisearch==0.31.5
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
 mock==5.1.0
     # via
     #   -r requirements/quality.txt
@@ -275,6 +300,16 @@ pycparser==2.22
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   cffi
+pydantic==2.9.2
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   camel-converter
+pydantic-core==2.23.4
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   pydantic
 pylint==3.2.6
     # via
     #   -r requirements/quality.txt
@@ -344,6 +379,11 @@ pyyaml==6.0.1
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   code-annotations
+requests==2.32.3
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
+    #   meilisearch
 six==1.16.0
     # via
     #   -r requirements/quality.txt
@@ -380,6 +420,8 @@ typing-extensions==4.12.2
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   edx-opaque-keys
+    #   pydantic
+    #   pydantic-core
 tzdata==2024.1
     # via
     #   -r requirements/quality.txt
@@ -390,6 +432,7 @@ urllib3==1.26.19
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   elasticsearch
+    #   requests
 vine==5.1.0
     # via
     #   -r requirements/quality.txt
