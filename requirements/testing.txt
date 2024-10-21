@@ -12,11 +12,11 @@ asgiref==3.8.1
     # via
     #   -r requirements/base.txt
     #   django
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   -r requirements/base.txt
     #   openedx-events
-billiard==4.2.0
+billiard==4.2.1
     # via
     #   -r requirements/base.txt
     #   celery
@@ -24,11 +24,11 @@ celery==5.4.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   -r requirements/base.txt
     #   elasticsearch
-cffi==1.16.0
+cffi==1.17.1
     # via
     #   -r requirements/base.txt
     #   pynacl
@@ -57,7 +57,7 @@ code-annotations==1.8.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==7.6.0
+coverage[toml]==7.6.4
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -88,13 +88,13 @@ edx-ccx-keys==1.3.0
     # via
     #   -r requirements/base.txt
     #   openedx-events
-edx-django-utils==5.14.2
+edx-django-utils==7.0.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
     #   event-tracking
     #   openedx-events
-edx-opaque-keys[django]==2.10.0
+edx-opaque-keys[django]==2.11.0
     # via
     #   -r requirements/base.txt
     #   edx-ccx-keys
@@ -111,7 +111,7 @@ event-tracking==2.4.0
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.txt
-fastavro==1.9.5
+fastavro==1.9.7
     # via
     #   -r requirements/base.txt
     #   openedx-events
@@ -121,37 +121,37 @@ jinja2==3.1.4
     # via
     #   -r requirements/base.txt
     #   code-annotations
-kombu==5.3.7
+kombu==5.4.2
     # via
     #   -r requirements/base.txt
     #   celery
-markupsafe==2.1.5
+markupsafe==3.0.2
     # via
     #   -r requirements/base.txt
     #   jinja2
 mock==5.1.0
     # via -r requirements/testing.in
-newrelic==9.12.0
+newrelic==10.2.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==9.11.0
+openedx-events==9.15.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
 packaging==24.1
     # via pytest
-pbr==6.0.0
+pbr==6.1.0
     # via
     #   -r requirements/base.txt
     #   stevedore
 pluggy==1.5.0
     # via pytest
-prompt-toolkit==3.0.47
+prompt-toolkit==3.0.48
     # via
     #   -r requirements/base.txt
     #   click-repl
-psutil==6.0.0
+psutil==6.1.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
@@ -168,7 +168,7 @@ pynacl==1.5.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pytest==8.3.1
+pytest==8.3.3
     # via pytest-cov
 pytest-cov==5.0.0
     # via -r requirements/testing.in
@@ -180,11 +180,11 @@ python-slugify==8.0.4
     # via
     #   -r requirements/base.txt
     #   code-annotations
-pytz==2024.1
+pytz==2024.2
     # via
     #   -r requirements/base.txt
     #   event-tracking
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -198,7 +198,7 @@ sqlparse==0.5.1
     # via
     #   -r requirements/base.txt
     #   django
-stevedore==5.2.0
+stevedore==5.3.0
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -212,11 +212,12 @@ typing-extensions==4.12.2
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
-tzdata==2024.1
+tzdata==2024.2
     # via
     #   -r requirements/base.txt
     #   celery
-urllib3==1.26.19
+    #   kombu
+urllib3==1.26.20
     # via
     #   -r requirements/base.txt
     #   elasticsearch
