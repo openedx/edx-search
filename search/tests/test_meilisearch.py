@@ -3,6 +3,7 @@ Test for the Meilisearch search engine.
 """
 
 from datetime import datetime
+from unittest.mock import Mock
 
 import django.test
 from django.utils import timezone
@@ -34,6 +35,14 @@ class DocumentEncoderTests(django.test.TestCase):
         encoder = search.meilisearch.DocumentEncoder()
         encoded = encoder.encode(document)
         assert '{"date": "2024-12-31 05:00:00+00:00"}' == encoded
+
+    def test_document_encode_string(self):
+        document = {
+            "description": "I ♥ strings!",
+        }
+        encoder = search.meilisearch.DocumentEncoder()
+        encoded = encoder.encode(document)
+        assert '{"description": "I \\u2665 strings!"}' == encoded
 
 
 class EngineTests(django.test.TestCase):
@@ -256,3 +265,94 @@ class EngineTests(django.test.TestCase):
         assert [
             "enrollment_end >= 1704067200.0 OR enrollment_end NOT EXISTS"
         ] == params["filter"]
+
+    def test_engine_init(self):
+        engine = search.meilisearch.MeilisearchEngine(index="my_index")
+        assert engine.meilisearch_index_name == "my_index"
+
+    def test_engine_index(self):
+        engine = search.meilisearch.MeilisearchEngine(index="my_index")
+        engine.meilisearch_index.add_documents = Mock()
+        document = {
+            "id": "abcd",
+            "name": "My name",
+            "title": "My title",
+        }
+        processed_document = {
+            # Primary key field
+            # can be verified with: echo -n "abcd" | sha1sum
+            "_pk": "81fe8bfe87576c3ecb22426f8e57847382917acf",
+            "id": "abcd",
+            "name": "My name",
+            "title": "My title",
+        }
+        engine.index(sources=[document])
+        engine.meilisearch_index.add_documents.assert_called_with(
+            [processed_document],
+            serializer=search.meilisearch.DocumentEncoder,
+        )
+
+    def test_engine_search(self):
+        engine = search.meilisearch.MeilisearchEngine(index="my_index")
+        engine.meilisearch_index.search = Mock(return_value={
+            "hits": [
+                {
+                    "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                    "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                    "_rankingScore": 0.865,
+                },
+            ],
+            "query": "demo",
+            "processingTimeMs": 0,
+            "limit": 20,
+            "offset": 0,
+            "estimatedTotalHits": 1
+        })
+
+        results = engine.search(
+            query_string="abc",
+            field_dictionary={
+                "course": "course-v1:testorg+test1+alpha",
+                "org": "testorg",
+            },
+            filter_dictionary={"key": "value"},
+            exclude_dictionary={"id": ["abcd"]},
+            aggregation_terms={"org": 1, "course": 2},
+        )
+
+        engine.meilisearch_index.search.assert_called_with("abc", {
+            "showRankingScore": True,
+            "facets": ["org", "course"],
+            "filter": [
+                'course = "course-v1:testorg+test1+alpha"',
+                'org = "testorg"', 'key = "value" OR key NOT EXISTS',
+                'NOT _pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"',
+            ]
+        })
+        assert results == {
+            "aggs": {},
+            "max_score": 0.865,
+            "results": [
+                {
+                    "_id": "course-v1:OpenedX+DemoX+DemoCourse",
+                    "_index": "my_index",
+                    "_type": "_doc",
+                    "data": {
+                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                    },
+                },
+            ],
+            "took": 0,
+            "total": 1,
+        }
+
+    def test_engine_remove(self):
+        engine = search.meilisearch.MeilisearchEngine(index="my_index")
+        engine.meilisearch_index.delete_documents = Mock()
+        # Primary key field
+        # can be verified with: echo -n "abcd" | sha1sum
+        doc_id = "abcd"
+        doc_pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"
+        engine.remove(doc_ids=[doc_id])
+        engine.meilisearch_index.delete_documents.assert_called_with([doc_pk])
