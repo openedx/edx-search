@@ -318,6 +318,7 @@ class EngineTests(django.test.TestCase):
             filter_dictionary={"key": "value"},
             exclude_dictionary={"id": ["abcd"]},
             aggregation_terms={"org": 1, "course": 2},
+            log_search_params=True,
         )
 
         engine.meilisearch_index.search.assert_called_with("abc", {
