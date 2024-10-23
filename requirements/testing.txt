@@ -8,6 +8,10 @@ amqp==5.2.0
     # via
     #   -r requirements/base.txt
     #   kombu
+annotated-types==0.7.0
+    # via
+    #   -r requirements/base.txt
+    #   pydantic
 asgiref==3.8.1
     # via
     #   -r requirements/base.txt
@@ -20,6 +24,10 @@ billiard==4.2.0
     # via
     #   -r requirements/base.txt
     #   celery
+camel-converter[pydantic]==4.0.1
+    # via
+    #   -r requirements/base.txt
+    #   meilisearch
 celery==5.4.0
     # via
     #   -r requirements/base.txt
@@ -28,10 +36,15 @@ certifi==2024.7.4
     # via
     #   -r requirements/base.txt
     #   elasticsearch
+    #   requests
 cffi==1.16.0
     # via
     #   -r requirements/base.txt
     #   pynacl
+charset-normalizer==3.4.0
+    # via
+    #   -r requirements/base.txt
+    #   requests
 click==8.1.7
     # via
     #   -r requirements/base.txt
@@ -115,6 +128,10 @@ fastavro==1.9.5
     # via
     #   -r requirements/base.txt
     #   openedx-events
+idna==3.10
+    # via
+    #   -r requirements/base.txt
+    #   requests
 iniconfig==2.0.0
     # via pytest
 jinja2==3.1.4
@@ -129,6 +146,8 @@ markupsafe==2.1.5
     # via
     #   -r requirements/base.txt
     #   jinja2
+meilisearch==0.31.5
+    # via -r requirements/base.txt
 mock==5.1.0
     # via -r requirements/testing.in
 newrelic==9.12.0
@@ -159,6 +178,14 @@ pycparser==2.22
     # via
     #   -r requirements/base.txt
     #   cffi
+pydantic==2.9.2
+    # via
+    #   -r requirements/base.txt
+    #   camel-converter
+pydantic-core==2.23.4
+    # via
+    #   -r requirements/base.txt
+    #   pydantic
 pymongo==3.13.0
     # via
     #   -r requirements/base.txt
@@ -188,6 +215,10 @@ pyyaml==6.0.1
     # via
     #   -r requirements/base.txt
     #   code-annotations
+requests==2.32.3
+    # via
+    #   -r requirements/base.txt
+    #   meilisearch
 six==1.16.0
     # via
     #   -r requirements/base.txt
@@ -212,6 +243,8 @@ typing-extensions==4.12.2
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
+    #   pydantic
+    #   pydantic-core
 tzdata==2024.1
     # via
     #   -r requirements/base.txt
@@ -220,6 +253,7 @@ urllib3==1.26.19
     # via
     #   -r requirements/base.txt
     #   elasticsearch
+    #   requests
 vine==5.1.0
     # via
     #   -r requirements/base.txt
