@@ -3,11 +3,13 @@ Test for the Meilisearch search engine.
 """
 
 from datetime import datetime
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import django.test
 from django.utils import timezone
+import meilisearch
 import pytest
+from requests import Response
 
 from search.utils import DateRange, ValueRange
 import search.meilisearch
@@ -294,20 +296,22 @@ class EngineTests(django.test.TestCase):
 
     def test_engine_search(self):
         engine = search.meilisearch.MeilisearchEngine(index="my_index")
-        engine.meilisearch_index.search = Mock(return_value={
-            "hits": [
-                {
-                    "pk": "f381d4f1914235c9532576c0861d09b484ade634",
-                    "id": "course-v1:OpenedX+DemoX+DemoCourse",
-                    "_rankingScore": 0.865,
-                },
-            ],
-            "query": "demo",
-            "processingTimeMs": 0,
-            "limit": 20,
-            "offset": 0,
-            "estimatedTotalHits": 1
-        })
+        engine.meilisearch_index.search = Mock(
+            return_value={
+                "hits": [
+                    {
+                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                        "_rankingScore": 0.865,
+                    },
+                ],
+                "query": "demo",
+                "processingTimeMs": 0,
+                "limit": 20,
+                "offset": 0,
+                "estimatedTotalHits": 1,
+            }
+        )
 
         results = engine.search(
             query_string="abc",
@@ -321,15 +325,19 @@ class EngineTests(django.test.TestCase):
             log_search_params=True,
         )
 
-        engine.meilisearch_index.search.assert_called_with("abc", {
-            "showRankingScore": True,
-            "facets": ["org", "course"],
-            "filter": [
-                'course = "course-v1:testorg+test1+alpha"',
-                'org = "testorg"', 'key = "value" OR key NOT EXISTS',
-                'NOT _pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"',
-            ]
-        })
+        engine.meilisearch_index.search.assert_called_with(
+            "abc",
+            {
+                "showRankingScore": True,
+                "facets": ["org", "course"],
+                "filter": [
+                    'course = "course-v1:testorg+test1+alpha"',
+                    'org = "testorg"',
+                    'key = "value" OR key NOT EXISTS',
+                    'NOT _pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"',
+                ],
+            },
+        )
         assert results == {
             "aggs": {},
             "max_score": 0.865,
@@ -357,3 +365,35 @@ class EngineTests(django.test.TestCase):
         doc_pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"
         engine.remove(doc_ids=[doc_id])
         engine.meilisearch_index.delete_documents.assert_called_with([doc_pk])
+
+
+class UtilitiesTests(django.test.TestCase):
+    """
+    Tests associated to the utility functions of the meilisearch engine.
+    """
+
+    @patch.object(search.meilisearch, "wait_for_task_to_succeed")
+    def test_create_index(self, mock_wait_for_task_to_succeed) -> None:
+        class ClientMock:
+            """
+            Mocked client
+            """
+            number_of_calls = 0
+
+            def get_index(self, index_name):
+                """Mocked client.get_index method"""
+                self.number_of_calls += 1
+                if self.number_of_calls == 1:
+                    error = meilisearch.errors.MeilisearchApiError("", Response())
+                    error.code = "index_not_found"
+                    raise error
+                if self.number_of_calls == 2:
+                    return f"index created: {index_name}"
+                # We shouldn't be there
+                assert False
+
+        client = Mock()
+        client.get_index = Mock(side_effect=ClientMock().get_index)
+        result = search.meilisearch.get_or_create_meilisearch_index(client, "my_index")
+        assert result == "index created: my_index"
+        mock_wait_for_task_to_succeed.assert_called_once()
