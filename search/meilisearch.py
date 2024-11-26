@@ -104,6 +104,7 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         PRIMARY_KEY_FIELD_NAME,  # exclude some specific documents based on ID
         "course",  # search courseware content by course
         "org",  # used during indexing
+        "catalog_visibility",  # exclude visibility="none"
         "start_date",  # limit search to started courses
     ],
 }
