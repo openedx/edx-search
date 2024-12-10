@@ -17,7 +17,6 @@ from search.tests.utils import post_request, SearcherMixin, TEST_INDEX_NAME
 
 
 # Any class that inherits from TestCase will cause too-many-public-methods pylint error
-# pylint: disable=too-many-public-methods
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME)
@@ -46,11 +45,11 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def assert_no_events_were_emitted(self):
         """Ensures no events were emitted since the last event related assertion"""
-        self.assertFalse(self.mock_tracker.emit.called)  # pylint: disable=maybe-no-member
+        self.assertFalse(self.mock_tracker.emit.called)
 
     def assert_search_initiated_event(self, search_term, size, page):
         """Ensures an search initiated event was emitted"""
-        initiated_search_call = self.mock_tracker.emit.mock_calls[0]  # pylint: disable=maybe-no-member
+        initiated_search_call = self.mock_tracker.emit.mock_calls[0]
         expected_result = call('edx.course.search.initiated', {
             "search_term": str(search_term),
             "page_size": size,
@@ -60,7 +59,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def assert_results_returned_event(self, search_term, size, page, total):
         """Ensures an results returned event was emitted"""
-        returned_results_call = self.mock_tracker.emit.mock_calls[1]  # pylint: disable=maybe-no-member
+        returned_results_call = self.mock_tracker.emit.mock_calls[1]
         expected_result = call('edx.course.search.results_displayed', {
             "search_term": str(search_term),
             "page_size": size,
@@ -71,7 +70,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
     def assert_initiated_return_events(self, search_term, size, page, total):
         """Asserts search initiated and results returned events were emitted"""
-        self.assertEqual(self.mock_tracker.emit.call_count, 2)  # pylint: disable=maybe-no-member
+        self.assertEqual(self.mock_tracker.emit.call_count, 2)
         self.assert_search_initiated_event(search_term, size, page)
         self.assert_results_returned_event(search_term, size, page, total)
 

@@ -2,6 +2,7 @@
 """ Setup to allow pip installs of edx-search module """
 import os
 import re
+from pathlib import Path
 
 from setuptools import setup
 
@@ -117,11 +118,16 @@ def get_version(*file_paths):
 
 VERSION = get_version('edxsearch', '__init__.py')
 
+# read the contents of your README file
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='edx-search',
     version=VERSION,
     description='Search and index routines for index access',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='edX',
     author_email='oscm@edx.org',
     url='https://github.com/openedx/edx-search',
@@ -133,8 +139,8 @@ setup(
         'License :: OSI Approved :: GNU Affero General Public License v3',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Framework :: Django',
         'Framework :: Django :: 2.2',
         'Framework :: Django :: 3.0',

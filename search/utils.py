@@ -1,6 +1,7 @@
 """ Utility classes to support others """
 
 import importlib
+import datetime
 from collections.abc import Iterable
 
 
@@ -65,3 +66,44 @@ class DateRange(ValueRange):
     def lower_string(self):
         """ use isoformat for _lower date's string format """
         return self._lower.isoformat()
+
+
+class Timer:
+
+    """ Simple timer class to measure elapsed time """
+    def __init__(self):
+        self._start_time = None
+        self._end_time = None
+
+    def start(self):
+        """ Start the timer """
+        self._start_time = datetime.datetime.now()
+
+    def stop(self):
+        """ Stop the timer """
+        self._end_time = datetime.datetime.now()
+
+    @property
+    def start_time(self):
+        """ Return the start time """
+        return self._start_time
+
+    @property
+    def end_time(self):
+        """ Return the end time """
+        return self._end_time
+
+    @property
+    def start_time_string(self):
+        """ use isoformat for the start time """
+        return self._start_time.isoformat()
+
+    @property
+    def end_time_string(self):
+        """ use isoformat for the end time """
+        return self._end_time.isoformat()
+
+    @property
+    def elapsed_time(self):
+        """ Return the elapsed time """
+        return (self._end_time - self._start_time).seconds

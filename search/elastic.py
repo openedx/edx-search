@@ -469,6 +469,7 @@ class ElasticSearchEngine(SearchEngine):
                 log.exception("An error occurred while removing documents from the index: %r", valid_errors)
                 raise
 
+    # pylint: disable=arguments-renamed, unused-argument
     def search(self,
                query_string=None,
                field_dictionary=None,
@@ -477,7 +478,8 @@ class ElasticSearchEngine(SearchEngine):
                aggregation_terms=None,
                exclude_ids=None,
                use_field_match=False,
-               **kwargs):  # pylint: disable=arguments-differ, unused-argument
+               log_search_params=False,
+               **kwargs):
         """
         Implements call to search the index for the desired content.
 
@@ -652,6 +654,9 @@ class ElasticSearchEngine(SearchEngine):
         body = {"query": query}
         if aggregation_terms:
             body["aggs"] = _process_aggregation_terms(aggregation_terms)
+
+        if log_search_params:
+            log.info(f"full elastic search body {body}")
 
         try:
             es_response = self._es.search(index=self._prefixed_index_name, body=body, **kwargs)

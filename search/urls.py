@@ -8,7 +8,6 @@ from . import views
 COURSE_ID_PATTERN = getattr(settings, "COURSE_ID_PATTERN", r'(?P<course_id>[^/+]+(/|\+)[^/+]+(/|\+)[^/]+)')
 
 # urlpatterns is the standard name to use here
-# pylint: disable=invalid-name
 urlpatterns = [
     path('', views.do_search, name='do_search'),
     re_path(r'^{}$'.format(COURSE_ID_PATTERN), views.do_search, name='do_search'),

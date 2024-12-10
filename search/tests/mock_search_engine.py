@@ -190,7 +190,7 @@ def _count_aggregated_values(documents, aggregation_terms):
         for document in aggregated_documents:
             add_agg_value(document[aggregate])
 
-        total = sum([terms[term] for term in terms])
+        total = sum([terms[term] for term in terms])    # pylint: disable=consider-using-generator
 
         return total, terms
 
@@ -340,6 +340,7 @@ class MockSearchEngine(SearchEngine):
                filter_dictionary=None,
                exclude_dictionary=None,
                aggregation_terms=None,
+               log_search_params=False,
                **kwargs):  # pylint: disable=too-many-arguments
         """
         Perform search upon documents within index.
@@ -384,8 +385,7 @@ class MockSearchEngine(SearchEngine):
             while documents_to_search:
                 current_doc = documents_to_search[0]
                 score = len([d for d in documents_to_search if d == current_doc])
-                if score > max_score:
-                    max_score = score
+                max_score = max(max_score, score)
                 documents_to_search = [d for d in documents_to_search if d != current_doc]
 
                 data = copy.copy(current_doc)

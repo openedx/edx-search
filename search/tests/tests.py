@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Some of the subclasses that get used as settings-overrides will yield this pylint
 # error, but they do get used when included as part of the override_settings
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-ancestors
 """ Tests for search functionalty """
 
 from datetime import datetime
@@ -20,8 +18,6 @@ from search.utils import ValueRange, DateRange
 from .mock_search_engine import MockSearchEngine
 
 
-# Any class that inherits from TestCase will cause too-many-public-methods pylint error
-# pylint: disable=too-many-public-methods
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
 @override_settings(ELASTIC_FIELD_MAPPINGS={"start_date": {"type": "date"}})
 @override_settings(MOCK_SEARCH_BACKING_FILE=None)
@@ -129,6 +125,15 @@ class MockSearchTests(TestCase, SearcherMixin):
         self.searcher.index([{"content": {"deep": {"down": test_string}}}])
         response = self.searcher.search_string(test_string)
         self.assertEqual(response["total"], 3)
+
+    def test_log_params(self):
+        """ Test that if you turn on detailed logging, search doesn't explode. """
+        test_string = "A test string"
+        self.searcher.index([{"content": {"name": test_string}}])
+
+        # search string
+        response = self.searcher.search(query_string=test_string, log_search_params=True)
+        self.assertEqual(response["total"], 1)
 
     def test_field(self):
         """ test matching on a field """

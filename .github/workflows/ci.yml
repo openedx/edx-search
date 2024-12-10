@@ -13,9 +13,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04]
-        python-version: ['3.8']
-        toxenv: [django32, django40, django42, quality]
+        os: [ubuntu-latest]
+        python-version: ['3.11', '3.12']
+        toxenv: [django42, quality]
 
     steps:
     - uses: actions/checkout@v2
@@ -31,15 +31,20 @@ jobs:
       run: pip install -r requirements/pip.txt
 
     - name: Install Dependencies
-      run: pip install -r requirements/ci.txt
+      run: |
+        pip install setuptools
+        pip install -r requirements/ci.txt
 
     - name: Run Tests
       env:
         TOXENV: ${{ matrix.toxenv }}
+      # Sleep is needed to give elasticsearch enough time to startup.
+      # Longer term we should switch to the upstream ES github action to start up the server
       run: sleep 10 && tox
 
     - name: Run Coverage
-      if: matrix.python-version == '3.8' && matrix.toxenv=='django42'
-      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.12' && matrix.toxenv=='django42'
+      uses: codecov/codecov-action@v4
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true
