@@ -1,2 +1,5 @@
+[MASTER]
+django-settings-module = edxsearch.settings
+
 [MESSAGES CONTROL]
-DISABLE+= ,test-inherits-tests
+DISABLE+= ,test-inherits-tests,too-many-positional-arguments
