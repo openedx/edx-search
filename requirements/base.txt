@@ -10,7 +10,7 @@ annotated-types==0.7.0
     # via pydantic
 asgiref==3.8.1
     # via django
-attrs==24.3.0
+attrs==25.1.0
     # via openedx-events
 billiard==4.2.1
     # via celery
@@ -18,7 +18,7 @@ camel-converter[pydantic]==4.0.1
     # via meilisearch
 celery==5.4.0
     # via event-tracking
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   elasticsearch
     #   requests
@@ -95,9 +95,9 @@ markupsafe==3.0.2
     # via jinja2
 meilisearch==0.33.1
     # via -r requirements/base.in
-newrelic==10.4.0
+newrelic==10.5.0
     # via edx-django-utils
-openedx-events==9.15.2
+openedx-events==9.17.0
     # via event-tracking
 pbr==6.1.0
     # via stevedore
@@ -121,7 +121,7 @@ python-dateutil==2.9.0.post0
     # via celery
 python-slugify==8.0.4
     # via code-annotations
-pytz==2024.2
+pytz==2025.1
     # via event-tracking
 pyyaml==6.0.2
     # via code-annotations
