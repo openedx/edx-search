@@ -16,7 +16,7 @@ asgiref==3.8.1
     # via
     #   -r requirements/base.txt
     #   django
-attrs==24.3.0
+attrs==25.1.0
     # via
     #   -r requirements/base.txt
     #   openedx-events
@@ -32,7 +32,7 @@ celery==5.4.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   -r requirements/base.txt
     #   elasticsearch
@@ -152,11 +152,11 @@ meilisearch==0.33.1
     # via -r requirements/base.txt
 mock==5.1.0
     # via -r requirements/testing.in
-newrelic==10.4.0
+newrelic==10.5.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==9.15.2
+openedx-events==9.17.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -209,7 +209,7 @@ python-slugify==8.0.4
     # via
     #   -r requirements/base.txt
     #   code-annotations
-pytz==2024.2
+pytz==2025.1
     # via
     #   -r requirements/base.txt
     #   event-tracking
