@@ -70,7 +70,7 @@ code-annotations==2.2.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==7.6.10
+coverage[toml]==7.6.11
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -152,7 +152,7 @@ meilisearch==0.33.1
     # via -r requirements/base.txt
 mock==5.1.0
     # via -r requirements/testing.in
-newrelic==10.5.0
+newrelic==10.6.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
@@ -162,7 +162,7 @@ openedx-events==9.17.0
     #   event-tracking
 packaging==24.2
     # via pytest
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   -r requirements/base.txt
     #   stevedore
@@ -268,3 +268,6 @@ wcwidth==0.2.13
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
