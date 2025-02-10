@@ -42,7 +42,7 @@ click-repl==0.3.0
     # via celery
 code-annotations==2.2.0
     # via edx-toggles
-django==4.2.18
+django==4.2.19
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
@@ -95,11 +95,11 @@ markupsafe==3.0.2
     # via jinja2
 meilisearch==0.33.1
     # via -r requirements/base.in
-newrelic==10.5.0
+newrelic==10.6.0
     # via edx-django-utils
 openedx-events==9.17.0
     # via event-tracking
-pbr==6.1.0
+pbr==6.1.1
     # via stevedore
 prompt-toolkit==3.0.50
     # via click-repl
@@ -162,3 +162,6 @@ vine==5.1.0
     #   kombu
 wcwidth==0.2.13
     # via prompt-toolkit
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
