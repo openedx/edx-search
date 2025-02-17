@@ -115,7 +115,7 @@ colorama==0.4.6
     # via
     #   -r requirements/ci.txt
     #   tox
-coverage[toml]==7.6.10
+coverage[toml]==7.6.12
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -133,7 +133,7 @@ distlib==0.3.9
     # via
     #   -r requirements/ci.txt
     #   virtualenv
-django==4.2.18
+django==4.2.19
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
@@ -181,7 +181,7 @@ edx-opaque-keys[django]==2.11.0
     #   -r requirements/testing.txt
     #   edx-ccx-keys
     #   openedx-events
-edx-toggles==5.2.0
+edx-toggles==5.3.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -246,12 +246,12 @@ mock==5.1.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
-newrelic==10.5.0
+newrelic==10.6.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   edx-django-utils
-openedx-events==9.17.0
+openedx-events==9.18.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -266,7 +266,7 @@ packaging==24.2
     #   pyproject-api
     #   pytest
     #   tox
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -292,7 +292,7 @@ prompt-toolkit==3.0.50
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   click-repl
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -446,7 +446,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==20.29.1
+virtualenv==20.29.2
     # via
     #   -r requirements/ci.txt
     #   tox
