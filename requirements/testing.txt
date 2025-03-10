@@ -70,7 +70,7 @@ code-annotations==2.2.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==7.6.10
+coverage[toml]==7.6.12
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -105,7 +105,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r requirements/base.txt
     #   openedx-events
-edx-django-utils==7.1.0
+edx-django-utils==7.2.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
@@ -116,7 +116,7 @@ edx-opaque-keys[django]==2.11.0
     #   -r requirements/base.txt
     #   edx-ccx-keys
     #   openedx-events
-edx-toggles==5.2.0
+edx-toggles==5.3.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -136,7 +136,7 @@ idna==3.10
     #   requests
 iniconfig==2.0.0
     # via pytest
-jinja2==3.1.5
+jinja2==3.1.6
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -148,21 +148,21 @@ markupsafe==3.0.2
     # via
     #   -r requirements/base.txt
     #   jinja2
-meilisearch==0.33.1
+meilisearch==0.34.0
     # via -r requirements/base.txt
-mock==5.1.0
+mock==5.2.0
     # via -r requirements/testing.in
-newrelic==10.5.0
+newrelic==10.7.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-openedx-events==9.17.0
+openedx-events==9.18.2
     # via
     #   -r requirements/base.txt
     #   event-tracking
 packaging==24.2
     # via pytest
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   -r requirements/base.txt
     #   stevedore
@@ -172,7 +172,7 @@ prompt-toolkit==3.0.50
     # via
     #   -r requirements/base.txt
     #   click-repl
-psutil==6.1.1
+psutil==7.0.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
@@ -197,7 +197,7 @@ pynacl==1.5.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pytest==8.3.4
+pytest==8.3.5
     # via pytest-cov
 pytest-cov==6.0.0
     # via -r requirements/testing.in
@@ -231,7 +231,7 @@ sqlparse==0.5.3
     # via
     #   -r requirements/base.txt
     #   django
-stevedore==5.4.0
+stevedore==5.4.1
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -268,3 +268,6 @@ wcwidth==0.2.13
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
