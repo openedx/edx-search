@@ -166,7 +166,7 @@ edx-ccx-keys==2.0.2
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   openedx-events
-edx-django-utils==7.2.0
+edx-django-utils==7.4.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -246,12 +246,12 @@ mock==5.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
-newrelic==10.8.1
+newrelic==10.9.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   edx-django-utils
-openedx-events==9.20.0
+openedx-events==10.0.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -419,7 +419,7 @@ tomlkit==0.13.2
     #   pylint
 tox==4.25.0
     # via -r requirements/ci.txt
-typing-extensions==4.13.1
+typing-extensions==4.13.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
