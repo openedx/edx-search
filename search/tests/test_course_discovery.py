@@ -311,6 +311,41 @@ class TestMockCourseDiscoverySearch(TestCase, SearcherMixin):
         self.assertEqual(results["aggs"]["lang"]["terms"]["fr"], 2)
         self.assertEqual(results["aggs"]["lang"]["terms"]["de"], 1)
 
+    def test_sorting_by_start_date(self):
+        """
+        Test course sorting by start date
+        """
+
+        def _transform_dates(results):
+            dates = []
+            for result in results["results"]:
+                start_date = result["data"]["start"]
+
+                if isinstance(start_date, str):
+                    start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                dates.append(start_date)
+            return dates
+
+        DemoCourse.get_and_index(self.searcher, {"start": datetime(2014, 2, 1)})
+        DemoCourse.get_and_index(self.searcher, {"start": datetime(2014, 3, 1)})
+        DemoCourse.get_and_index(self.searcher, {"start": datetime(2014, 1, 1)})
+
+        unsorted_results = course_discovery_search()
+        self.assertEqual(unsorted_results["total"], 3)
+
+        unsorted_dates = _transform_dates(unsorted_results)
+        self.assertEqual(unsorted_dates[0].month, 2)
+        self.assertEqual(unsorted_dates[1].month, 3)
+        self.assertEqual(unsorted_dates[2].month, 1)
+
+        sorted_results = course_discovery_search(enable_course_sorting_by_start_date=True)
+        self.assertEqual(sorted_results["total"], 3)
+
+        sorted_dates = _transform_dates(sorted_results)
+        self.assertEqual(sorted_dates[0].month, 1)
+        self.assertEqual(sorted_dates[1].month, 2)
+        self.assertEqual(sorted_dates[2].month, 3)
+
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine")
 @ddt.ddt

@@ -3,7 +3,7 @@ Test for the Meilisearch search engine.
 """
 
 from datetime import datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, PropertyMock
 
 import django.test
 from django.utils import timezone
@@ -268,11 +268,17 @@ class EngineTests(django.test.TestCase):
             "enrollment_end >= 1704067200.0 OR enrollment_end NOT EXISTS"
         ] == params["filter"]
 
-    def test_engine_init(self):
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_engine_init(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
         engine = search.meilisearch.MeilisearchEngine(index="my_index")
-        assert engine.meilisearch_index_name == "my_index"
+        assert engine.index_name == "my_index"
 
-    def test_engine_index(self):
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_engine_index(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
         engine = search.meilisearch.MeilisearchEngine(index="my_index")
         engine.meilisearch_index.add_documents = Mock()
         document = {
@@ -294,24 +300,26 @@ class EngineTests(django.test.TestCase):
             serializer=search.meilisearch.DocumentEncoder,
         )
 
-    def test_engine_search(self):
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_engine_search(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
         engine = search.meilisearch.MeilisearchEngine(index="my_index")
-        engine.meilisearch_index.search = Mock(
-            return_value={
-                "hits": [
-                    {
-                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
-                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
-                        "_rankingScore": 0.865,
-                    },
-                ],
-                "query": "demo",
-                "processingTimeMs": 0,
-                "limit": 20,
-                "offset": 0,
-                "estimatedTotalHits": 1,
-            }
-        )
+        mock_index.search.return_value = {
+            "hits": [
+                {
+                    "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                    "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                    "_rankingScore": 0.865,
+                },
+            ],
+            "query": "demo",
+            "processingTimeMs": 0,
+            "limit": 20,
+            "offset": 0,
+            "estimatedTotalHits": 1,
+        }
 
         results = engine.search(
             query_string="abc",
@@ -356,9 +364,12 @@ class EngineTests(django.test.TestCase):
             "total": 1,
         }
 
-    def test_engine_remove(self):
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_engine_remove(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
         engine = search.meilisearch.MeilisearchEngine(index="my_index")
-        engine.meilisearch_index.delete_documents = Mock()
+        mock_index.delete_documents = Mock()
         # Primary key field
         # can be verified with: echo -n "abcd" | sha1sum
         doc_id = "abcd"

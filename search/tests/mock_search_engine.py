@@ -340,6 +340,7 @@ class MockSearchEngine(SearchEngine):
                filter_dictionary=None,
                exclude_dictionary=None,
                aggregation_terms=None,
+               sort_by=None,
                log_search_params=False,
                **kwargs):  # pylint: disable=too-many-arguments
         """
@@ -404,6 +405,13 @@ class MockSearchEngine(SearchEngine):
             kwargs["from_"] if "from_" in kwargs else None,
             sorted(search_results, key=lambda k: k["score"])
         )
+
+        if sort_by:
+            for field in sort_by:
+                results.sort(
+                    key=lambda x, sk=field: _find_field(x["data"], sk.name),
+                    reverse=field.order == "desc"
+                )
 
         response = {
             "took": 10,

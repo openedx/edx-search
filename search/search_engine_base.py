@@ -4,6 +4,7 @@
 from waffle import switch_is_active  # lint-amnesty, pylint: disable=invalid-django-waffle-import
 from django.conf import settings
 
+from .dataclasses import SortField
 from .utils import _load_class
 
 # .. toggle_name: edx_search.default_elastic_search
@@ -42,12 +43,20 @@ class SearchEngine:
         """
         raise NotImplementedError
 
+    def _transform_sort_by(self, fields: list[SortField]):
+        """
+        Helper function to transform sort_by dictionary to the format
+        expected by the search engine.
+        """
+        return fields
+
     def search(self,
                query_string=None,
                field_dictionary=None,
                filter_dictionary=None,
                exclude_dictionary=None,
                aggregation_terms=None,
+               sort_by=None,
                log_search_params=False,
                **kwargs):  # pylint: disable=too-many-arguments
         """

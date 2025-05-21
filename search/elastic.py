@@ -9,6 +9,7 @@ from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
 from elasticsearch.helpers import bulk, BulkIndexError
 
+from search.dataclasses import SortField
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
 
@@ -477,6 +478,7 @@ class ElasticSearchEngine(SearchEngine):
                exclude_dictionary=None,
                aggregation_terms=None,
                exclude_ids=None,
+               sort_by=None,
                use_field_match=False,
                log_search_params=False,
                **kwargs):
@@ -654,6 +656,8 @@ class ElasticSearchEngine(SearchEngine):
         body = {"query": query}
         if aggregation_terms:
             body["aggs"] = _process_aggregation_terms(aggregation_terms)
+        if sort_by:
+            body["sort"] = self._transform_sort_by(sort_by)
 
         if log_search_params:
             log.info(f"full elastic search body {body}")
@@ -665,3 +669,17 @@ class ElasticSearchEngine(SearchEngine):
             raise
 
         return _translate_hits(es_response)
+
+    def _transform_sort_by(self, fields: list[SortField]):
+        """
+        Helper function to transform sort_by dictionary to the format
+        expected by the search engine.
+        """
+        return [
+            {
+                field.name: {
+                    "order": field.order,
+                }
+            }
+            for field in fields
+        ]
