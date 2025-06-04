@@ -99,6 +99,7 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "org",
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "enrollment_end",  # include only enrollable courses
+        "course_id"
     ],
     getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content"): [
         PRIMARY_KEY_FIELD_NAME,  # exclude some specific documents based on ID
@@ -106,6 +107,21 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "org",  # used during indexing
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "start_date",  # limit search to started courses
+        "course_id",  # used to filter courseware content by course
+    ],
+    "course_team_index": [
+        PRIMARY_KEY_FIELD_NAME,
+        "id",
+        "course_id",
+        "topic_id",
+        "is_private",
+        "course",
+        "org",
+        "start_date",
+        "catalog_visibility",
+        "enrollment_end",
+        "language",
+        "modes",
     ],
 }
 
@@ -237,6 +253,11 @@ def create_indexes(index_filterables: t.Optional[dict[str, list[str]]] = None):
     client = get_meilisearch_client()
     for index_name, filterables in index_filterables.items():
         meilisearch_index_name = get_meilisearch_index_name(index_name)
+        logging.info(
+            "Creating Meilisearch index: %s with filterables: %s",
+            meilisearch_index_name,
+            filterables,
+        )
         index = get_or_create_meilisearch_index(client, meilisearch_index_name)
         update_index_filterables(client, index, filterables)
 
@@ -255,10 +276,6 @@ def get_or_create_meilisearch_index(
     except meilisearch.errors.MeilisearchApiError as e:
         if e.code != "index_not_found":
             raise
-        task_info = client.create_index(
-            index_name, {"primaryKey": PRIMARY_KEY_FIELD_NAME}
-        )
-        wait_for_task_to_succeed(client, task_info)
         # Get the index again
         return client.get_index(index_name)
 
