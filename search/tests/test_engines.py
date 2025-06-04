@@ -12,13 +12,12 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
 from elasticsearch.helpers import BulkIndexError
+
 from search.api import NoSearchEngineError, perform_search
 from search.elastic import RESERVED_CHARACTERS
-from search.tests.mock_search_engine import (MockSearchEngine,
-                                             json_date_to_datetime)
+from search.tests.mock_search_engine import MockSearchEngine, json_date_to_datetime
 from search.tests.tests import MockSearchTests
-from search.tests.utils import (TEST_INDEX_NAME, ErroringElasticImpl,
-                                SearcherMixin)
+from search.tests.utils import TEST_INDEX_NAME, ErroringElasticImpl, SearcherMixin
 
 
 @override_settings(ELASTIC_SEARCH_INDEX_PREFIX='prefixed_')
@@ -92,6 +91,20 @@ class ElasticSearchTests(MockSearchTests):
         self.assertEqual(org_term_counts["MIT"], 2)
         self.assertNotIn("edX", org_term_counts)
         self.assertEqual(aggregation_results["org"]["other"], 1)
+
+    def test_search_sorting(self):
+        """
+        Test that search function sorts the results appropriately
+        """
+        self.searcher.index([
+            {"id": "FAKE_ID_1", "display_name": "CBA"},
+            {"id": "FAKE_ID_2", "display_name": "ABC"},
+        ])
+
+        with self.settings(FEATURES={'ELASTICSEARCH_DISCOVERY_SORT_PARAMETERS': [{'display_name': 'asc'}]}):
+            response = self.searcher.search()
+            self.assertEqual(response["results"][0]["_id"], "FAKE_ID_2")
+            self.assertEqual(response["results"][1]["_id"], "FAKE_ID_1")
 
 
 @override_settings(MOCK_SEARCH_BACKING_FILE="./testfile.pkl")

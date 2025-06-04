@@ -24,6 +24,8 @@ following response:
 In such cases, the filterable field should be added to INDEX_FILTERABLES below. And you should
 then run the `create_indexes()` function again, as indicated above.
 
+Similarly sortable fields should be added to INDEX_SORTABLES.
+
 This search engine was tested for the following indexes:
 
 1. course_info ("course discovery"):
@@ -58,21 +60,19 @@ can troubleshoot these tasks by printing them with:
     ./manage.py lms shell -c "import search.meilisearch; search.meilisearch.print_failed_meilisearch_tasks()"
 """
 
-from copy import deepcopy
-from datetime import datetime
 import hashlib
 import json
 import logging
 import typing as t
+from copy import deepcopy
+from datetime import datetime
 
 import meilisearch
-
 from django.conf import settings
 from django.utils import timezone
 
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
-
 
 MEILISEARCH_API_KEY = getattr(settings, "MEILISEARCH_API_KEY", "")
 MEILISEARCH_URL = getattr(settings, "MEILISEARCH_URL", "http://meilisearch")
@@ -106,6 +106,13 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "org",  # used during indexing
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "start_date",  # limit search to started courses
+    ],
+}
+
+INDEX_SORTABLES: dict[str, list[str]] = {
+    getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info"): [
+        "start",  # sort by course start date
+        "display_name",  # sort by course display_name
     ],
 }
 
@@ -177,6 +184,14 @@ class MeilisearchEngine(SearchEngine):
         )
         if log_search_params:
             logger.info("Search query: opt_params=%s", opt_params)
+        # Apply sort parameters from settings when no sort criteria specified in request
+        if "sort" not in opt_params:
+            # For format of sort parameters refer to:
+            # https://www.meilisearch.com/docs/learn/filtering_and_sorting/sort_search_results
+            # Example:
+            # 'MEILISEARCH_DISCOVERY_SORT_PARAMETERS' = ['start:desc']
+            features = getattr(settings, 'FEATURES', {})
+            opt_params["sort"] = features.get('MEILISEARCH_DISCOVERY_SORT_PARAMETERS', [])
         meilisearch_results = self.meilisearch_index.search(query_string, opt_params)
         processed_results = process_results(meilisearch_results, self.index_name)
         return processed_results
@@ -223,22 +238,34 @@ def print_failed_meilisearch_tasks(count: int = 10):
         print(result)
 
 
-def create_indexes(index_filterables: t.Optional[dict[str, list[str]]] = None):
+def create_indexes(
+    index_filterables: t.Optional[dict[str, list[str]]] = None,
+    index_sortables: t.Optional[dict[str, list[str]]] = None,
+):
     """
     This is an initialization function that creates indexes and makes sure that they
     support the right facetting.
 
-    The `index_filterables` will default to `INDEX_FILTERABLES` if undefined. Developers
-    can use this function to configure their own indices.
+    The `index_filterables` will default to `INDEX_FILTERABLES` if undefined and
+    the `index_sortables` will default to `INDEX_SORTABLES` if undefined.
+    Developers can use this function to configure their own indices.
     """
     if index_filterables is None:
         index_filterables = INDEX_FILTERABLES
+
+    if index_sortables is None:
+        index_sortables = INDEX_SORTABLES
 
     client = get_meilisearch_client()
     for index_name, filterables in index_filterables.items():
         meilisearch_index_name = get_meilisearch_index_name(index_name)
         index = get_or_create_meilisearch_index(client, meilisearch_index_name)
         update_index_filterables(client, index, filterables)
+
+    for index_name, sortables in index_sortables.items():
+        meilisearch_index_name = get_meilisearch_index_name(index_name)
+        index = get_or_create_meilisearch_index(client, meilisearch_index_name)
+        update_index_sortables(client, index, sortables)
 
 
 def get_or_create_meilisearch_index(
@@ -279,6 +306,25 @@ def update_index_filterables(
         return
     all_filterables = list(existing_filterables.union(filterables))
     task_info = index.update_filterable_attributes(all_filterables)
+    wait_for_task_to_succeed(client, task_info)
+
+
+def update_index_sortables(
+    client: meilisearch.Client, index: meilisearch.index.Index, sortables: list[str]
+) -> None:
+    """
+    Make sure that the sortable fields of an index include the given list of fields.
+
+    If existing fields are present, they are preserved.
+    """
+    if not sortables:
+        return
+    existing_sortables = set(index.get_sortable_attributes())
+    if set(sortables).issubset(existing_sortables):
+        # all sortables fields are already present
+        return
+    all_sortables = list(existing_sortables.union(sortables))
+    task_info = index.update_sortable_attributes(all_sortables)
     wait_for_task_to_succeed(client, task_info)
 
 

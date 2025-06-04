@@ -4,6 +4,7 @@ Test for the Meilisearch search engine.
 
 from datetime import datetime
 from unittest.mock import Mock, patch
+from django.test.utils import override_settings
 
 import django.test
 from django.utils import timezone
@@ -336,6 +337,71 @@ class EngineTests(django.test.TestCase):
                     'key = "value" OR key NOT EXISTS',
                     'NOT _pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"',
                 ],
+                'sort': []
+            },
+        )
+        assert results == {
+            "aggs": {},
+            "max_score": 0.865,
+            "results": [
+                {
+                    "_id": "course-v1:OpenedX+DemoX+DemoCourse",
+                    "_index": "my_index",
+                    "_type": "_doc",
+                    "data": {
+                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                    },
+                },
+            ],
+            "took": 0,
+            "total": 1,
+        }
+
+    @override_settings(FEATURES={'MEILISEARCH_DISCOVERY_SORT_PARAMETERS': ['start:desc']})
+    def test_engine_sorted_search(self):
+        engine = search.meilisearch.MeilisearchEngine(index="my_index")
+        engine.meilisearch_index.search = Mock(
+            return_value={
+                "hits": [
+                    {
+                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                        "_rankingScore": 0.865,
+                    },
+                ],
+                "query": "demo",
+                "processingTimeMs": 0,
+                "limit": 20,
+                "offset": 0,
+                "estimatedTotalHits": 1,
+            }
+        )
+
+        results = engine.search(
+            query_string="abc",
+            field_dictionary={
+                "course": "course-v1:testorg+test1+alpha",
+                "org": "testorg",
+            },
+            filter_dictionary={"key": "value"},
+            exclude_dictionary={"id": ["abcd"]},
+            aggregation_terms={"org": 1, "course": 2},
+            log_search_params=True,
+        )
+
+        engine.meilisearch_index.search.assert_called_with(
+            "abc",
+            {
+                "showRankingScore": True,
+                "facets": ["org", "course"],
+                "filter": [
+                    'course = "course-v1:testorg+test1+alpha"',
+                    'org = "testorg"',
+                    'key = "value" OR key NOT EXISTS',
+                    'NOT _pk = "81fe8bfe87576c3ecb22426f8e57847382917acf"',
+                ],
+                'sort': ["start:desc"]
             },
         )
         assert results == {

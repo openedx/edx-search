@@ -7,7 +7,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from elasticsearch import Elasticsearch, exceptions
-from elasticsearch.helpers import bulk, BulkIndexError
+from elasticsearch.helpers import BulkIndexError, bulk
 
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange, _is_iterable
@@ -654,6 +654,14 @@ class ElasticSearchEngine(SearchEngine):
         body = {"query": query}
         if aggregation_terms:
             body["aggs"] = _process_aggregation_terms(aggregation_terms)
+
+        if "sort" not in body:
+            # For format of sort parameters refer to:
+            # https://www.elastic.co/docs/reference/elasticsearch/rest-apis/sort-search-results
+            # Example:
+            # 'ELASTICSEARCH_DISCOVERY_SORT_PARAMETERS': [{'display_name':'asc'}]
+            features = getattr(settings, "FEATURES", {})
+            body["sort"] = features.get("ELASTICSEARCH_DISCOVERY_SORT_PARAMETERS", [])
 
         if log_search_params:
             log.info(f"full elastic search body {body}")
