@@ -6,6 +6,7 @@ import pytz
 from django.test import TestCase
 from django.test.utils import override_settings
 
+from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import _find_field, _filter_intersection, json_date_to_datetime
 from search.tests.utils import SearcherMixin
 from search.utils import DateRange
@@ -125,3 +126,26 @@ class MockSpecificSearchTests(TestCase, SearcherMixin):
 
         response = self.searcher.search(field_dictionary={"start_date": DateRange(datetime(2099, 1, 1), None)})
         self.assertEqual(response["total"], 1)
+
+
+class SearchEngineBaseTests(TestCase):
+    """
+    Tests for the SearchEngine base class.
+    """
+
+    def setUp(self):
+        """
+        Set up the SearchEngine instance for testing.
+        """
+        self.searcher = SearchEngine()
+
+    def test_search_engine_base_transform_sort_by(self):
+        """
+        Test that the transform_sort_by method returns the fields as is.
+        """
+        fields = [
+            {"field": "title", "direction": "asc"},
+            {"field": "date", "direction": "desc"}
+        ]
+        transformed_fields = self.searcher._transform_sort_by(fields)  # pylint: disable=protected-access
+        self.assertEqual(transformed_fields, fields)

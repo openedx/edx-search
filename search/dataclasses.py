@@ -23,5 +23,5 @@ class SortField:
     Represents a field used for sorting in search results.
     """
     name: str
-    type_: FieldTypes
+    type_: FieldTypes = FieldTypes.STRING
     order: Literal["asc", "desc"] = "asc"

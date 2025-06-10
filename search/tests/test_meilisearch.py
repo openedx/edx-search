@@ -268,6 +268,22 @@ class EngineTests(django.test.TestCase):
             "enrollment_end >= 1704067200.0 OR enrollment_end NOT EXISTS"
         ] == params["filter"]
 
+    def test_search_params_sort_by(self):
+        params = search.meilisearch.get_search_params(
+            sort_by=[
+                search.dataclasses.SortField(name="start", order="asc"),
+                search.dataclasses.SortField(name="title", order="desc"),
+            ]
+        )
+        assert [
+            search.dataclasses.SortField(name="start", order="asc"),
+            search.dataclasses.SortField(name="title", order="desc"),
+        ] == params["sort"]
+
+        # No sort by
+        params = search.meilisearch.get_search_params(sort_by=[])
+        assert params.get("sort") is None
+
     @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
     def test_engine_init(self, mock_meilisearch_index):
         mock_index = Mock()
@@ -408,3 +424,130 @@ class UtilitiesTests(django.test.TestCase):
         result = search.meilisearch.get_or_create_meilisearch_index(client, "my_index")
         assert result == "index created: my_index"
         mock_wait_for_task_to_succeed.assert_called_once()
+
+
+class IndexSortablesAndTransformTests(django.test.TestCase):
+    """
+    Tests for INDEX_SORTABLES configuration, sortable attributes functionality, and _transform_sort_by method.
+    """
+
+    @patch('search.meilisearch.get_meilisearch_client')
+    def test_meilisearch_index_calls_update_sortable_attributes(self, mock_get_client):
+        mock_index = Mock()
+        mock_client = Mock()
+        mock_get_client.return_value = mock_client
+        mock_client.index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+
+        # Access the property to trigger the call
+        _ = engine.meilisearch_index
+
+        # Verify update_sortable_attributes was called
+        mock_index.update_sortable_attributes.assert_called()
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_transform_sort_by_single_field_asc(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+
+        sort_fields = [search.dataclasses.SortField(name="start", order="asc")]
+        result = engine._transform_sort_by(sort_fields)  # pylint: disable=protected-access
+
+        assert result == ["start:asc"]
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_transform_sort_by_single_field_desc(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+
+        sort_fields = [search.dataclasses.SortField(name="title", order="desc")]
+        result = engine._transform_sort_by(sort_fields)  # pylint: disable=protected-access
+
+        assert result == ["title:desc"]
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_transform_sort_by_multiple_fields(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+
+        sort_fields = [
+            search.dataclasses.SortField(name="start", order="desc"),
+            search.dataclasses.SortField(name="title", order="asc"),
+            search.dataclasses.SortField(name="score", order="desc"),
+        ]
+        result = engine._transform_sort_by(sort_fields)  # pylint: disable=protected-access
+
+        assert result == ["start:desc", "title:asc", "score:desc"]
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_transform_sort_by_empty_list(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+
+        sort_fields = []
+        result = engine._transform_sort_by(sort_fields)  # pylint: disable=protected-access
+
+        assert result == []
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_search_with_sort_by_integration(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+        mock_index.search.return_value = {
+            "hits": [],
+            "query": "",
+            "processingTimeMs": 0,
+            "limit": 20,
+            "offset": 0,
+            "estimatedTotalHits": 0,
+        }
+
+        sort_fields = [
+            search.dataclasses.SortField(name="start", order="desc"),
+            search.dataclasses.SortField(name="title", order="asc"),
+        ]
+
+        engine.search(query_string="test", sort_by=sort_fields)
+
+        mock_index.search.assert_called_with(
+            "test",
+            {
+                "showRankingScore": True,
+                "sort": ["start:desc", "title:asc"],
+            },
+        )
+
+    @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
+    def test_search_without_sort_by(self, mock_meilisearch_index):
+        mock_index = Mock()
+        mock_meilisearch_index.return_value = mock_index
+
+        engine = search.meilisearch.MeilisearchEngine(index="test_index")
+        mock_index.search.return_value = {
+            "hits": [],
+            "query": "",
+            "processingTimeMs": 0,
+            "limit": 20,
+            "offset": 0,
+            "estimatedTotalHits": 0,
+        }
+
+        engine.search(query_string="test")
+
+        mock_index.search.assert_called_with(
+            "test",
+            {
+                "showRankingScore": True,
+            },
+        )

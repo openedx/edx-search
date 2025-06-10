@@ -209,7 +209,7 @@ class MeilisearchEngine(SearchEngine):
         if doc_pks:
             self.meilisearch_index.delete_documents(doc_pks)
 
-    def transform_sort_by(self, fields: list[SortField]):
+    def _transform_sort_by(self, fields: list[SortField]):
         """
         Helper function to transform sort_by dictionary to the format
         expected by the search engine.
