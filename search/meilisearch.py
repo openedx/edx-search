@@ -253,11 +253,6 @@ def create_indexes(index_filterables: t.Optional[dict[str, list[str]]] = None):
     client = get_meilisearch_client()
     for index_name, filterables in index_filterables.items():
         meilisearch_index_name = get_meilisearch_index_name(index_name)
-        logging.info(
-            "Creating Meilisearch index: %s with filterables: %s",
-            meilisearch_index_name,
-            filterables,
-        )
         index = get_or_create_meilisearch_index(client, meilisearch_index_name)
         update_index_filterables(client, index, filterables)
 
@@ -276,6 +271,10 @@ def get_or_create_meilisearch_index(
     except meilisearch.errors.MeilisearchApiError as e:
         if e.code != "index_not_found":
             raise
+        task_info = client.create_index(
+            index_name, {"primaryKey": PRIMARY_KEY_FIELD_NAME}
+        )
+        wait_for_task_to_succeed(client, task_info)
         # Get the index again
         return client.get_index(index_name)
 
@@ -419,17 +418,21 @@ def get_search_params(
 
 def get_filter_rules(
     rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
-) -> list[str]:
+) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
     """
     rules = []
     for key, value in rule_dict.items():
         if isinstance(value, list):
-            for v in value:
-                rules.append(
-                    get_filter_rule(key, v, exclude=exclude, optional=optional)
-                )
+            key_rules = [
+                get_filter_rule(key, v, exclude=exclude, optional=optional)
+                for v in value
+            ]
+            if exclude:
+                rules.extend(key_rules)
+            else:
+                rules.append(key_rules)
         else:
             rules.append(
                 get_filter_rule(key, value, exclude=exclude, optional=optional)
