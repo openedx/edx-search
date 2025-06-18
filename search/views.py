@@ -159,6 +159,7 @@ def course_discovery(request):
         "search_string" (optional) - text with which to search for courses
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
+        "enable_course_sorting_by_start_date" (optional) - boolean to enable sorting by start date
     """
     results = {
         "error": _("Nothing to search")
