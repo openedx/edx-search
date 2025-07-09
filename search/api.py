@@ -129,6 +129,7 @@ def course_discovery_search(
     from_=0,
     field_dictionary=None,
     enable_course_sorting_by_start_date=False,
+    is_multivalue=False,
 ):
     """
     Course Discovery activities against the search engine index of course details
@@ -166,6 +167,7 @@ def course_discovery_search(
         exclude_dictionary=exclude_dictionary,
         aggregation_terms=course_discovery_aggregations(),
         sort_by=sort_by,
+        is_multivalue=is_multivalue,
     )
 
     return results
