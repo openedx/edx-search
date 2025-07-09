@@ -70,6 +70,7 @@ import meilisearch
 from django.conf import settings
 from django.utils import timezone
 
+from search.api import course_discovery_filter_fields
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
@@ -168,6 +169,7 @@ class MeilisearchEngine(SearchEngine):
         """
         See meilisearch docs: https://www.meilisearch.com/docs/reference/api/search
         """
+        is_multivalue = kwargs.pop("is_multivalue", False)
         opt_params = get_search_params(
             field_dictionary=field_dictionary,
             filter_dictionary=filter_dictionary,
@@ -178,8 +180,36 @@ class MeilisearchEngine(SearchEngine):
         if log_search_params:
             logger.info("Search query: opt_params=%s", opt_params)
         meilisearch_results = self.meilisearch_index.search(query_string, opt_params)
-        processed_results = process_results(meilisearch_results, self.index_name)
-        return processed_results
+
+        if is_multivalue:
+            self._expand_facet_distibutions(field_dictionary, query_string, opt_params, meilisearch_results)
+
+        return process_results(meilisearch_results, self.index_name)
+
+    def _expand_facet_distibutions(self, field_dictionary, query_string, opt_params, meilisearch_results):
+        """
+        For each selected facet, get all its available options within the selected filters.
+        """
+        for facet in field_dictionary.keys():
+            expanded_facet_distribution = self._get_expanded_distribution(
+                query_string,
+                facet,
+                opt_params.get("filter", []),
+            )
+            meilisearch_results.setdefault("facetDistribution", {})[facet] = expanded_facet_distribution
+
+    def _get_expanded_distribution(self, query, facet_to_exclude, filter_rules):
+        """
+        Run a secondary query excluding one facet to get its full distribution.
+        Only return distribution data, without any actual results.
+        """
+        secondary_opt_params = {
+            'facets': [facet_to_exclude],
+            'filter': [rule for rule in filter_rules if not rule.startswith(f"{facet_to_exclude} = ")],
+            'limit': 0,
+        }
+        result = self.meilisearch_index.search(query, secondary_opt_params)
+        return result.get("facetDistribution", {}).get(facet_to_exclude, {})
 
     def remove(self, doc_ids, **kwargs):
         """
