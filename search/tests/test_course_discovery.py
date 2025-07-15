@@ -366,6 +366,80 @@ class TestElasticCourseDiscoverySearch(TestMockCourseDiscoverySearch):
         results = course_discovery_search(term)
         self.assertEqual(results["total"], result_count)
 
+    def test_aggregating_with_single_values_in_two_facets(self):
+        DemoCourse.get_and_index(self.searcher, {
+            "language": "en",
+            "org": "EDX",
+            "modes": "audit",
+        })
+
+        DemoCourse.get_and_index(self.searcher, {
+            "language": "en",
+            "org": "ORG2",
+            "modes": "honor",
+        })
+
+        results = course_discovery_search(
+            search_term="",
+            field_dictionary={"language": "en", "org": "EDX"}
+        )
+
+        self.assertIn("audit", results["aggs"]["modes"]["terms"])
+        self.assertNotIn("honor", results["aggs"]["modes"]["terms"])
+        self.assertEqual(results["aggs"]["language"]["terms"], {"en": 1})
+        self.assertEqual(results["aggs"]["org"]["terms"], {"EDX": 1})
+
+    def test_aggregating_with_multi_value_facet(self):
+        DemoCourse.get_and_index(self.searcher, {
+            "org": "EDX",
+            "language": "en",
+            "modes": "audit",
+        })
+
+        DemoCourse.get_and_index(self.searcher, {
+            "org": "EDX",
+            "language": "fr",
+            "modes": "honor",
+        })
+
+        DemoCourse.get_and_index(self.searcher, {
+            "org": "ORG2",
+            "language": "uk",
+            "modes": "verified",
+        })
+
+        results = course_discovery_search(
+            search_term="",
+            field_dictionary={"language": ["en", "fr"]},
+            is_multivalue=True
+        )
+
+        aggregations = results["aggs"]
+        self.assertIn("en", aggregations["language"]["terms"])
+        self.assertIn("fr", aggregations["language"]["terms"])
+        self.assertIn("uk", aggregations["language"]["terms"])
+        self.assertDictEqual(aggregations["language"]["terms"], {"en": 1, "fr": 1, "uk": 1})
+
+        self.assertNotIn("verified", aggregations["modes"]["terms"])
+        self.assertDictEqual(aggregations["modes"]["terms"], {"audit": 1, "honor": 1})
+
+        self.assertNotIn("ORG2", aggregations["org"]["terms"])
+        self.assertDictEqual(aggregations["org"]["terms"], {"EDX": 2})
+
+    def test_aggregating_facet_narrowed_if_single_value_search(self):
+        DemoCourse.get_and_index(self.searcher, {"language": "en", "modes": "audit"})
+
+        DemoCourse.get_and_index(self.searcher, {"language": "en", "modes": "honor"})
+
+        results = course_discovery_search(
+            search_term="",
+            field_dictionary={"modes": ["honor"]},
+            is_multivalue=False
+        )
+
+        self.assertNotIn("audit", results["aggs"]["modes"]["terms"])
+        self.assertDictEqual(results["aggs"]["modes"]["terms"], {'honor': 1})
+
 
 @override_settings(SEARCH_ENGINE=None)
 class TestNone(TestCase):
