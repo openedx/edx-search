@@ -17,6 +17,9 @@ jobs:
         python-version: ['3.11', '3.12']
         toxenv: [django42, django52, quality]
 
+    env:
+      MEILISEARCH_URL: http://localhost:7700
+
     steps:
     - uses: actions/checkout@v2
     - name: setup python
@@ -26,6 +29,9 @@ jobs:
 
     - name: Start Elasticsearch
       run: make test.start_elasticsearch
+
+    - name: Start Meilisearch
+      run: make meili-up
 
     - name: Install pip
       run: pip install -r requirements/pip.txt
