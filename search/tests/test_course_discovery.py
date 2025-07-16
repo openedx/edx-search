@@ -17,8 +17,8 @@ from elasticsearch import Elasticsearch
 from search.api import course_discovery_search, NoSearchEngineError
 from search.elastic import ElasticSearchEngine
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
-from .mock_search_engine import MockSearchEngine
 from search.meilisearch import get_meilisearch_client, create_indexes
+from .mock_search_engine import MockSearchEngine
 
 
 class DemoCourse:
@@ -406,7 +406,7 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
 
     @staticmethod
     def wait_for_meilisearch_indexing():
-        from search.meilisearch import get_meilisearch_client
+        """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
         client = get_meilisearch_client()
         task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
         if not task:

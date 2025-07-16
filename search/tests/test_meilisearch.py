@@ -411,11 +411,11 @@ class EngineTests(django.test.TestCase):
             'org = "EDX"',
         ]
         selected_facet = 'language'
-        actual_distribution = engine._get_expanded_distribution(
+        actual_distribution = engine._get_expanded_distribution(  # pylint: disable=protected-access
             '', selected_facet, original_filter
         )
         self.assertDictEqual(actual_distribution, multivalue_distribution)
-        (query, opt_params), _ = engine.meilisearch_index.search.call_args
+        (query, opt_params), _ = engine.meilisearch_index.search.call_args  # pylint: disable=unused-variable
         self.assertIn(selected_facet, opt_params['facets'])
         self.assertFalse(any(rule.startswith(f'{selected_facet} = ') for rule in opt_params['filter']))
 
@@ -495,7 +495,7 @@ class EngineTests(django.test.TestCase):
 
     def test_facet_expansion_not_triggered_if_not_multivalue(self):
         engine = search.meilisearch.MeilisearchEngine(index="test_index")
-        engine._expand_facet_distibutions = MagicMock()
+        engine._expand_facet_distibutions = MagicMock()  # pylint: disable=protected-access
         engine.meilisearch_index.search = Mock(
             return_value={
                 "hits": [],
@@ -505,11 +505,11 @@ class EngineTests(django.test.TestCase):
             }
         )
         engine.search(field_dictionary={"language": "en"}, is_multivalue=False)
-        engine._expand_facet_distibutions.assert_not_called()
+        engine._expand_facet_distibutions.assert_not_called()  # pylint: disable=protected-access
 
     def test_facet_expansion_is_triggered_if_multivalue(self):
         engine = search.meilisearch.MeilisearchEngine(index="test_index")
-        engine._expand_facet_distibutions = MagicMock()
+        engine._expand_facet_distibutions = MagicMock()  # pylint: disable=protected-access
         engine.meilisearch_index.search = Mock(
             return_value={
                 "hits": [],
@@ -519,7 +519,7 @@ class EngineTests(django.test.TestCase):
             }
         )
         engine.search(query_string="demo", field_dictionary={"language": ["en"]}, is_multivalue=True)
-        engine._expand_facet_distibutions.assert_called_once()
+        engine._expand_facet_distibutions.assert_called_once()  # pylint: disable=protected-access
 
 
 class UtilitiesTests(django.test.TestCase):
