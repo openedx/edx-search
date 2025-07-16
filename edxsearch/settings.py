@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', '@krr4&!u8#g&2^(q53e3xu_kux$3rm=)7s3m1
 # This is just a container for running tests
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1']
 
 TEMPLATES = [
     {
@@ -130,4 +130,4 @@ EVENT_TRACKING_BACKENDS = {
 }
 
 MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_MASTER_KEY", "test_master_key")
-MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://meilisearch")
+MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://meilisearch:7700")

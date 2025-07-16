@@ -33,6 +33,11 @@ jobs:
     - name: Start Meilisearch
       run: make meili-up
 
+    - name: Debug Meilisearch health
+      run: |
+        docker ps
+        curl -v http://localhost:7700/health || true
+
     - name: Install pip
       run: pip install -r requirements/pip.txt
 
