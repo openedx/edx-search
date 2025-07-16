@@ -130,4 +130,4 @@ EVENT_TRACKING_BACKENDS = {
 }
 
 MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_MASTER_KEY", "test_master_key")
-MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://meilisearch:7700")
+MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
