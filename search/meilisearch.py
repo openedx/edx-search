@@ -175,6 +175,7 @@ class MeilisearchEngine(SearchEngine):
             filter_dictionary=filter_dictionary,
             exclude_dictionary=exclude_dictionary,
             aggregation_terms=aggregation_terms,
+            is_multivalue=is_multivalue,
             **kwargs,
         )
         if log_search_params:
@@ -398,6 +399,7 @@ def get_search_params(
     filter_dictionary=None,
     exclude_dictionary=None,
     aggregation_terms=None,
+    is_multivalue: bool = False,
     **kwargs,
 ) -> dict[str, t.Any]:
     """
@@ -413,11 +415,11 @@ def get_search_params(
     # Exclusion and inclusion filters
     filters = []
     if field_dictionary:
-        filters += get_filter_rules(field_dictionary)
+        filters += get_filter_rules(field_dictionary, is_multivalue=is_multivalue)
     if filter_dictionary:
-        filters += get_filter_rules(filter_dictionary, optional=True)
+        filters += get_filter_rules(filter_dictionary, optional=True, is_multivalue=is_multivalue)
     if exclude_dictionary:
-        filters += get_filter_rules(exclude_dictionary, exclude=True)
+        filters += get_filter_rules(exclude_dictionary, exclude=True, is_multivalue=is_multivalue)
     if filters:
         params["filter"] = filters
 
@@ -431,22 +433,28 @@ def get_search_params(
 
 
 def get_filter_rules(
-    rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
+    rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False, is_multivalue: bool = False
 ) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
     """
     rules = []
+    filter_fields = course_discovery_filter_fields()
     for key, value in rule_dict.items():
         if isinstance(value, list):
-            key_rules = [
-                get_filter_rule(key, v, exclude=exclude, optional=optional)
-                for v in value
-            ]
-            if exclude:
-                rules.extend(key_rules)
+            if key in filter_fields and is_multivalue:
+                or_expr = " OR ".join(f'{key} = "{v}"' for v in value)
+                rules.append(or_expr)
             else:
-                rules.append(key_rules)
+                key_rules = [
+                    get_filter_rule(key, v, exclude=exclude, optional=optional)
+                    for v in value
+                ]
+                if exclude:
+                    rules.extend(key_rules)
+                else:
+                    rules.append(key_rules)
+
         else:
             rules.append(
                 get_filter_rule(key, value, exclude=exclude, optional=optional)
