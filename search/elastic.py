@@ -122,9 +122,9 @@ def _translate_hits(es_response, aggregation_terms, is_multivalue=False):
                 for bucket in agg_item["buckets"]
             }
             total_docs = (
-                    agg_result[_get_total_doc_key(bucket)]["value"]
-                    + agg_item["sum_other_doc_count"]
-                    + agg_item["doc_count_error_upper_bound"]
+                agg_result[_get_total_doc_key(bucket)]["value"]
+                + agg_item["sum_other_doc_count"]
+                + agg_item["doc_count_error_upper_bound"]
             )
 
         return {
