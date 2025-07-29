@@ -131,3 +131,11 @@ EVENT_TRACKING_BACKENDS = {
 
 MEILISEARCH_API_KEY = os.environ.get("MEILISEARCH_MASTER_KEY", "test_master_key")
 MEILISEARCH_URL = os.environ.get("MEILISEARCH_URL", "http://localhost:7700")
+
+ELASTIC_SEARCH_CONFIG = [
+    {
+        'use_ssl': False,
+        'host': 'localhost',
+        'port': 9200
+    }
+]
