@@ -74,6 +74,7 @@ test-meili: meili-up
 	@echo "Running Meilisearch tests..."
 	@MEILISEARCH_MASTER_KEY=test_master_key \
 	MEILISEARCH_URL=http://localhost:7700 \
+	python manage.py migrate
 	pytest -v \
 	    search/tests/test_meilisearch.py \
 	    search/tests/test_course_discovery.py -k Meilisearch || true
@@ -92,6 +93,7 @@ meili-down:
 
 test-elastic: elastic-up
 	@echo "Running Elasticsearch tests..."
+	python manage.py migrate
 	pytest -v \
 		search/tests/test_engines.py -k Elastic \
 		search/tests/test_views.py -k Elastic \
