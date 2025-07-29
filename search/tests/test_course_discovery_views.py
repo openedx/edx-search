@@ -8,11 +8,10 @@ from django.urls import reverse
 from elasticsearch.client import Elasticsearch
 
 from search.tests.tests import TEST_INDEX_NAME
-from search.tests.utils import post_discovery_request
+from search.tests.utils import post_discovery_request, SearcherMixin
 from .test_views import MockSearchUrlTest
 from .test_course_discovery import DemoCourse
 from search.meilisearch import create_indexes, get_meilisearch_client
-from search.search_engine_base import SearchEngine
 
 
 @override_settings(ELASTIC_FIELD_MAPPINGS={
