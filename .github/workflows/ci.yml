@@ -27,17 +27,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Start Elasticsearch
-      run: make test.start_elasticsearch
-
-    - name: Start Meilisearch
-      run: make meili-up
-
-    - name: Debug Meilisearch health
-      run: |
-        docker ps
-        curl -v http://localhost:7700/health || true
-
     - name: Install pip
       run: pip install -r requirements/pip.txt
 
@@ -45,6 +34,12 @@ jobs:
       run: |
         pip install setuptools
         pip install -r requirements/ci.txt
+
+    - name: Test Elasticsearch
+      run: make test-elastic
+
+    - name: Test Meilisearch
+      run: make test-meili
 
     - name: Run Tests
       env:
