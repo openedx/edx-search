@@ -46,7 +46,10 @@ jobs:
         TOXENV: ${{ matrix.toxenv }}
       # Sleep is needed to give elasticsearch enough time to startup.
       # Longer term we should switch to the upstream ES github action to start up the server
-      run: sleep 10 && tox -- search.tests.test_engines \
+      run: |
+        sleep 10
+        tox -- \
+          search.tests.test_engines \
           search.tests.test_meilisearch \
           search.tests.test_course_discovery \
           search.tests.test_views \
