@@ -63,9 +63,10 @@ install-local: ## installs your local edx-search into the LMS and CMS python vir
 test-all: create-test-network
 	@$(MAKE) meili-up
 	@$(MAKE) elastic-up
-	pytest -v \
-	    search/tests/test_engines.py \
-	    search/tests/test_course_discovery.py \
+	python manage.py test \
+	    search.tests.test_engines \
+	    search.tests.test_course_discovery.TestNone \
+	    search.tests.test_course_discovery.TestElasticCourseDiscoverySearch \
 	    search/tests/test_meilisearch.py \
 		search/tests/test_views.py || true
         # TODO: include test_course_discovery_views.py
@@ -74,9 +75,9 @@ test-meili: meili-up
 	@echo "Running Meilisearch tests..."
 	@MEILISEARCH_MASTER_KEY=test_master_key \
 	MEILISEARCH_URL=http://localhost:7700 \
-	pytest -v \
-	    search/tests/test_meilisearch.py \
-	    search/tests/test_course_discovery.py -k Meilisearch || true
+	python manage.py test \
+	    search.tests.test_meilisearch \
+	    search.tests.test_course_discovery.TestMeilisearchCourseDiscoverySearch || true
 	@$(MAKE) meili-down
 
 meili-up: create-test-network
@@ -92,10 +93,15 @@ meili-down:
 
 test-elastic: elastic-up
 	@echo "Running Elasticsearch tests..."
-	pytest -v \
-		search/tests/test_engines.py -k Elastic \
-		search/tests/test_views.py -k Elastic \
-		search/tests/test_course_discovery.py -k Elastic || true
+	python manage.py test \
+	    search.tests.test_engines \
+	    search.tests.test_course_discovery.TestNone \
+	    search.tests.test_course_discovery.TestMockCourseDiscoverySearch \
+	    search.tests.test_course_discovery.TestElasticCourseDiscoverySearch \
+	    search.tests.test_views \
+	    search.tests.test_api_timing_events \
+	    search.tests.test_search_result_processor \
+	    search.tests.tests || true
 	@$(MAKE) elastic-down
 
 elastic-up: create-test-network

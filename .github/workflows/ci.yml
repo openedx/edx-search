@@ -35,11 +35,11 @@ jobs:
         pip install setuptools
         pip install -r requirements/ci.txt
 
-    - name: Test Elasticsearch
-      run: make test-elastic
-
     - name: Test Meilisearch
       run: make test-meili
+
+    - name: Test Elasticsearch
+      run: make test-elastic
 
     - name: Run Tests
       env:
