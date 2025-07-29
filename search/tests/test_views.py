@@ -350,7 +350,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
 
         code, results = post_request({"search_string": "Little Darling", "page_size": 101})
         self.assertEqual(code, 500)
-        self.assertTrue("error" in results)
+        self.assertIn("error", results)
 
 
 @override_settings(SEARCH_ENGINE="search.tests.utils.ErroringSearchEngine")
