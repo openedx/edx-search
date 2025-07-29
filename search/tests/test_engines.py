@@ -11,7 +11,6 @@ from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
-from elasticsearch.client import Elasticsearch
 from elasticsearch.helpers import BulkIndexError
 from search.api import NoSearchEngineError, perform_search
 from search.elastic import RESERVED_CHARACTERS, ElasticSearchEngine

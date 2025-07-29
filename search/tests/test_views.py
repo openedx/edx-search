@@ -226,7 +226,7 @@ class MockSearchUrlTest(TestCase, SearcherMixin):
         self.assertGreater(code, 499)
         self.assertEqual(results["error"], "No search term provided for search")
 
-    # pylint: disable=too-many-statements,wrong-assert-type
+    # pylint: disable=too-many-statements
     def test_pagination(self):
         """ test searching using the course url """
         self.searcher.index([
