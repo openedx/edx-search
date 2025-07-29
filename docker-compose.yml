@@ -18,12 +18,16 @@ services:
       - data01:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
+    networks:
+      - test_network
 
   test_meilisearch:
     image: getmeili/meilisearch:v1.7
     container_name: test_meilisearch
     ports:
       - "7700:7700"
+    networks:
+      - test_network
     environment:
       MEILISEARCH_MASTER_KEY: test_master_key
       MEILISEARCH_URL: http://localhost:7700
@@ -38,3 +42,9 @@ version: '3.8'
 volumes:
   data01:
     driver: local
+
+networks:
+  test_network:
+    name: test_network
+    driver: bridge
+    external: true

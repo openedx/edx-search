@@ -69,14 +69,35 @@ test-meili: meili-up
 	    search/tests/test_course_discovery.py -k Meilisearch || true
 	@$(MAKE) meili-down
 
-meili-up:
+meili-up: create-test-network
 	@echo "Starting Meilisearch..."
 	@docker compose up -d test_meilisearch
 	@echo "Waiting for Meilisearch to be healthy..."
 	@timeout 15 bash -c \
     	'until curl -sf http://localhost:7700/health > /dev/null; do echo "Waiting..."; sleep 1; done'
 
-
 meili-down:
 	@echo "Shutting down Meilisearch..."
-	@docker compose down -v test_meilisearch
+	@docker compose down test_meilisearch
+
+test-elastic: elastic-up
+	@echo "Running Elasticsearch tests..."
+	pytest -v \
+		search/tests/test_engines.py -k Elastic \
+		search/tests/test_views.py -k Elastic \
+		search/tests/test_course_discovery.py -k Elastic \
+		search/tests/test_course_discovery_views.py -k Elastic || true
+	@$(MAKE) elastic-down
+
+elastic-up: create-test-network
+	@echo "Starting Elasticsearch..."
+	@docker compose up -d test_elasticsearch
+	@echo "Waiting for Elasticsearch to be healthy..."
+	@timeout 30 bash -c 'until curl -s http://localhost:9200/_cluster/health | grep -q "status"; do echo "Waiting..."; sleep 2; done'
+
+elastic-down:
+	@echo "Shutting down Elasticsearch..."
+	docker compose down test_elasticsearch
+
+create-test-network:
+	docker network inspect test_network >/dev/null 2>&1 || docker network create --driver bridge test_network
