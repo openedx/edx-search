@@ -220,6 +220,11 @@ class EngineTests(django.test.TestCase):
             f'NOT {search.meilisearch.PRIMARY_KEY_FIELD_NAME} = "{search.meilisearch.id2pk("2")}"',
         ] == params["filter"]
 
+        params = search.meilisearch.get_search_params(
+            exclude_dictionary={"language": ["en", "fr"]}
+        )
+        assert ['NOT language = "en"', 'NOT language = "fr"'] == params["filter"]
+
     def test_search_params_field_dictionary(self):
         params = search.meilisearch.get_search_params(
             field_dictionary={
@@ -242,7 +247,7 @@ class EngineTests(django.test.TestCase):
 
         assert [
             'mode = "honor"',
-            ['org = "testorg"', 'org = "testorg2"'],
+            'org = "testorg" OR org = "testorg2"',
         ] == params["filter"]
 
     def test_search_params_filter_dictionary(self):
