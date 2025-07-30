@@ -8,6 +8,6 @@ metadata:
   description: "A django application to provide access to search services"
   links: []
 spec:
-  owner: group:openedx-unmaintained
+  owner: "user:Ali-Salman29"
   type: 'service'
   lifecycle: 'production'

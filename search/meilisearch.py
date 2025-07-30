@@ -97,13 +97,14 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "language",  # aggregate by language, mode, org
         "modes",
         "org",
-        "catalog_visibility",  # exclude visibility="none"
+        "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "enrollment_end",  # include only enrollable courses
     ],
     getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content"): [
         PRIMARY_KEY_FIELD_NAME,  # exclude some specific documents based on ID
         "course",  # search courseware content by course
         "org",  # used during indexing
+        "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "start_date",  # limit search to started courses
     ],
 }
@@ -401,17 +402,21 @@ def get_search_params(
 
 def get_filter_rules(
     rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
-) -> list[str]:
+) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
     """
     rules = []
     for key, value in rule_dict.items():
         if isinstance(value, list):
-            for v in value:
-                rules.append(
-                    get_filter_rule(key, v, exclude=exclude, optional=optional)
-                )
+            key_rules = [
+                get_filter_rule(key, v, exclude=exclude, optional=optional)
+                for v in value
+            ]
+            if exclude:
+                rules.extend(key_rules)
+            else:
+                rules.append(key_rules)
         else:
             rules.append(
                 get_filter_rule(key, value, exclude=exclude, optional=optional)
