@@ -6,6 +6,7 @@ from django.conf import settings
 
 from .utils import _load_class, DateRange
 
+from typing import Any, Dict, List, Optional, Union
 
 class SearchFilterGenerator:
 
@@ -14,9 +15,38 @@ class SearchFilterGenerator:
     Users of this search app will override this class and update setting for SEARCH_FILTER_GENERATOR
     """
 
-    def filter_dictionary(self, **kwargs):
-        """ base implementation which filters via start_date """
-        return {"start_date": DateRange(None, datetime.utcnow())}
+    # def filter_dictionary(self, **kwargs):
+    #     """ base implementation which filters via start_date """
+    #     return {"start_date": DateRange(None, datetime.utcnow())}
+
+
+# changed filter_dictionary function to support the following
+#  Starts with a default start_date filter.
+
+# Then dynamically adds more filters based on the provided field_filters dictionary.
+
+# Uses term or terms queries depending on whether the value is a single item or a list.
+    @staticmethod
+    def _normalise_to_list(value: Any) -> List[Any]:
+        """
+        Return *value* as a list without mutating it if it already is one.
+        """
+        if isinstance(value, (list, tuple, set)):
+            return list(value)
+        return [value]
+
+    def filter_dictionary(self, *, field_filters=None, **_kwargs):
+        filters = {
+            "start_date": DateRange(None, datetime.utcnow())
+        }
+        if field_filters:
+            for field, raw in field_filters.items():
+                values = self._normalise_to_list(raw)
+                if len(values) == 1:
+                    filters[field] = {"term": {f"{field}.keyword": values[0]}}
+                else:
+                    filters[field] = {"terms": {f"{field}.keyword": values}}
+        return filters
 
     def field_dictionary(self, **kwargs):
         """ base implementation which add course if provided """
