@@ -192,6 +192,18 @@ def _process_filters(filter_dictionary):
             },
         }
 
+    # --- update to handle multiple fields --- 
+# def _process_filters(filter_dictionary):
+#     for field, value in filter_dictionary.items():
+#         if value:
+#             field_filter = _get_filter_field(field, value)
+#             # If the helper returns a list of filters, yield each filter one by one
+#             if isinstance(field_filter, list):
+#                 for multi_filter in field_filter:
+#                     yield multi_filter
+#             else:
+#                 #  If a single filter dictionary is returned, yield it directly 
+#                 yield field_filter
 
 def _process_exclude_dictionary(exclude_dictionary):
     """
