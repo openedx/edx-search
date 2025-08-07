@@ -158,29 +158,3 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     )
 
     return results
-
-# helper function for building filters from dicts (optional):
-# def build_filters(field_dictionary):
-#     """
-#     Convert field_dictionary into Elasticsearch filter clauses,
-#     using 'terms' for multi-value filters and 'term' for single-value filters.
-#     """
-#     filters = []
-#     for field, values in field_dictionary.items():
-#         if not isinstance(values, list):
-#             values = [values]
-
-#         if len(values) > 1:
-#             filters.append({
-#                 "terms": {
-#                     field: values
-#                 }
-#             })
-#         else:
-#             filters.append({
-#                 "term": {
-#                     field: values[0]
-#                 }
-#             })
-
-#     return filters
