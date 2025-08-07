@@ -14,18 +14,6 @@ class SearchFilterGenerator:
     Class to provide a set of filters for the search.
     Users of this search app will override this class and update setting for SEARCH_FILTER_GENERATOR
     """
-
-    # def filter_dictionary(self, **kwargs):
-    #     """ base implementation which filters via start_date """
-    #     return {"start_date": DateRange(None, datetime.utcnow())}
-
-
-# changed filter_dictionary function to support the following
-#  Starts with a default start_date filter.
-
-# Then dynamically adds more filters based on the provided field_filters dictionary.
-
-# Uses term or terms queries depending on whether the value is a single item or a list.
     @staticmethod
     def _normalise_to_list(value: Any) -> List[Any]:
         """
