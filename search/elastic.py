@@ -192,7 +192,6 @@ def _process_filters(filter_dictionary):
             },
         }
 
-
 def _process_exclude_dictionary(exclude_dictionary):
     """
     Build a list of term fields which will be excluded from result set.
