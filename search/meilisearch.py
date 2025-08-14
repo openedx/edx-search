@@ -99,6 +99,7 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "org",
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "enrollment_end",  # include only enrollable courses
+        "course_id"
     ],
     getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content"): [
         PRIMARY_KEY_FIELD_NAME,  # exclude some specific documents based on ID
@@ -106,6 +107,21 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "org",  # used during indexing
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "start_date",  # limit search to started courses
+        "course_id",  # used to filter courseware content by course
+    ],
+    "course_team_index": [
+        PRIMARY_KEY_FIELD_NAME,
+        "id",
+        "course_id",
+        "topic_id",
+        "is_private",
+        "course",
+        "org",
+        "start_date",
+        "catalog_visibility",
+        "enrollment_end",
+        "language",
+        "modes",
     ],
 }
 
