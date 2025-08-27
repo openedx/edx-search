@@ -388,6 +388,7 @@ requests==2.32.3
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   meilisearch
+    #   typesense
 six==1.17.0
     # via
     #   -r requirements/quality.txt
@@ -419,6 +420,10 @@ tomlkit==0.13.2
     #   pylint
 tox==4.25.0
     # via -r requirements/ci.txt
+typesense==1.1.1
+    # via
+    #   -r requirements/quality.txt
+    #   -r requirements/testing.txt
 typing-extensions==4.13.1
     # via
     #   -r requirements/quality.txt
