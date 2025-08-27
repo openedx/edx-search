@@ -58,7 +58,6 @@ can troubleshoot these tasks by printing them with:
     ./manage.py lms shell -c "import search.meilisearch; search.meilisearch.print_failed_meilisearch_tasks()"
 """
 
-from copy import deepcopy
 from datetime import datetime
 import hashlib
 import json
@@ -72,7 +71,7 @@ from django.utils import timezone
 
 from search.dataclasses import SortField
 from search.search_engine_base import SearchEngine
-from search.utils import ValueRange
+from search.utils import convert_doc_datatypes, ValueRange, restore_doc_datatypes
 
 
 MEILISEARCH_API_KEY = getattr(settings, "MEILISEARCH_API_KEY", "")
@@ -84,7 +83,6 @@ logger = logging.getLogger(__name__)
 
 
 PRIMARY_KEY_FIELD_NAME = "_pk"
-UTC_OFFSET_SUFFIX = "__utcoffset"
 
 
 # In Meilisearch, we need to explicitly list fields for which we expect to define
@@ -377,34 +375,11 @@ def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
 
     We make a copy to avoid modifying the source document.
     """
-    processed = process_nested_document(doc)
+    processed = convert_doc_datatypes(doc)
 
     # Add primary key field
     processed[PRIMARY_KEY_FIELD_NAME] = id2pk(doc["id"])
 
-    return processed
-
-
-def process_nested_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
-    """
-    Process nested dict inside top-level Meilisearch document.
-    """
-    processed = {}
-    for key, value in doc.items():
-        if isinstance(value, timezone.datetime):
-            # Convert datetime objects to timestamp, and store the timezone in a
-            # separate field with a suffix given by UTC_OFFSET_SUFFIX.
-            utcoffset = None
-            if value.tzinfo:
-                utcoffset = value.utcoffset().seconds
-            processed[key] = value.timestamp()
-            processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
-        elif isinstance(value, dict):
-            processed[key] = process_nested_document(value)
-        else:
-            # Pray that there are not datetime objects inside lists.
-            # If there are, they will be converted to str by the DocumentEncoder.
-            processed[key] = value
     return processed
 
 
@@ -633,7 +608,7 @@ def process_hit(hit: dict[str, t.Any]) -> dict[str, t.Any]:
     """
     Convert a search result back to the ES format.
     """
-    processed = deepcopy(hit)
+    processed = restore_doc_datatypes(hit)
 
     # Remove primary key field
     try:
@@ -641,16 +616,4 @@ def process_hit(hit: dict[str, t.Any]) -> dict[str, t.Any]:
     except KeyError:
         pass
 
-    # Convert datetime fields back to datetime
-    for key in list(processed.keys()):
-        if key.endswith(UTC_OFFSET_SUFFIX):
-            utcoffset = processed.pop(key)
-            key = key[: -len(UTC_OFFSET_SUFFIX)]
-            timestamp = hit[key]
-            tz = (
-                timezone.get_fixed_timezone(timezone.timedelta(seconds=utcoffset))
-                if utcoffset
-                else None
-            )
-            processed[key] = timezone.datetime.fromtimestamp(timestamp, tz=tz)
     return processed

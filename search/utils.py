@@ -1,8 +1,73 @@
 """ Utility classes to support others """
-
 import importlib
 import datetime
 from collections.abc import Iterable
+from typing import Any
+
+from django.utils import timezone
+
+
+UTC_OFFSET_SUFFIX = "__utcoffset"
+
+
+def convert_doc_datatypes(doc: dict[str, Any]) -> dict[str, Any]:
+    """
+    Recursively replace datatypes that our search engine doesn't support, so we
+    can store data into the search index.
+
+    This is used by both Meilisearch and Typesense engines.
+
+    - `datetime` values become timestamps.
+    - `None` values are removed (Meilisearch ignores them per
+      https://www.meilisearch.com/docs/learn/engine/datatypes#null
+      and Typesense throws an error if you try to index them.)
+    """
+    processed = {}
+    for key, value in doc.items():
+        if isinstance(value, timezone.datetime):
+            # Convert datetime objects to timestamp, and store the timezone in a
+            # separate field with a suffix given by UTC_OFFSET_SUFFIX.
+            # Most (all?) datetimes are UTC, so the actual offset is not usually
+            # super important, but the presence of the offset field is used to
+            # detect timestamp fields and convert them back to datetime values
+            # when loading search results.
+            processed[key] = value.timestamp()
+            if value.tzinfo:
+                utcoffset = value.utcoffset().seconds
+                processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
+        elif isinstance(value, dict):
+            processed[key] = convert_doc_datatypes(value)
+        elif value is None:
+            continue
+        else:
+            # Pray that there are not datetime objects inside lists.
+            # If there are, they will be converted to str by the DocumentEncoder.
+            processed[key] = value
+    return processed
+
+
+def restore_doc_datatypes(search_result: dict[str, Any]) -> dict[str, Any]:
+    """
+    Convert data values from the search index back into the more detailed
+    python data types that we want, before displaying results to the user.
+    """
+    processed = {}
+    for key, value in search_result.items():
+        if key.endswith(UTC_OFFSET_SUFFIX):
+            utcoffset = value
+            timestamp_key = key[: -len(UTC_OFFSET_SUFFIX)]
+            timestamp = search_result[timestamp_key]
+            tz = (
+                timezone.get_fixed_timezone(timezone.timedelta(seconds=utcoffset))
+                if utcoffset
+                else None
+            )
+            processed[timestamp_key] = timezone.datetime.fromtimestamp(timestamp, tz=tz)
+        elif isinstance(value, dict):
+            processed[key] = restore_doc_datatypes(value)
+        else:
+            processed[key] = value
+    return processed
 
 
 def _load_class(class_path, default):
