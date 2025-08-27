@@ -232,6 +232,19 @@ class EngineTests(django.test.TestCase):
             'org = "testorg"',
         ] == params["filter"]
 
+    def test_engine_search_orgs_list(self):
+        params = search.meilisearch.get_search_params(
+            field_dictionary={
+                'mode': 'honor',
+                "org": ["testorg", "testorg2"],
+            }
+        )
+
+        assert [
+            'mode = "honor"',
+            ['org = "testorg"', 'org = "testorg2"'],
+        ] == params["filter"]
+
     def test_search_params_filter_dictionary(self):
         params = search.meilisearch.get_search_params(
             filter_dictionary={"key": "value"}

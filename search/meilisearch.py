@@ -427,17 +427,21 @@ def get_search_params(
 
 def get_filter_rules(
     rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
-) -> list[str]:
+) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
     """
     rules = []
     for key, value in rule_dict.items():
         if isinstance(value, list):
-            for v in value:
-                rules.append(
-                    get_filter_rule(key, v, exclude=exclude, optional=optional)
-                )
+            key_rules = [
+                get_filter_rule(key, v, exclude=exclude, optional=optional)
+                for v in value
+            ]
+            if exclude:
+                rules.extend(key_rules)
+            else:
+                rules.append(key_rules)
         else:
             rules.append(
                 get_filter_rule(key, value, exclude=exclude, optional=optional)
