@@ -7,7 +7,6 @@ import copy
 import time
 from datetime import datetime
 import ddt
-import meilisearch
 
 from django.core.cache import cache
 from django.test import TestCase
@@ -472,10 +471,7 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
 
     def tearDown(self):
         client = get_meilisearch_client()
-        try:
-            client.index(TEST_INDEX_NAME).delete()
-        except meilisearch.errors.MeilisearchApiError:
-            pass
+        client.index(TEST_INDEX_NAME).delete()
         super().tearDown()
 
     @staticmethod
@@ -483,8 +479,6 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
         client = get_meilisearch_client()
         task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
-        if not task:
-            return
         client.wait_for_task(task.uid)
         time.sleep(0.2)
 
