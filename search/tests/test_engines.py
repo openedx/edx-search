@@ -6,14 +6,14 @@
 import json
 import os
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import exceptions
 from elasticsearch.helpers import BulkIndexError
 from search.api import NoSearchEngineError, perform_search
-from search.elastic import RESERVED_CHARACTERS
+from search.elastic import RESERVED_CHARACTERS, ElasticSearchEngine
 from search.tests.mock_search_engine import (MockSearchEngine,
                                              json_date_to_datetime)
 from search.tests.tests import MockSearchTests
@@ -250,3 +250,265 @@ class TestElasticConfig(TestCase, SearcherMixin):
         elasticsearch = self.searcher._es  # pylint: disable=protected-access
         hosts = elasticsearch.transport.hosts
         self.assertEqual(hosts, [{'host': '127.0.0.1'}, {'host': 'localhost'}])
+
+
+class ElasticSearchUnitTests(TestCase):
+    """
+    ElasticSearch tests.
+    """
+
+    @patch("search.elastic.Elasticsearch")
+    def test_multivalue_aggregations_translated_correctly(self, mock_elasticsearch_class):
+        """Tests that multivalue facet aggregations return full facet buckets despite filtering."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 2},
+                "max_score": 1.0,
+                "hits": [
+                    {
+                        "_source": {"org": "OrgA", "language": "en"},
+                        "_score": 1.0
+                    },
+                    {
+                        "_source": {"org": "OrgC", "language": "en"},
+                        "_score": 0.8
+                    }
+                ]
+            },
+            "aggregations": {
+                "global_aggs": {
+                    "language": {
+                        "doc_count": 3,
+                        "values": {
+                            "buckets": [
+                                {"key": "en", "doc_count": 2},
+                                {"key": "fr", "doc_count": 1}
+                            ]
+                        }
+                    },
+                    "org": {
+                        "doc_count": 2,
+                        "values": {
+                            "buckets": [
+                                {"key": "OrgA", "doc_count": 1},
+                                {"key": "OrgC", "doc_count": 1}
+                            ]
+                        }
+                    }
+                }
+            },
+            "took": 2,
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        result = engine.search(
+            field_dictionary={"language": ["en"]},
+            aggregation_terms={
+                "language": {},
+                "org": {},
+            },
+            is_multivalue=True
+        )
+
+        self.assertEqual(result["total"], 2)
+        self.assertEqual(result["aggs"]["language"]["terms"]["en"], 2)
+        self.assertEqual(result["aggs"]["language"]["terms"]["fr"], 1)
+        self.assertEqual(set(result["aggs"]["org"]["terms"].keys()), {"OrgA", "OrgC"})
+
+        mock_es.search.assert_called_once()
+
+    @patch("search.elastic.Elasticsearch")
+    def test_multivalue_with_empty_filters_uses_match_all(self, mock_elasticsearch_class):
+        """Tests that multivalue aggregation works when no filters are applied."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 3},
+                "max_score": 0.0,
+                "hits": []
+            },
+            "aggregations": {
+                "global_aggs": {
+                    "language": {
+                        "doc_count": 3,
+                        "values": {
+                            "buckets": [
+                                {"key": "en", "doc_count": 2},
+                                {"key": "fr", "doc_count": 1}
+                            ]
+                        }
+                    }
+                }
+            },
+            "took": 2,
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        result = engine.search(
+            aggregation_terms={"language": {}},
+            field_dictionary={},
+            is_multivalue=True
+        )
+
+        self.assertEqual(result["total"], 3)
+        self.assertEqual(result["aggs"]["language"]["terms"]["en"], 2)
+        self.assertEqual(result["aggs"]["language"]["terms"]["fr"], 1)
+
+    @patch("search.elastic.Elasticsearch")
+    def test_regular_aggregations_do_not_use_global_aggs(self, mock_elasticsearch_class):
+        """Tests that single-value aggregation does not include global_aggs wrapper."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 1},
+                "max_score": 1.0,
+                "hits": [{
+                    "_source": {"org": "OrgX", "language": "en"},
+                    "_score": 1.0
+                }]
+            },
+            "aggregations": {
+                "language": {
+                    "buckets": [
+                        {"key": "en", "doc_count": 1}
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0
+                },
+                "total_language_docs": {"value": 1.0},
+                "total_modes_docs": {"value": 1.0},
+                "total_org_docs": {"value": 1.0}
+            },
+            "took": 2,
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        result = engine.search(
+            field_dictionary={"language": ["en"]},
+            aggregation_terms={"language": {}},
+            is_multivalue=False
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["aggs"]["language"]["terms"]["en"], 1)
+
+        call_args = mock_es.search.call_args[1]
+        search_body = call_args["body"]
+        self.assertIn("aggs", search_body)
+        self.assertIn("language", search_body["aggs"])
+        self.assertNotIn("global_aggs", search_body["aggs"])
+
+    @patch("search.elastic._process_multivalue_aggregations")
+    @patch("search.elastic._process_aggregation_terms")
+    @patch("search.elastic.Elasticsearch")
+    def test_single_value_calls_process_aggregation_terms(
+            self, mock_elasticsearch_class, mock_process_single, mock_process_multi
+    ):
+        """Tests that single-value aggregation calls the standard aggregation processor."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 1},
+                "max_score": 1.0,
+                "hits": [{
+                    "_source": {"org": "OrgX", "language": "en"},
+                    "_score": 1.0
+                }]
+            },
+            "aggregations": {
+                "language": {
+                    "buckets": [
+                        {"key": "en", "doc_count": 1}
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0
+                },
+                "total_language_docs": {"value": 1.0},
+                "total_modes_docs": {"value": 1.0},
+                "total_org_docs": {"value": 1.0}
+            },
+            "took": 2,
+        }
+
+        mock_process_single.return_value = {
+            "language": {"terms": {"fields": "language"}}
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        aggregation_terms = {"language": {}}
+
+        engine.search(
+            field_dictionary={"language": ["en"]},
+            aggregation_terms=aggregation_terms,
+            is_multivalue=False
+        )
+
+        mock_process_single.assert_called_once_with(aggregation_terms)
+        mock_process_multi.assert_not_called()
+
+    @patch("search.elastic._process_multivalue_aggregations")
+    @patch("search.elastic._process_aggregation_terms")
+    @patch("search.elastic.Elasticsearch")
+    def test_multivalue_calls_process_multivalue_aggregations(
+            self, mock_elasticsearch_class, mock_process_single, mock_process_multi
+    ):
+        """Tests that multivalue aggregation calls the multivalue aggregation processor."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 1},
+                "max_score": 1.0,
+                "hits": [{
+                    "_source": {"org": "OrgX", "language": "en"},
+                    "_score": 1.0
+                }]
+            },
+            "aggregations": {
+                "language": {
+                    "buckets": [
+                        {"key": "en", "doc_count": 1}
+                    ],
+                    "doc_count_error_upper_bound": 0,
+                    "sum_other_doc_count": 0
+                },
+                "total_language_docs": {"value": 1.0},
+                "total_modes_docs": {"value": 1.0},
+                "total_org_docs": {"value": 1.0}
+            },
+            "took": 2,
+        }
+
+        mock_process_multi.return_value = {
+            "global_aggs": {
+                "language": {"filter": {}, "aggs": {"values": {"terms": {"field": "language"}}}}
+            }
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        field_dictionary = {"language": ["en"]}
+        aggregation_terms = {"language": {}}
+
+        engine.search(
+            field_dictionary=field_dictionary,
+            aggregation_terms=aggregation_terms,
+            is_multivalue=True
+        )
+
+        mock_process_single.assert_not_called()
+        mock_process_multi.assert_called_once_with(
+            aggregation_terms,
+            field_dictionary
+        )
