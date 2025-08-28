@@ -526,6 +526,14 @@ class EngineTests(django.test.TestCase):
         engine.search(query_string="demo", field_dictionary={"language": ["en"]}, is_multivalue=True)
         engine._expand_facet_distibutions.assert_called_once()  # pylint: disable=protected-access
 
+    def test_multivalue_nonfacet_field_expands_to_multiple_rules(self):
+        # "title" is not a facet field
+        rules = search.meilisearch.get_filter_rules({"title": ["Intro", "Advanced"]})
+        self.assertIn('title = "Intro"', rules)
+        self.assertIn('title = "Advanced"', rules)
+        # Both values should appear separately
+        self.assertEqual(len(rules), 2)
+
 
 class UtilitiesTests(django.test.TestCase):
     """
