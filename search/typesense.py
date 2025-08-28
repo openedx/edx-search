@@ -4,7 +4,7 @@ API, such that it can be setup as a drop-in replacement for the ElasticSearchEng
 switch to this engine, you should run a TypeSense instance and define the following
 setting:
 
-    SEARCH_ENGINE = "search.meilisearch.TypeSenseEngine"
+    SEARCH_ENGINE = "search.typesense.TypeSenseEngine"
 
 You will then need to create the new indices by running:
 
@@ -18,12 +18,8 @@ https://github.com/typesense/typesense-python
 """
 
 from copy import deepcopy
-from datetime import datetime
-import hashlib
-import json
 import logging
 import typing as t
-from urllib.parse import urlparse
 
 import typesense
 from typesense.collection import Collection
@@ -38,6 +34,10 @@ from search.utils import ValueRange
 TYPESENSE_API_KEY = getattr(settings, "TYPESENSE_API_KEY", "")
 TYPESENSE_URLS = getattr(settings, "TYPESENSE_URLS", [getattr(settings, "TYPESENSE_URL", "http://typesense")])
 TYPESENSE_INDEX_PREFIX = getattr(settings, "TYPESENSE_INDEX_PREFIX", "")
+
+# Indices:
+COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
+COURSE_CONTENT_INDEX = getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
 
 
 logger = logging.getLogger(__name__)
@@ -150,89 +150,22 @@ class TypeSenseEngine(SearchEngine):
 #         return super().default(o)
 
 
-def print_failed_typesense_tasks(count: int = 10):
-    """
-    Useful function for troubleshooting.
-
-    Since indexing tasks are asynchronous, sometimes they fail and it's tricky to figure
-    out why. This will print failed tasks to stdout.
-    """
-    client = get_typesense_client()
-    for result in client.task_handler.get_tasks(
-        {"statuses": "failed", "limit": count}
-    ).results:
-        print(result)
-
-
-def create_indexes(index_filterables: t.Optional[dict[str, list[str]]] = None):
+def create_indexes():
     """
     This is an initialization function that creates indexes and makes sure that they
     support the right facetting.
-
-    The `index_filterables` will default to `INDEX_FILTERABLES` if undefined. Developers
-    can use this function to configure their own indices.
     """
-    if index_filterables is None:
-        index_filterables = INDEX_FILTERABLES
-
     client = get_typesense_client()
-    for index_name, filterables in index_filterables.items():
+    for index_name in [COURSE_INFO_INDEX, COURSE_CONTENT_INDEX]:
         typesense_index_name = get_typesense_index_name(index_name)
-        index = get_or_create_typesense_index(client, typesense_index_name)
-        update_index_filterables(client, index, filterables)
-
-
-def get_or_create_typesense_index(
-    client: typesense.Client, index_name: str
-) -> Collection:
-    """
-    Get an index. If it does not exist, create it.
-
-    This will fail with a RuntimeError if we fail to create the index. It will fail with
-    a MeilisearchApiError in other failure cases.
-    """
-    if index_name in client.collections:
-        return client.collections[index_name]
-    else:
-        task_info = client.collections.create({
-            name: index_name,
-            fields: {},
+        client.collections.create({
+            "name": typesense_index_name,
+            "fields": [
+                # Auto-created fields as needed. If we need to mark some as facetable or other things,
+                # we can override specific fields.
+                {"name": ".*", "type": "auto"},
+            ],
         })
-        wait_for_task_to_succeed(client, task_info)
-        # Get the index again
-        return client.get_index(index_name)
-
-
-def update_index_filterables(
-    client: typesense.Client, index: meilisearch.index.Index, filterables: list[str]
-) -> None:
-    """
-    Make sure that the filterable fields of an index include the given list of fields.
-
-    If existing fields are present, they are preserved.
-    """
-    if not filterables:
-        return
-    existing_filterables = set(index.get_filterable_attributes())
-    if set(filterables).issubset(existing_filterables):
-        # all filterables fields are already present
-        return
-    all_filterables = list(existing_filterables.union(filterables))
-    task_info = index.update_filterable_attributes(all_filterables)
-    wait_for_task_to_succeed(client, task_info)
-
-
-def wait_for_task_to_succeed(
-    client: typesense.Client,
-    task_info: meilisearch.task.TaskInfo,
-    timeout_in_ms: int = 5000,
-) -> None:
-    """
-    Wait for a Meilisearch task to succeed. If it does not, raise RuntimeError.
-    """
-    task = client.wait_for_task(task_info.task_uid, timeout_in_ms=timeout_in_ms)
-    if task.status != "succeeded":
-        raise RuntimeError(f"Failed meilisearch task: {task}")
 
 
 def get_typesense_client() -> typesense.Client:
@@ -270,27 +203,27 @@ def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
     return processed
 
 
-def process_nested_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
-    """
-    Process nested dict inside top-level Meilisearch document.
-    """
-    processed = {}
-    for key, value in doc.items():
-        if isinstance(value, timezone.datetime):
-            # Convert datetime objects to timestamp, and store the timezone in a
-            # separate field with a suffix given by UTC_OFFSET_SUFFIX.
-            utcoffset = None
-            if value.tzinfo:
-                utcoffset = value.utcoffset().seconds
-            processed[key] = value.timestamp()
-            processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
-        elif isinstance(value, dict):
-            processed[key] = process_nested_document(value)
-        else:
-            # Pray that there are not datetime objects inside lists.
-            # If there are, they will be converted to str by the DocumentEncoder.
-            processed[key] = value
-    return processed
+# def process_nested_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
+#     """
+#     Process nested dict inside top-level Meilisearch document.
+#     """
+#     processed = {}
+#     for key, value in doc.items():
+#         if isinstance(value, timezone.datetime):
+#             # Convert datetime objects to timestamp, and store the timezone in a
+#             # separate field with a suffix given by UTC_OFFSET_SUFFIX.
+#             utcoffset = None
+#             if value.tzinfo:
+#                 utcoffset = value.utcoffset().seconds
+#             processed[key] = value.timestamp()
+#             processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
+#         elif isinstance(value, dict):
+#             processed[key] = process_nested_document(value)
+#         else:
+#             # Pray that there are not datetime objects inside lists.
+#             # If there are, they will be converted to str by the DocumentEncoder.
+#             processed[key] = value
+#     return processed
 
 
 # def id2pk(value: str) -> str:
