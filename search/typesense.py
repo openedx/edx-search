@@ -33,7 +33,7 @@ from search.utils import ValueRange
 
 TYPESENSE_API_KEY = getattr(settings, "TYPESENSE_API_KEY", "")
 TYPESENSE_URLS = getattr(settings, "TYPESENSE_URLS", [getattr(settings, "TYPESENSE_URL", "http://typesense")])
-TYPESENSE_INDEX_PREFIX = getattr(settings, "TYPESENSE_INDEX_PREFIX", "")
+TYPESENSE_COLLECTION_PREFIX = getattr(settings, "TYPESENSE_COLLECTION_PREFIX", "")
 
 # Indices:
 COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
@@ -186,7 +186,7 @@ def get_typesense_index_name(index_name: str) -> str:
     This is useful for multi-tenant TypeSense: just define a different prefix for
     every tenant.
     """
-    return TYPESENSE_INDEX_PREFIX + index_name
+    return TYPESENSE_COLLECTION_PREFIX + index_name
 
 
 def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
