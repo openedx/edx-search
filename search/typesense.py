@@ -21,12 +21,12 @@ from copy import deepcopy
 import logging
 import typing as t
 
+from django.conf import settings
+from django.utils import timezone
 import typesense
 from typesense.collection import Collection
 
-from django.conf import settings
-from django.utils import timezone
-
+from search.meilisearch import convert_doc_datatypes, UTC_OFFSET_SUFFIX
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
@@ -37,14 +37,11 @@ TYPESENSE_COLLECTION_PREFIX = getattr(settings, "TYPESENSE_COLLECTION_PREFIX", "
 
 # Indices:
 COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
+COURSE_INFO_TIMESTAMP_FIELDS = ["start", "end", "enrollment_start", "enrollment_end"]
 COURSE_CONTENT_INDEX = getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
 
 
 logger = logging.getLogger(__name__)
-
-
-PRIMARY_KEY_FIELD_NAME = "_pk"
-UTC_OFFSET_SUFFIX = "__utcoffset"
 
 
 # In Typesense, we explicitly list fields for which we expect to use faceting.
@@ -109,7 +106,7 @@ class TypesenseEngine(SearchEngine):
         """
         See meilisearch docs: https://typesense.org/docs/29.0/api/search.html#search-parameters
         """
-        opt_params = get_search_params(
+        compiled_params = get_search_params(
             field_dictionary=field_dictionary,
             filter_dictionary=filter_dictionary,
             exclude_dictionary=exclude_dictionary,
@@ -117,9 +114,9 @@ class TypesenseEngine(SearchEngine):
             **kwargs,
         )
         if log_search_params:
-            logger.info("Search query: opt_params=%s", opt_params)
-        meilisearch_results = self.typesense_index.search(query_string, opt_params)
-        processed_results = process_results(meilisearch_results, self.index_name)
+            logger.info("Search query: compiled_params=%s", compiled_params)
+        results = self.typesense_index.documents.search({"q": query_string, **compiled_params})
+        processed_results = process_results(results, self.index_name)
         return processed_results
 
     def remove(self, doc_ids, **kwargs):
@@ -133,21 +130,8 @@ class TypesenseEngine(SearchEngine):
             doc_ids,
             kwargs,
         )
-        doc_pks = [id2pk(doc_id) for doc_id in doc_ids]
-        if doc_pks:
-            self.typesense_index.delete_documents(doc_pks)
-
-
-# class DocumentEncoder(json.JSONEncoder):
-#     """
-#     Custom encoder, useful in particular to encode datetime fields.
-#     Ref: https://github.com/meilisearch/meilisearch-python?tab=readme-ov-file#custom-serializer-for-documents-
-#     """
-
-#     def default(self, o):
-#         if isinstance(o, datetime):
-#             return str(o)
-#         return super().default(o)
+        if doc_ids:
+            self.typesense_index.documents.delete({'filter_by': f'filter_by=id: [{",".join(doc_ids)}]'})
 
 
 def create_indexes():
@@ -156,16 +140,46 @@ def create_indexes():
     support the right facetting.
     """
     client = get_typesense_client()
-    for index_name in [COURSE_INFO_INDEX, COURSE_CONTENT_INDEX]:
-        typesense_index_name = get_typesense_index_name(index_name)
-        client.collections.create({
-            "name": typesense_index_name,
-            "fields": [
-                # Auto-created fields as needed. If we need to mark some as facetable or other things,
-                # we can override specific fields.
-                {"name": ".*", "type": "auto"},
+    # Collection that stores the list of courses
+    client.collections.create({
+        "name": get_typesense_index_name(COURSE_INFO_INDEX),
+        "fields": [
+            # Auto-create fields by default
+            {"name": ".*", "type": "auto"},
+            # Override specific fields as needed:
+            # timestamps and their suffixes should be integers, not float
+            *[
+                {"name": field_name, "type": "int64"} for field_name in COURSE_INFO_TIMESTAMP_FIELDS
             ],
-        })
+            *[
+                {"name": field_name + UTC_OFFSET_SUFFIX, "type": "int32"} for field_name in COURSE_INFO_TIMESTAMP_FIELDS
+            ],
+        ],
+    })
+    # Collection that stores content within each course:
+    client.collections.create({
+        "name": get_typesense_index_name(COURSE_CONTENT_INDEX),
+        "fields": [
+            # Auto-create fields by default
+            {"name": ".*", "type": "auto"},
+            # Override specific fields as needed:
+            {"name": "start_date", "type": "int64"},
+            {"name": "start_date" + UTC_OFFSET_SUFFIX, "type": "int32"},
+        ],
+    })
+
+
+def delete_indexes():
+    """
+    This is an initialization function that creates indexes and makes sure that they
+    support the right facetting.
+    """
+    client = get_typesense_client()
+    # Collection that stores the list of courses
+    for index_name in [COURSE_INFO_INDEX, COURSE_CONTENT_INDEX]:
+        full_index_name = get_typesense_index_name(index_name)
+        if full_index_name in client.collections:
+            client.collections[full_index_name].delete()
 
 
 def get_typesense_client() -> typesense.Client:
@@ -195,46 +209,9 @@ def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
 
     We make a copy to avoid modifying the source document.
     """
-    processed = process_nested_document(doc)
-
-    # Add primary key field
-    processed[PRIMARY_KEY_FIELD_NAME] = id2pk(doc["id"])
+    processed = convert_doc_datatypes(doc)
 
     return processed
-
-
-# def process_nested_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
-#     """
-#     Process nested dict inside top-level Meilisearch document.
-#     """
-#     processed = {}
-#     for key, value in doc.items():
-#         if isinstance(value, timezone.datetime):
-#             # Convert datetime objects to timestamp, and store the timezone in a
-#             # separate field with a suffix given by UTC_OFFSET_SUFFIX.
-#             utcoffset = None
-#             if value.tzinfo:
-#                 utcoffset = value.utcoffset().seconds
-#             processed[key] = value.timestamp()
-#             processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
-#         elif isinstance(value, dict):
-#             processed[key] = process_nested_document(value)
-#         else:
-#             # Pray that there are not datetime objects inside lists.
-#             # If there are, they will be converted to str by the DocumentEncoder.
-#             processed[key] = value
-#     return processed
-
-
-# def id2pk(value: str) -> str:
-#     """
-#     Convert a document "id" field into a primary key that is compatible with Meilisearch.
-
-#     This step is necessary because the "id" is typically a course id, which includes
-#     colon ":" characters, which are not supported by Meilisearch. Source:
-#     https://www.meilisearch.com/docs/learn/getting_started/primary_key#formatting-the-document-id
-#     """
-#     return hashlib.sha1(value.encode()).hexdigest()
 
 
 def get_search_params(
@@ -245,10 +222,10 @@ def get_search_params(
     **kwargs,
 ) -> dict[str, t.Any]:
     """
-    Return a dictionary of parameters that should be passed to the Meilisearch client
-    `.search()` method.
+    Return a dictionary of parameters that should be passed to the Typesense
+    client `.search()` method.
     """
-    params: dict[str, t.Any] = {"showRankingScore": True}
+    params: dict[str, t.Any] = {}
 
     # Aggregation
     if aggregation_terms:
@@ -263,7 +240,7 @@ def get_search_params(
     if exclude_dictionary:
         filters += get_filter_rules(exclude_dictionary, exclude=True)
     if filters:
-        params["filter"] = filters
+        params["filter_by"] = filters
 
     # Offset/Size
     if "from_" in kwargs:
@@ -307,9 +284,6 @@ def get_filter_rule(
     See: https://www.meilisearch.com/docs/learn/filtering_and_sorting/filter_expression_reference
     """
     prefix = "NOT " if exclude else ""
-    if key == "id":
-        key = PRIMARY_KEY_FIELD_NAME
-        value = id2pk(value)
     if isinstance(value, str):
         rule = f'{prefix}{key} = "{value}"'
     elif isinstance(value, ValueRange):
@@ -438,12 +412,6 @@ def process_hit(hit: dict[str, t.Any]) -> dict[str, t.Any]:
     Convert a search result back to the ES format.
     """
     processed = deepcopy(hit)
-
-    # Remove primary key field
-    try:
-        processed.pop(PRIMARY_KEY_FIELD_NAME)
-    except KeyError:
-        pass
 
     # Convert datetime fields back to datetime
     for key in list(processed.keys()):
