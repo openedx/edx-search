@@ -1,20 +1,20 @@
 """
-This is a search engine for TypeSense. It implements the edx-search's SearchEngine
+This is a search engine for Typesense. It implements the edx-search's SearchEngine
 API, such that it can be setup as a drop-in replacement for the ElasticSearchEngine. To
-switch to this engine, you should run a TypeSense instance and define the following
+switch to this engine, you should run a Typesense instance and define the following
 setting:
 
-    SEARCH_ENGINE = "search.typesense.TypeSenseEngine"
+    SEARCH_ENGINE = "search.typesense.TypesenseEngine"
 
 You will then need to create the new indices by running:
 
     ./manage.py lms shell -c "import search.typesense; search.typesense.create_indexes()"
 
-For more information about the TypeSense API in Python, check
+For more information about the Typesense API in Python, check
 https://github.com/typesense/typesense-python
 
 (TODO: potentially copy other docs that were here in meilisearch.py, if they are
- also relevant to TypeSense)
+ also relevant to Typesense)
 """
 
 from copy import deepcopy
@@ -47,15 +47,15 @@ PRIMARY_KEY_FIELD_NAME = "_pk"
 UTC_OFFSET_SUFFIX = "__utcoffset"
 
 
-# In TypeSense, we explicitly list fields for which we expect to use faceting.
+# In Typesense, we explicitly list fields for which we expect to use faceting.
 # This is different than Elasticsearch where we can aggregate results over any field.
 # Reference: https://typesense.org/docs/29.0/api/collections.html#create-a-collection
 # TODO: do we use faceting for any fields?
 
 
-class TypeSenseEngine(SearchEngine):
+class TypesenseEngine(SearchEngine):
     """
-    TypeSense-compatible search engine. We work very hard to produce an output that is
+    Typesense-compatible search engine. We work very hard to produce an output that is
     API compatible with edx-search's ElasticSearchEngine.
     """
 
@@ -66,7 +66,7 @@ class TypeSenseEngine(SearchEngine):
     @property
     def typesense_index(self) -> Collection:
         """
-        Lazy load TypeSense index ("Collection").
+        Lazy load Typesense index ("Collection").
         """
         if self._typesense_index is None:
             client = get_typesense_client()
@@ -170,7 +170,7 @@ def create_indexes():
 
 def get_typesense_client() -> typesense.Client:
     """
-    Return a TypeSense client with the right settings.
+    Return a Typesense client with the right settings.
     """
     return typesense.Client({
         'nodes': TYPESENSE_URLS,
@@ -181,9 +181,9 @@ def get_typesense_client() -> typesense.Client:
 
 def get_typesense_index_name(index_name: str) -> str:
     """
-    Return the index name in TypeSense associated to a hard-coded index name.
+    Return the index name in Typesense associated to a hard-coded index name.
 
-    This is useful for multi-tenant TypeSense: just define a different prefix for
+    This is useful for multi-tenant Typesense: just define a different prefix for
     every tenant.
     """
     return TYPESENSE_COLLECTION_PREFIX + index_name
@@ -338,7 +338,7 @@ def get_filter_rule(
 
 def process_results(results: dict[str, t.Any], index_name: str) -> dict[str, t.Any]:
     """
-    Convert results produced by TypeSense into results that are compatible with the
+    Convert results produced by Typesense into results that are compatible with the
     edx-search engine API.
 
     Example input:
