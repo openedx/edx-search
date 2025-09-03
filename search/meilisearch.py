@@ -341,7 +341,7 @@ def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
 
     We make a copy to avoid modifying the source document.
     """
-    processed = process_nested_document(doc)
+    processed = convert_doc_datatypes(doc)
 
     # Add primary key field
     processed[PRIMARY_KEY_FIELD_NAME] = id2pk(doc["id"])
@@ -349,22 +349,29 @@ def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
     return processed
 
 
-def process_nested_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
+def convert_doc_datatypes(doc: dict[str, t.Any]) -> dict[str, t.Any]:
     """
-    Process nested dict inside top-level Meilisearch document.
+    Recursively replace datatypes that our search engine doesn't support.
+    ⚠️ This is used by both Meilisearch and Typesense engines.
+
+    - datetime values become timestamps.
     """
     processed = {}
     for key, value in doc.items():
         if isinstance(value, timezone.datetime):
             # Convert datetime objects to timestamp, and store the timezone in a
             # separate field with a suffix given by UTC_OFFSET_SUFFIX.
-            utcoffset = None
+            # Most (all?) datetimes are UTC, so the actual offset is not usually
+            # super important, but the presence of the offset field is used to
+            # detect timestamp fields and convert them back to datetime values
+            # when loading search results.
+            processed[key] = value.timestamp()
             if value.tzinfo:
                 utcoffset = value.utcoffset().seconds
-            processed[key] = value.timestamp()
-            processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
+                if utcoffset != 0:
+                processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
         elif isinstance(value, dict):
-            processed[key] = process_nested_document(value)
+            processed[key] = convert_doc_datatypes(value)
         else:
             # Pray that there are not datetime objects inside lists.
             # If there are, they will be converted to str by the DocumentEncoder.
