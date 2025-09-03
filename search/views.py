@@ -159,6 +159,7 @@ def course_discovery(request):
         "search_string" (optional) - text with which to search for courses
         "page_size" (optional)- how many results to return per page (defaults to 20, with maximum cutoff at 100)
         "page_index" (optional) - for which page (zero-indexed) to include results (defaults to 0)
+        "enable_course_sorting_by_start_date" (optional) - boolean to enable sorting by start date
     """
     results = {
         "error": _("Nothing to search")
@@ -166,6 +167,7 @@ def course_discovery(request):
     status_code = 500
 
     search_term = request.POST.get("search_string", None)
+    enable_course_sorting_by_start_date = request.POST.get("enable_course_sorting_by_start_date", False)
 
     try:
         size, from_, page = _process_pagination_values(request)
@@ -186,6 +188,7 @@ def course_discovery(request):
             size=size,
             from_=from_,
             field_dictionary=field_dictionary,
+            enable_course_sorting_by_start_date=enable_course_sorting_by_start_date,
         )
 
         # Analytics - log search results before sending to browser

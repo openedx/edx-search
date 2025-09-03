@@ -4,6 +4,7 @@ from datetime import datetime
 from django.conf import settings
 
 from eventtracking import tracker as track
+from .dataclasses import FieldTypes, SortField
 from .filter_generator import SearchFilterGenerator
 from .search_engine_base import SearchEngine
 from .result_processor import SearchResultProcessor
@@ -122,12 +123,19 @@ def emit_api_timing_event(search_term, course_id, filter_generation_timer, proce
     })
 
 
-def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary=None):
+def course_discovery_search(
+    search_term=None,
+    size=20,
+    from_=0,
+    field_dictionary=None,
+    enable_course_sorting_by_start_date=False,
+):
     """
     Course Discovery activities against the search engine index of course details
     """
     # We'll ignore the course-enrollemnt informaiton in field and filter
     # dictionary, and use our own logic upon enrollment dates for these
+    sort_by = None
     use_search_fields = ["org"]
     (search_fields, _, exclude_dictionary) = SearchFilterGenerator.generate_field_filters()
     use_field_dictionary = {
@@ -136,6 +144,8 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
     }
     if field_dictionary:
         use_field_dictionary.update(field_dictionary)
+    if enable_course_sorting_by_start_date:
+        sort_by = [SortField(name="start", type_=FieldTypes.DATETIME)]
     if not getattr(settings, "SEARCH_SKIP_ENROLLMENT_START_DATE_FILTERING", False):
         use_field_dictionary["enrollment_start"] = DateRange(None, datetime.utcnow())
 
@@ -155,6 +165,7 @@ def course_discovery_search(search_term=None, size=20, from_=0, field_dictionary
         filter_dictionary={"enrollment_end": DateRange(datetime.utcnow(), None)},
         exclude_dictionary=exclude_dictionary,
         aggregation_terms=course_discovery_aggregations(),
+        sort_by=sort_by,
     )
 
     return results

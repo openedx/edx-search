@@ -70,6 +70,7 @@ import meilisearch
 from django.conf import settings
 from django.utils import timezone
 
+from search.dataclasses import SortField
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
@@ -109,6 +110,15 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
     ],
 }
 
+INDEX_SORTABLES: dict[str, list[str]] = {
+    getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info"): [
+        "start",  # sort by start date
+    ],
+    getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content"): [
+        "start",  # sort by start date
+    ],
+}
+
 
 class MeilisearchEngine(SearchEngine):
     """
@@ -129,6 +139,7 @@ class MeilisearchEngine(SearchEngine):
             meilisearch_index_name = get_meilisearch_index_name(self.index_name)
             meilisearch_client = get_meilisearch_client()
             self._meilisearch_index = meilisearch_client.index(meilisearch_index_name)
+            self._meilisearch_index.update_sortable_attributes(INDEX_SORTABLES.get(self.index_name, []))
         return self._meilisearch_index
 
     @property
@@ -160,6 +171,7 @@ class MeilisearchEngine(SearchEngine):
         filter_dictionary=None,
         exclude_dictionary=None,
         aggregation_terms=None,
+        sort_by=None,
         # exclude_ids=None, # deprecated
         # use_field_match=False, # deprecated
         log_search_params=False,
@@ -173,6 +185,7 @@ class MeilisearchEngine(SearchEngine):
             filter_dictionary=filter_dictionary,
             exclude_dictionary=exclude_dictionary,
             aggregation_terms=aggregation_terms,
+            sort_by=self._transform_sort_by(sort_by) if sort_by else None,
             **kwargs,
         )
         if log_search_params:
@@ -195,6 +208,13 @@ class MeilisearchEngine(SearchEngine):
         doc_pks = [id2pk(doc_id) for doc_id in doc_ids]
         if doc_pks:
             self.meilisearch_index.delete_documents(doc_pks)
+
+    def _transform_sort_by(self, fields: list[SortField]):
+        """
+        Helper function to transform sort_by dictionary to the format
+        expected by the search engine.
+        """
+        return [f"{field.name}:{field.order}" for field in fields]
 
 
 class DocumentEncoder(json.JSONEncoder):
@@ -368,6 +388,7 @@ def get_search_params(
     filter_dictionary=None,
     exclude_dictionary=None,
     aggregation_terms=None,
+    sort_by=None,
     **kwargs,
 ) -> dict[str, t.Any]:
     """
@@ -379,6 +400,10 @@ def get_search_params(
     # Aggregation
     if aggregation_terms:
         params["facets"] = list(aggregation_terms.keys())
+
+    # Sorting
+    if sort_by:
+        params["sort"] = sort_by
 
     # Exclusion and inclusion filters
     filters = []
