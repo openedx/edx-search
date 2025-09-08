@@ -61,23 +61,16 @@ install-local: ## installs your local edx-search into the LMS and CMS python vir
 	docker exec -t edx.devstack.cms bash -c '. /edx/app/edxapp/venvs/edxapp/bin/activate && cd /edx/app/edxapp/edx-platform && pip uninstall -y edx-search && pip install -e /edx/src/edx-search && pip freeze | grep edx-search'
 
 test-all: create-test-network
-	@$(MAKE) meili-up
-	@$(MAKE) elastic-up
-	python manage.py test \
-	    search.tests.test_engines \
-	    search.tests.test_course_discovery.TestNone \
-	    search.tests.test_course_discovery.TestElasticCourseDiscoverySearch \
-	    search/tests/test_meilisearch.py \
-		search/tests/test_views.py || true
-        # TODO: include test_course_discovery_views.py
+	@$(MAKE) test-meili
+	@$(MAKE) test-elastic
 
 test-meili: meili-up
 	@echo "Running Meilisearch tests..."
 	@MEILISEARCH_MASTER_KEY=test_master_key \
 	MEILISEARCH_URL=http://localhost:7700 \
 	python manage.py test \
-	    search.tests.test_meilisearch \
-	    search.tests.test_course_discovery.TestMeilisearchCourseDiscoverySearch || true
+	    search.tests.test_course_discovery.TestMeilisearchCourseDiscoverySearch \
+	    search.tests.test_meilisearch || true
 	@$(MAKE) meili-down
 
 meili-up: create-test-network
