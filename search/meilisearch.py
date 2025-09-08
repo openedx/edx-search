@@ -420,7 +420,6 @@ def get_search_params(
     exclude_dictionary=None,
     aggregation_terms=None,
     sort_by=None,
-    is_multivalue: bool = False,
     **kwargs,
 ) -> dict[str, t.Any]:
     """
