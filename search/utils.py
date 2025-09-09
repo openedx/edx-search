@@ -32,9 +32,8 @@ def convert_doc_datatypes(doc: dict[str, Any]) -> dict[str, Any]:
             # detect timestamp fields and convert them back to datetime values
             # when loading search results.
             processed[key] = value.timestamp()
-            if value.tzinfo:
-                utcoffset = value.utcoffset().seconds
-                processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
+            utcoffset = value.utcoffset().seconds if value.tzinfo else 0
+            processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
         elif isinstance(value, dict):
             processed[key] = convert_doc_datatypes(value)
         elif value is None:

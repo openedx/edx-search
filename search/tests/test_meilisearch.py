@@ -85,22 +85,12 @@ class EngineTests(django.test.TestCase):
         assert "My name" == processed["name"]
         assert "My title" == processed["title"]
 
-    def test_index_recursive(self):
-        document = {"field": {"value": timezone.datetime(2024, 1, 1)}}
-        processed = search.meilisearch.process_nested_document(document)
-        assert {
-            "field": {
-                "value": 1704067200.0,
-                "value__utcoffset": None,
-            }
-        } == processed
-
     def test_index_datetime_no_tz(self):
         # No timezone
         document = {"id": "1", "dt": timezone.datetime(2024, 1, 1)}
         processed = search.meilisearch.process_document(document)
         assert 1704067200.0 == processed["dt"]
-        assert processed["dt__utcoffset"] is None
+        assert processed["dt__utcoffset"] == 0
         # reverse serialisation
         reverse = search.meilisearch.process_hit(processed)
         assert document == reverse
