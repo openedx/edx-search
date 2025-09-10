@@ -27,7 +27,13 @@ from typesense.exceptions import ObjectNotFound, RequestMalformed, ServerError
 from typesense.types.document import Hit, SearchResponse
 
 from search.search_engine_base import SearchEngine
-from search.utils import convert_doc_datatypes, UTC_OFFSET_SUFFIX, ValueRange, restore_doc_datatypes
+from search.utils import (
+    convert_doc_datatypes,
+    IS_NULL_SUFFIX,
+    restore_doc_datatypes,
+    UTC_OFFSET_SUFFIX,
+    ValueRange,
+)
 
 TYPESENSE_API_KEY = getattr(settings, "TYPESENSE_API_KEY", "")
 TYPESENSE_URLS = getattr(settings, "TYPESENSE_URLS", [getattr(settings, "TYPESENSE_URL", "http://typesense")])
@@ -41,14 +47,20 @@ TYPESENSE_COLLECTION_PREFIX = getattr(settings, "TYPESENSE_COLLECTION_PREFIX", "
 # The two indexes we're most concerned about are:
 #  - Course Info index: stores a list of courses that users can browse and then enroll into
 #  - Course Content index: stores the course content (XBlocks) for enrolled users to search within one course
-COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
 # We need to know which fields store timestamps in order to force them to be stored as 64 bit integers instead of 32
-COURSE_INFO_TIMESTAMP_FIELDS = ["start", "end", "enrollment_start", "enrollment_end"]
+COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info")
 COURSE_CONTENT_INDEX = getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
-# In Typesense, we explicitly list fields for which we expect to use faceting.
-# This is different than Elasticsearch where we can aggregate results over any field.
-# Reference: https://typesense.org/docs/29.0/api/collections.html#create-a-collection
-# TODO: do we use faceting for any fields?
+INDEX_CONFIGURATION = {
+    COURSE_INFO_INDEX: {
+        "datetime_fields": ["start", "end", "enrollment_start", "enrollment_end"],
+        "nullable_fields": ["start", "end", "enrollment_start", "enrollment_end"],
+        # TODO: faceting_fields.
+    },
+    COURSE_CONTENT_INDEX: {
+        "datetime_fields": ["start_date"],
+        "nullable_fields": ["start_date"],
+    }
+}
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +102,28 @@ class TypesenseEngine(SearchEngine):
             sources,
             kwargs,
         )
-        processed_documents = [process_document(source) for source in sources]
-        self.typesense_index.documents.import_(processed_documents, {'action': 'create'})
-        # TODO ^ Should that be upsert instead of create?
+        processed_documents = [self.process_document(source) for source in sources]
+        result = self.typesense_index.documents.import_(processed_documents, {'action': 'upsert'})
+        for idx, doc_result in enumerate(result):
+            if doc_result.get("error"):
+                logger.error(f"Failed to index document {sources[idx].get('id', idx)}: {doc_result['error']}")
+
+    def process_document(self, doc: dict[str, t.Any]) -> dict[str, t.Any]:
+        """
+        Process document before indexing.
+        """
+        index_config = INDEX_CONFIGURATION[self.index_name]
+        # Some fields like 'enrollment_start' are absent from the source documents
+        # when they are NULL (have no value). But TypeSense doesn't allow filtering
+        # by NULL values, so to support filtering we need to explicitly store something
+        # else to represent NULLs. So here we set them to None, and convert_doc_datatypes()
+        # will create the required separate __is_null field. See its docstring.
+        doc_with_nulls = {**doc}
+        for key in index_config["nullable_fields"]:
+            doc_with_nulls.setdefault(key)
+        # Convert field types recursively, e.g. datetime->int64, NULL -> separate field:
+        processed = convert_doc_datatypes(doc_with_nulls, record_nulls=True)
+        return processed
 
     def search(
         self,
@@ -172,33 +203,32 @@ def create_indexes():
     support the right data types, filtering, and faceting.
     """
     client = get_typesense_client()
-    # Collection that stores the list of courses
-    client.collections.create({
-        "name": get_typesense_index_name(COURSE_INFO_INDEX),
-        "fields": [
-            # Auto-create fields by default
-            {"name": ".*", "type": "auto"},
-            # Override specific fields as needed:
-            # timestamps and their suffixes should be integers, not float
-            *[
-                {"name": field_name, "type": "int64"} for field_name in COURSE_INFO_TIMESTAMP_FIELDS
+    for index_name, index_config in INDEX_CONFIGURATION.items():
+        datetime_fields = index_config.get("datetime_fields", [])
+        nullable_fields = index_config.get("nullable_fields", [])
+        client.collections.create({
+            "name": get_typesense_index_name(index_name),
+            "fields": [
+                # Auto-create fields by default
+                {"name": ".*", "type": "auto"},
+                # Override specific fields as needed:
+                # e.g. timestamps should be 64-bit integers, not float; plus special separate offset field.
+                # See search.utils.convert_doc_datatypes() for details.
+                *[
+                    {"name": field_name, "type": "int64", "optional": field_name in nullable_fields}
+                    for field_name in datetime_fields
+                ],
+                *[
+                    {"name": field_name + UTC_OFFSET_SUFFIX, "type": "int32", "optional": field_name in nullable_fields}
+                    for field_name in datetime_fields
+                ],
+                # Track nullable fields - see docstring of search.utils.convert_doc_datatypes()
+                *[
+                    {"name": field_name + IS_NULL_SUFFIX, "type": "bool", "optional": True}
+                    for field_name in nullable_fields
+                ],
             ],
-            *[
-                {"name": field_name + UTC_OFFSET_SUFFIX, "type": "int32"} for field_name in COURSE_INFO_TIMESTAMP_FIELDS
-            ],
-        ],
-    })
-    # Collection that stores content within each course:
-    client.collections.create({
-        "name": get_typesense_index_name(COURSE_CONTENT_INDEX),
-        "fields": [
-            # Auto-create fields by default
-            {"name": ".*", "type": "auto"},
-            # Override specific fields as needed:
-            {"name": "start_date", "type": "int64"},
-            {"name": "start_date" + UTC_OFFSET_SUFFIX, "type": "int32"},
-        ],
-    })
+        })
 
 
 def delete_indexes():
@@ -221,7 +251,10 @@ def get_typesense_client() -> typesense.Client:
         get_typesense_client.client_singleton = typesense.Client({
             'nodes': TYPESENSE_URLS,
             'api_key': TYPESENSE_API_KEY,
-            'connection_timeout_seconds': 4,
+            # Per note in the python example at
+            # https://typesense.org/docs/29.0/api/documents.html#index-multiple-documents ,
+            # this timeout needs to be at least five minutes.
+            'connection_timeout_seconds': 5 * 60,
         })
     return get_typesense_client.client_singleton
 
@@ -234,17 +267,6 @@ def get_typesense_index_name(index_name: str) -> str:
     every tenant.
     """
     return TYPESENSE_COLLECTION_PREFIX + index_name
-
-
-def process_document(doc: dict[str, t.Any]) -> dict[str, t.Any]:
-    """
-    Process document before indexing.
-
-    We make a copy to avoid modifying the source document.
-    """
-    processed = convert_doc_datatypes(doc)
-
-    return processed
 
 
 def get_search_params(
@@ -332,10 +354,10 @@ def get_filter_rule(
     elif isinstance(value, ValueRange):
         lower = value.lower
         if isinstance(lower, timezone.datetime):
-            lower = lower.timestamp()
+            lower = round(lower.timestamp())
         upper = value.upper
         if isinstance(upper, timezone.datetime):
-            upper = upper.timestamp()
+            upper = round(upper.timestamp())
         # I know that the following fails if value == 0, but we are being
         # consistent with the behaviour in the elasticsearch engine.
         if upper and lower:
@@ -352,10 +374,8 @@ def get_filter_rule(
     else:
         raise ValueError(f"Unknown value type: {value.__class__}")
     if optional:
-        # rule += f" || {key} NOT EXISTS"
-        raise NotImplementedError("Optional fields not supported for Typesense")
-        # TODO: put a sentinel value instead of NULL ?
-        # See https://typesense.org/docs/guide/tips-for-filtering.html#filtering-for-empty-fields
+        # https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#searching-for-null-or-empty-values
+        rule = f"({rule} || {key}{IS_NULL_SUFFIX}:true)"
     return rule
 
 

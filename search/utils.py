@@ -8,9 +8,10 @@ from django.utils import timezone
 
 
 UTC_OFFSET_SUFFIX = "__utcoffset"
+IS_NULL_SUFFIX = "__is_null"
 
 
-def convert_doc_datatypes(doc: dict[str, Any]) -> dict[str, Any]:
+def convert_doc_datatypes(doc: dict[str, Any], *, record_nulls=False) -> dict[str, Any]:
     """
     Recursively replace datatypes that our search engine doesn't support, so we
     can store data into the search index.
@@ -20,7 +21,15 @@ def convert_doc_datatypes(doc: dict[str, Any]) -> dict[str, Any]:
     - `datetime` values become timestamps.
     - `None` values are removed (Meilisearch ignores them per
       https://www.meilisearch.com/docs/learn/engine/datatypes#null
-      and Typesense throws an error if you try to index them.)
+      and Typesense throws an error if you try to set None/null values on
+      some field types, and ignores it on other field types.)
+
+    For Typesense, specify record_nulls=True to insert a second field marking
+    fields that have null values - this is the only way to reliably filter for
+    fields that are null, which Typesense otherwise doesn't support.
+    - https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#searching-for-null-or-empty-values
+    - https://typesense.org/docs/guide/tips-for-filtering.html#filtering-for-empty-fields
+    - https://github.com/typesense/typesense/issues/790
     """
     processed = {}
     for key, value in doc.items():
@@ -35,10 +44,14 @@ def convert_doc_datatypes(doc: dict[str, Any]) -> dict[str, Any]:
             utcoffset = value.utcoffset().seconds if value.tzinfo else 0
             processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
         elif isinstance(value, dict):
-            processed[key] = convert_doc_datatypes(value)
+            processed[key] = convert_doc_datatypes(value, record_nulls=record_nulls)
         elif value is None:
-            continue
+            if record_nulls:
+                processed[f"{key}{IS_NULL_SUFFIX}"] = True
+            else:
+                continue  # Ignore this NULL value - the search engine will ignore it anyways.
         else:
+            # Index the value, unmodified.
             # Pray that there are not datetime objects inside lists.
             # If there are, they will be converted to str by the DocumentEncoder.
             processed[key] = value
@@ -62,6 +75,9 @@ def restore_doc_datatypes(search_result: dict[str, Any]) -> dict[str, Any]:
                 else None
             )
             processed[timestamp_key] = timezone.datetime.fromtimestamp(timestamp, tz=tz)
+        elif key.endswith(IS_NULL_SUFFIX):
+            orig_key = key[: -len(IS_NULL_SUFFIX)]
+            processed[orig_key] = None
         elif isinstance(value, dict):
             processed[key] = restore_doc_datatypes(value)
         else:

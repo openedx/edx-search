@@ -125,3 +125,30 @@ class EngineUtilsTests(django.test.TestCase):
                 "bar": "foo",
             },
         } == processed
+
+    def test_convert_document_with_null_separate(self):
+        """
+        Test converting a document to Typesense compatible format, marking NULL
+        values using a separate field as recommended at
+        https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#searching-for-null-or-empty-values
+        """
+        document = {
+            "foo": "bar",
+            "count": 17,
+            "null_value": None,
+            "dict_value": {
+                "null_value": None,
+                "bar": "foo",
+            },
+        }
+        processed = convert_doc_datatypes(document, record_nulls=True)
+        assert {
+            "foo": "bar",
+            "count": 17,
+            "null_value__is_null": True,
+            "dict_value": {
+                "null_value__is_null": True,
+                "bar": "foo",
+            },
+        } == processed
+        assert document == restore_doc_datatypes(processed)
