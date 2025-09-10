@@ -54,11 +54,14 @@ INDEX_CONFIGURATION = {
     COURSE_INFO_INDEX: {
         "datetime_fields": ["start", "end", "enrollment_start", "enrollment_end"],
         "nullable_fields": ["start", "end", "enrollment_start", "enrollment_end"],
+        # Which fields to use for text matches. Required by Typesense.
+        "query_fields": ["course", "org", "number", "content"],
         # TODO: faceting_fields.
     },
     COURSE_CONTENT_INDEX: {
         "datetime_fields": ["start_date"],
         "nullable_fields": ["start_date"],
+        "query_fields": ["content"],
     }
 }
 
@@ -152,11 +155,9 @@ class TypesenseEngine(SearchEngine):
 
         # TypeSense requires us to specify which text fields the 'q' query will search,
         # for ALL searches, even if we're not specifying a query text (i.e. even if we're
-        # just using filters). Load them from the index:
-        # TODO: specify a smaller, more specific, prioritized list? This shouldn't include e.g. image_url, org_image_url
-        # TODO: cache this? It won't change during the lifetime of our process, and retrieving it probably slows us down
-        query_by = [field["name"] for field in self.typesense_index.retrieve()["fields"] if field["type"] == "string"]
-
+        # just using filters).
+        index_config = INDEX_CONFIGURATION[self.index_name]
+        query_by = index_config["query_fields"]
         search_args = {"q": query_string, "query_by": query_by, **compiled_params}
         try:
             results = self.typesense_index.documents.search(search_args)
@@ -208,6 +209,7 @@ def create_indexes():
         nullable_fields = index_config.get("nullable_fields", [])
         client.collections.create({
             "name": get_typesense_index_name(index_name),
+            "enable_nested_fields": True,
             "fields": [
                 # Auto-create fields by default
                 {"name": ".*", "type": "auto"},
@@ -466,11 +468,14 @@ def process_results(results: SearchResponse, index_name: str) -> dict[str, t.Any
     }
 
     # Hits
-    max_score = 0
+    max_score = 100
     for hit in results["hits"]:
         result = process_hit(hit, index_name)
-        # TODO: we are discarding the actual score here and just keeping the max. Is that correct?
-        max_score = max(max_score, hit["text_match"])
+        # TODO: do we need the scores and max_score? For now just hard-coding max to 100.
+        # The TypeSense scores are so large that they cannot be represented as regular
+        # numbers in JavaScript, causing client-side errors.
+        # Ref: https://github.com/typesense/typesense/issues/667
+        # max_score = max(max_score, hit["text_match"])
         processed["results"].append(result)
     processed["max_score"] = max_score
 
