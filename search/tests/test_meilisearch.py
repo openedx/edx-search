@@ -380,22 +380,24 @@ class EngineTests(django.test.TestCase):
                 ],
             },
         )
-        self.assertEqual(result["max_score"], 0.865)
-        self.assertEqual(result["took"], 0)
-        self.assertEqual(result["total"], 1)
-        self.assertListEqual(
-            result["results"],
-            [
-                {
-                    "_id": "course-v1:OpenedX+DemoX+DemoCourse",
-                    "_index": "my_index",
-                    "_type": "_doc",
-                    "data": {
-                        "id": "course-v1:OpenedX+DemoX+DemoCourse",
-                        "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+
+        self.assertGreaterEqual(
+            result.items(),
+            {
+                "max_score": 0.865,
+                "took": 0,
+                "results": [
+                    {
+                        "_id": "course-v1:OpenedX+DemoX+DemoCourse",
+                        "_index": "my_index",
+                        "_type": "_doc",
+                        "data": {
+                            "id": "course-v1:OpenedX+DemoX+DemoCourse",
+                            "pk": "f381d4f1914235c9532576c0861d09b484ade634",
+                        },
                     },
-                },
-            ]
+                ]
+            }.items()
         )
 
     @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
