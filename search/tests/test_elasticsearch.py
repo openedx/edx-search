@@ -293,6 +293,55 @@ class ElasticSearchUnitTests(TestCase):
         self.assertIn("language", search_body["aggs"])
         self.assertNotIn("global_aggs", search_body["aggs"])
 
+
+    @patch("search.elastic.Elasticsearch")
+    def test_multivalue_aggregations_use_global_aggs(self, mock_elasticsearch_class):
+        """Tests that multi-value aggregation includes global_aggs wrapper."""
+        mock_es = MagicMock()
+        mock_elasticsearch_class.return_value = mock_es
+        mock_es.search.return_value = {
+            "hits": {
+                "total": {"value": 1},
+                "max_score": 1.0,
+                "hits": [{
+                    "_source": {"org": "OrgX", "language": "en"},
+                    "_score": 1.0
+                }]
+            },
+            "aggregations": {
+                "global_aggs": {
+                    "language": {
+                        "doc_count": 1,
+                        "values": {
+                            "buckets": [
+                                {"key": "en", "doc_count": 1}
+                            ]
+                        }
+                    }
+                }
+            },
+            "took": 2,
+        }
+
+        engine = ElasticSearchEngine(index=TEST_INDEX_NAME)
+
+        result = engine.search(
+            field_dictionary={"language": ["en"]},
+            aggregation_terms={"language": {}},
+            is_multivalue=True
+        )
+
+        self.assertEqual(result["total"], 1)
+        self.assertEqual(result["aggs"]["language"]["terms"]["en"], 1)
+
+        call_args = mock_es.search.call_args[1]
+        search_body = call_args["body"]
+
+        self.assertIn("aggs", search_body)
+        self.assertIn("global_aggs", search_body["aggs"])
+        self.assertIn("language", search_body["aggs"]["global_aggs"]["aggs"])
+
+
     @patch("search.elastic._process_multivalue_aggregations")
     @patch("search.elastic._process_aggregation_terms")
     @patch("search.elastic.Elasticsearch")
