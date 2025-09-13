@@ -259,9 +259,13 @@ def _process_aggregation_terms(aggregation_terms):
     return elastic_aggs
 
 
-def _process_multivalue_aggregations(aggregation_terms, field_dictionary):
+def _process_multivalue_aggregations(aggregation_terms: dict, field_dictionary: dict) -> dict:
     """
-    Calculate facet distributions for multi-value faceted search.
+    Compute the aggregation requests that we'll send with the query when searching with multi-value faceting.
+    Typical shape of the args:
+        aggregation_terms={'language': {}, 'modes': {}, 'org': {}}
+        field_dictionary={'enrollment_start': <search.utils.DateRange object at ...>,
+                          'language': ['en', 'fr']}
     """
     aggs = {}
     for facet_field, options in aggregation_terms.items():
