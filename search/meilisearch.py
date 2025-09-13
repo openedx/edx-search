@@ -200,7 +200,13 @@ class MeilisearchEngine(SearchEngine):
 
         return process_results(meilisearch_results, self.index_name)
 
-    def _expand_facet_distibutions(self, field_dictionary, query_string, opt_params, meilisearch_results):
+    def _expand_facet_distibutions(
+            self,
+            field_dictionary: dict,
+            query_string: str,
+            opt_params: dict,
+            meilisearch_results: dict
+    ) -> dict:
         """
         For each selected facet, get all its available options within the selected filters.
         """
@@ -212,7 +218,7 @@ class MeilisearchEngine(SearchEngine):
             )
             meilisearch_results.setdefault("facetDistribution", {})[facet] = expanded_facet_distribution
 
-    def _get_expanded_distribution(self, query, facet_to_exclude, filter_rules):
+    def _get_expanded_distribution(self, query: str, facet_to_exclude: str, filter_rules: list) -> dict:
         """
         Run a secondary query excluding one facet to get its full distribution.
         Only return distribution data, without any actual results.
