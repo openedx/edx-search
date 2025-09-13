@@ -129,7 +129,7 @@ def course_discovery_search(
     from_=0,
     field_dictionary=None,
     enable_course_sorting_by_start_date=False,
-    is_multivalue=False,
+    is_multivalue=False,  # Determines whether to use single-faceted or multi-faceted search
 ):
     """
     Course Discovery activities against the search engine index of course details
