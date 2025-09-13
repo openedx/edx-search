@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
 
   test_elasticsearch:
@@ -36,8 +38,6 @@ services:
       interval: 2s
       timeout: 1s
       retries: 10
-
-version: '3.8'
 
 volumes:
   data01:
