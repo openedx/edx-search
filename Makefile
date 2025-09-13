@@ -67,7 +67,6 @@ test-all: create-test-network
 test-meili: meili-up
 	@echo "Running Meilisearch tests..."
 	@MEILISEARCH_MASTER_KEY=test_master_key \
-	MEILISEARCH_URL=http://localhost:7700 \
 	python manage.py test \
 	    search.tests.test_course_discovery.TestMeilisearchCourseDiscoverySearch \
 	    search.tests.test_meilisearch || true

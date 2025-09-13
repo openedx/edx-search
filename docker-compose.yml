@@ -33,7 +33,6 @@ services:
       - test_network
     environment:
       MEILISEARCH_MASTER_KEY: test_master_key
-      MEILISEARCH_URL: http://localhost:7700
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
       interval: 2s
