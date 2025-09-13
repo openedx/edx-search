@@ -470,26 +470,26 @@ def get_filter_rules(
     """
     rules = []
     filter_fields = course_discovery_filter_fields()
-    for rule_name, rule_value in rule_dict.items():
-        if isinstance(rule_value, list):
+    for field_name, field_value in rule_dict.items():
+        if isinstance(field_value, list):
             if exclude:
                 # Always flat list of NOT rules
-                for nested_value in rule_value:
-                    rules.append(get_filter_rule(rule_name, nested_value, exclude=True, optional=optional))
+                for nested_value in field_value:
+                    rules.append(get_filter_rule(field_name, nested_value, exclude=True, optional=optional))
             else:
-                if rule_name in filter_fields:
+                if field_name in filter_fields:
                     # Multi-value facet → OR logic as a single string
-                    or_expr = " OR ".join(f'{rule_name} = "{nested_value}"' for nested_value in rule_value)
+                    or_expr = " OR ".join(f'{field_name} = "{nested_value}"' for nested_value in field_value)
                     rules.append(or_expr)
                 else:
                     # Non-facet field → multiple AND rules
                     rules += [
                         get_filter_rule(
-                            rule_name, nested_value, exclude=exclude, optional=optional
-                        ) for nested_value in rule_value
+                            field_name, nested_value, exclude=exclude, optional=optional
+                        ) for nested_value in field_value
                     ]
         else:
-            rules.append(get_filter_rule(rule_name, rule_value, exclude=exclude, optional=optional))
+            rules.append(get_filter_rule(field_name, field_value, exclude=exclude, optional=optional))
 
     return rules
 
