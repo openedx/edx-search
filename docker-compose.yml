@@ -24,8 +24,9 @@ services:
       - test_network
 
   test_meilisearch:
-    image: getmeili/meilisearch:v1.7
-    container_name: test_meilisearch
+    # Keep in sync with DOCKER_IMAGE_MEILISEARCH
+    # in https://github.com/overhangio/tutor/blob/main/tutor/templates/config/defaults.yml
+    image: getmeili/meilisearch:v1.8.4
     ports:
       - "7700:7700"
     networks:
