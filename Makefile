@@ -88,6 +88,7 @@ test-elastic: elastic-up
 	@echo "Running Elasticsearch tests..."
 	python manage.py test \
 	    search.tests.test_engines \
+	    search.tests.test_elasticsearch \
 	    search.tests.test_course_discovery.TestNone \
 	    search.tests.test_course_discovery.TestMockCourseDiscoverySearch \
 	    search.tests.test_course_discovery.TestElasticCourseDiscoverySearch \
