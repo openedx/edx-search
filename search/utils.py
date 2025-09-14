@@ -16,7 +16,8 @@ def convert_doc_datatypes(doc: dict[str, Any], *, record_nulls=False) -> dict[st
     Recursively replace datatypes that our search engine doesn't support, so we
     can store data into the search index.
 
-    This is used by both Meilisearch and Typesense engines.
+    This is used by the Typesense engine, and could also be used by Meilisearch
+    if we decide to keep both Typesense and Meilisearch.
 
     - `datetime` values become timestamps.
     - `None` values are removed (Meilisearch ignores them per
@@ -62,6 +63,8 @@ def restore_doc_datatypes(search_result: dict[str, Any]) -> dict[str, Any]:
     """
     Convert data values from the search index back into the more detailed
     python data types that we want, before displaying results to the user.
+
+    This is the opposite of `convert_doc_datatypes()`.
     """
     processed = {}
     for key, value in search_result.items():
