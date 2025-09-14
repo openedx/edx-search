@@ -35,10 +35,6 @@ from search.utils import (
     ValueRange,
 )
 
-TYPESENSE_API_KEY = getattr(settings, "TYPESENSE_API_KEY", "")
-TYPESENSE_URLS = getattr(settings, "TYPESENSE_URLS", [getattr(settings, "TYPESENSE_URL", "http://typesense")])
-TYPESENSE_COLLECTION_PREFIX = getattr(settings, "TYPESENSE_COLLECTION_PREFIX", "")
-
 # ====== Indices ======
 # Due to the messy architecture of edx-search, we have to encode information about specific indexes in this engine.
 # So some information about the indexes is here (in ES, Meilisearch, and Typesense engines separately) and other info
@@ -251,8 +247,8 @@ def get_typesense_client() -> typesense.Client:
     """
     if not hasattr(get_typesense_client, "client_singleton"):
         get_typesense_client.client_singleton = typesense.Client({
-            'nodes': TYPESENSE_URLS,
-            'api_key': TYPESENSE_API_KEY,
+            'nodes': settings.TYPESENSE_URLS,
+            'api_key': settings.TYPESENSE_API_KEY,
             # Per note in the python example at
             # https://typesense.org/docs/29.0/api/documents.html#index-multiple-documents ,
             # this timeout needs to be at least five minutes.
@@ -268,7 +264,7 @@ def get_typesense_index_name(index_name: str) -> str:
     This is useful for multi-tenant Typesense: just define a different prefix for
     every tenant.
     """
-    return TYPESENSE_COLLECTION_PREFIX + index_name
+    return settings.TYPESENSE_COLLECTION_PREFIX + index_name
 
 
 def get_search_params(
