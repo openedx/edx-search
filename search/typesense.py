@@ -359,6 +359,8 @@ def get_filter_rule(
             upper = round(upper.timestamp())
         # I know that the following fails if value == 0, but we are being
         # consistent with the behaviour in the elasticsearch engine.
+        if not isinstance(lower, (int, type(None))) or not isinstance(upper, (int, type(None))):
+            raise ValueError("Upper/lower bounds of ValueRange must be integers if specified. Floats not implemented.")
         if upper and lower:
             # TODO: verify if this is inclusive or exclusive of outer bounds
             rule = f"{key}:[{lower}..{upper}]"
