@@ -266,6 +266,11 @@ def get_typesense_index_name(index_name: str) -> str:
     """
     return settings.TYPESENSE_COLLECTION_PREFIX + index_name
 
+def _escape_str(value: str):
+    """ Escape a string for use in a Typesense filter """
+    # https://typesense.org/docs/guide/tips-for-filtering.html#escaping-special-characters
+    return f'`{value.replace("`", "")}`'
+
 
 def get_search_params(
     field_dictionary=None,
@@ -296,8 +301,9 @@ def get_search_params(
         filters += get_filter_rules(field_dictionary)
     if filter_dictionary:
         filters += get_filter_rules(filter_dictionary, optional=True)
-    if exclude_dictionary:
-        filters += get_filter_rules(exclude_dictionary, exclude=True)
+    for key, values in exclude_dictionary.items():
+        # Ignore multiple values for this field, e.g. {"id": ["ignorethis1", "ignorethis2"]}
+        filters += [f"{key}:!=[{', '.join(_escape_str(value) for value in values)}]"]
     if filters:
         params["filter_by"] = " && ".join(filters)
 
@@ -343,12 +349,7 @@ def get_filter_rule(
     See: https://typesense.org/docs/29.0/api/search.html#filter-parameters
     """
     if isinstance(value, str):
-        # https://typesense.org/docs/guide/tips-for-filtering.html#escaping-special-characters
-        value_escaped = f'`{value.replace("`", "")}`'
-        if exclude:
-            rule = f'{key}:!={value_escaped}'
-        else:
-            rule = f'{key}:={value_escaped}'
+        rule = f'{key}:={_escape_str(value)}'
     elif isinstance(value, ValueRange):
         lower = value.lower
         if isinstance(lower, timezone.datetime):
@@ -367,8 +368,6 @@ def get_filter_rule(
             rule = f"{key}:<={upper}"
         else:
             raise ValueError("Either upper or lower is required for range search")
-        if exclude:
-            raise NotImplementedError("Excluding by value range not implemented yet for Typesense.")
     else:
         raise ValueError(f"Unknown value type: {value.__class__}")
     if optional:
