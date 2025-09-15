@@ -33,6 +33,7 @@ from django.utils import timezone
 import typesense
 from typesense.collection import Collection
 from typesense.exceptions import ObjectNotFound, RequestMalformed, ServerError
+from typesense.types.collection import RegularCollectionFieldSchema
 from typesense.types.document import Hit, SearchResponse
 
 from search.search_engine_base import SearchEngine
@@ -57,15 +58,23 @@ COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info
 COURSE_CONTENT_INDEX = getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
 INDEX_CONFIGURATION = {
     COURSE_INFO_INDEX: {
-        "datetime_fields": ["start", "end", "enrollment_start", "enrollment_end"],
-        "nullable_fields": ["start", "end", "enrollment_start", "enrollment_end"],
+        "field_overrides": [
+            {"name": "start", "type": "datetime", "optional": True},
+            {"name": "end", "type": "datetime", "optional": True},
+            {"name": "enrollment_start", "type": "datetime", "optional": True},
+            {"name": "enrollment_end", "type": "datetime", "optional": True},
+            {"name": "org", "type": "string", "facet": True},
+            {"name": "modes", "type": "string[]", "facet": True},
+            {"name": "language", "type": "string", "facet": True},
+        ],
         # Which fields to use for text matches. Required by Typesense.
         "query_fields": ["course", "org", "number", "content"],
-        # TODO: faceting_fields.
     },
     COURSE_CONTENT_INDEX: {
-        "datetime_fields": ["start_date"],
-        "nullable_fields": ["start_date"],
+        "field_overrides": [
+            {"name": "start_date", "type": "datetime", "optional": True},
+        ],
+        # Which fields to use for text matches. Required by Typesense.
         "query_fields": ["content"],
     }
 }
@@ -127,8 +136,9 @@ class TypesenseEngine(SearchEngine):
         # else to represent NULLs. So here we set them to None, and convert_doc_datatypes()
         # will create the required separate __is_null field. See its docstring.
         doc_with_nulls = {**doc}
-        for key in index_config["nullable_fields"]:
-            doc_with_nulls.setdefault(key)
+        for field_config in index_config.get("field_overrides", []):
+            if field_config.get("optional", False):
+                doc_with_nulls.setdefault(field_config["name"])
         # Convert field types recursively, e.g. datetime->int64, NULL -> separate field:
         processed = convert_doc_datatypes(doc_with_nulls, record_nulls=True)
         return processed
@@ -153,6 +163,7 @@ class TypesenseEngine(SearchEngine):
             filter_dictionary=filter_dictionary,
             exclude_dictionary=exclude_dictionary,
             aggregation_terms=aggregation_terms,
+            sort_by=sort_by,
             **kwargs,
         )
         if log_search_params:
@@ -210,31 +221,34 @@ def create_indexes():
     """
     client = get_typesense_client()
     for index_name, index_config in INDEX_CONFIGURATION.items():
-        datetime_fields = index_config.get("datetime_fields", [])
-        nullable_fields = index_config.get("nullable_fields", [])
+        field_overrides = index_config.get("field_overrides", [])
+        fields_config: list[RegularCollectionFieldSchema] = [
+            # Auto-create fields by default
+            {"name": ".*", "type": "auto"},
+        ]
+        for field in field_overrides:
+            field_type = field["type"]  # Throw error if type is not set here.
+            is_datetime = field["type"] == "datetime"
+            is_optional = field.get("optional", False)
+            if is_datetime:
+                field_type = "int64"
+            fields_config.append({**field, "type": field_type})
+            if is_datetime:
+                fields_config.append({
+                    "name": field["name"] + UTC_OFFSET_SUFFIX,
+                    "type": "int32",
+                    "optional": field.get("optional", False),
+                })
+            if is_optional:
+                fields_config.append({
+                    "name": field["name"] + IS_NULL_SUFFIX,
+                    "type": "bool",
+                    "optional": True,
+                })
         client.collections.create({
             "name": get_typesense_index_name(index_name),
             "enable_nested_fields": True,
-            "fields": [
-                # Auto-create fields by default
-                {"name": ".*", "type": "auto"},
-                # Override specific fields as needed:
-                # e.g. timestamps should be 64-bit integers, not float; plus special separate offset field.
-                # See search.utils.convert_doc_datatypes() for details.
-                *[
-                    {"name": field_name, "type": "int64", "optional": field_name in nullable_fields}
-                    for field_name in datetime_fields
-                ],
-                *[
-                    {"name": field_name + UTC_OFFSET_SUFFIX, "type": "int32", "optional": field_name in nullable_fields}
-                    for field_name in datetime_fields
-                ],
-                # Track nullable fields - see docstring of search.utils.convert_doc_datatypes()
-                *[
-                    {"name": field_name + IS_NULL_SUFFIX, "type": "bool", "optional": True}
-                    for field_name in nullable_fields
-                ],
-            ],
+            "fields": fields_config,
         })
 
 
@@ -299,7 +313,7 @@ def get_search_params(
 
     # Aggregation
     if aggregation_terms:
-        params["facets"] = list(aggregation_terms.keys())
+        params["facet_by"] = list(aggregation_terms.keys())
 
     # Sorting
     if sort_by:
@@ -481,10 +495,14 @@ def process_results(results: SearchResponse, index_name: str) -> dict[str, t.Any
         processed["results"].append(result)
     processed["max_score"] = max_score
 
-    # Aggregates/Facets - TODO: update this for Typesense
-    for facet_name, facet_distribution in results.get("facetDistribution", {}).items():
-        total = sum(facet_distribution.values())
-        processed["aggs"][facet_name] = {
+    for facet_data in results.get("facet_counts", []):
+        total = facet_data["stats"]["total_values"]
+        field_name = facet_data["field_name"]
+        facet_distribution = {}
+        for entry in facet_data["counts"]:
+            facet_distribution[entry["value"]] = entry["count"]
+            # e.g. facet_distribution["red"] = 15 if we have a color facet distribution {red: 15, yellow: 10, blue: 5}
+        processed["aggs"][field_name] = {
             "terms": facet_distribution,
             "total": total,
             "other": 0,
