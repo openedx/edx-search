@@ -479,6 +479,7 @@ def get_filter_rules(
             else:
                 if field_name in filter_fields:
                     # Multi-value facet → OR logic as a single string
+                    assert not optional, "optional=True not supported in OR filter branch"
                     or_expr = " OR ".join(f'{field_name} = "{nested_value}"' for nested_value in field_value)
                     rules.append(or_expr)
                 else:
