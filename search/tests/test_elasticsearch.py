@@ -293,7 +293,6 @@ class ElasticSearchUnitTests(TestCase):
         self.assertIn("language", search_body["aggs"])
         self.assertNotIn("global_aggs", search_body["aggs"])
 
-
     @patch("search.elastic.Elasticsearch")
     def test_multivalue_aggregations_use_global_aggs(self, mock_elasticsearch_class):
         """Tests that multi-value aggregation includes global_aggs wrapper."""
