@@ -381,7 +381,7 @@ def get_filter_rule(key: str, value: str, optional: bool = False) -> str:
         if not isinstance(lower, (int, type(None))) or not isinstance(upper, (int, type(None))):
             raise ValueError("Upper/lower bounds of ValueRange must be integers if specified. Floats not implemented.")
         if upper and lower:
-            # TODO: verify if this is inclusive or exclusive of outer bounds
+            # Note: this range is inclusive, i.e. equivalent to "lower <= value <= upper"
             rule = f"{key}:[{lower}..{upper}]"
         elif lower:
             rule = f"{key}:>={lower}"
