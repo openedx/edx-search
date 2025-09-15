@@ -71,7 +71,6 @@ from django.conf import settings
 from django.utils import timezone
 
 from search.dataclasses import SortField
-from search.api import course_discovery_filter_fields
 from search.search_engine_base import SearchEngine
 from search.utils import ValueRange
 
@@ -445,11 +444,11 @@ def get_search_params(
     # Exclusion and inclusion filters
     filters = []
     if field_dictionary:
-        filters += get_filter_rules(field_dictionary)
+        filters += get_filter_rules(field_dictionary, or_fields=params.get("facets"))
     if filter_dictionary:
-        filters += get_filter_rules(filter_dictionary, optional=True)
+        filters += get_filter_rules(filter_dictionary, optional=True, or_fields=params.get("facets"))
     if exclude_dictionary:
-        filters += get_filter_rules(exclude_dictionary, exclude=True)
+        filters += get_filter_rules(exclude_dictionary, exclude=True, or_fields=params.get("facets"))
     if filters:
         params["filter"] = filters
 
@@ -463,13 +462,13 @@ def get_search_params(
 
 
 def get_filter_rules(
-    rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
+    rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False, or_fields: list[str] | None = None,
 ) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
     """
+    or_fields = or_fields or []
     rules = []
-    filter_fields = course_discovery_filter_fields()
     for field_name, field_value in rule_dict.items():
         if isinstance(field_value, list):
             if exclude:
@@ -477,7 +476,7 @@ def get_filter_rules(
                 for nested_value in field_value:
                     rules.append(get_filter_rule(field_name, nested_value, exclude=True, optional=optional))
             else:
-                if field_name in filter_fields:
+                if field_name in or_fields:
                     # Multi-value facet → OR logic as a single string
                     assert not optional, "optional=True not supported in OR filter branch"
                     or_expr = " OR ".join(f'{field_name} = "{nested_value}"' for nested_value in field_value)

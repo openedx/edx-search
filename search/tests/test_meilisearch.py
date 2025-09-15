@@ -11,6 +11,7 @@ import meilisearch
 import pytest
 from requests import Response
 
+from search.api import course_discovery_aggregations
 from search.utils import DateRange, ValueRange
 import search.meilisearch
 
@@ -51,6 +52,8 @@ class EngineTests(django.test.TestCase):
     """
     MeilisearchEngine tests.
     """
+
+    aggregation_terms = course_discovery_aggregations()
 
     def test_index_empty_document(self):
         assert not search.meilisearch.process_nested_document({})
@@ -198,22 +201,24 @@ class EngineTests(django.test.TestCase):
         } == aggs["modes"]
 
     def test_search_params(self):
-        params = search.meilisearch.get_search_params()
+        params = search.meilisearch.get_search_params(aggregation_terms=self.aggregation_terms)
         self.assertTrue(params["showRankingScore"])
 
-        params = search.meilisearch.get_search_params(from_=0)
+        params = search.meilisearch.get_search_params(from_=0, aggregation_terms=self.aggregation_terms)
         assert 0 == params["offset"]
 
     def test_search_params_exclude_dictionary(self):
         # Simple value
         params = search.meilisearch.get_search_params(
-            exclude_dictionary={"course_visibility": "none"}
+            exclude_dictionary={"course_visibility": "none"},
+            aggregation_terms=self.aggregation_terms
         )
         assert ['NOT course_visibility = "none"'] == params["filter"]
 
         # Multiple IDs
         params = search.meilisearch.get_search_params(
-            exclude_dictionary={"id": ["1", "2"]}
+            exclude_dictionary={"id": ["1", "2"]},
+            aggregation_terms=self.aggregation_terms
         )
         assert [
             f'NOT {search.meilisearch.PRIMARY_KEY_FIELD_NAME} = "{search.meilisearch.id2pk("1")}"',
@@ -221,7 +226,8 @@ class EngineTests(django.test.TestCase):
         ] == params["filter"]
 
         params = search.meilisearch.get_search_params(
-            exclude_dictionary={"language": ["en", "fr"]}
+            exclude_dictionary={"language": ["en", "fr"]},
+            aggregation_terms=self.aggregation_terms
         )
         assert ['NOT language = "en"', 'NOT language = "fr"'] == params["filter"]
 
@@ -230,7 +236,8 @@ class EngineTests(django.test.TestCase):
             field_dictionary={
                 "course": "course-v1:testorg+test1+alpha",
                 "org": "testorg",
-            }
+            },
+            aggregation_terms=self.aggregation_terms,
         )
         assert [
             'course = "course-v1:testorg+test1+alpha"',
@@ -242,7 +249,8 @@ class EngineTests(django.test.TestCase):
             field_dictionary={
                 'mode': 'honor',
                 "org": ["testorg", "testorg2"],
-            }
+            },
+            aggregation_terms=self.aggregation_terms,
         )
 
         assert [
@@ -252,18 +260,21 @@ class EngineTests(django.test.TestCase):
 
     def test_search_params_filter_dictionary(self):
         params = search.meilisearch.get_search_params(
-            filter_dictionary={"key": "value"}
+            filter_dictionary={"key": "value"},
+            aggregation_terms=self.aggregation_terms,
         )
         assert ['key = "value" OR key NOT EXISTS'] == params["filter"]
 
     def test_search_params_value_range(self):
         params = search.meilisearch.get_search_params(
-            filter_dictionary={"value": ValueRange(lower=1, upper=2)}
+            filter_dictionary={"value": ValueRange(lower=1, upper=2)},
+            aggregation_terms=self.aggregation_terms,
         )
         assert ["(value >= 1 AND value <= 2) OR value NOT EXISTS"] == params["filter"]
 
         params = search.meilisearch.get_search_params(
-            filter_dictionary={"value": ValueRange(lower=1)}
+            filter_dictionary={"value": ValueRange(lower=1)},
+            aggregation_terms=self.aggregation_terms,
         )
         assert ["value >= 1 OR value NOT EXISTS"] == params["filter"]
 
@@ -273,14 +284,16 @@ class EngineTests(django.test.TestCase):
                 "enrollment_end": DateRange(
                     lower=datetime(2024, 1, 1), upper=datetime(2024, 1, 2)
                 )
-            }
+            },
+            aggregation_terms=self.aggregation_terms,
         )
         assert [
             "(enrollment_end >= 1704067200.0 AND enrollment_end <= 1704153600.0) OR enrollment_end NOT EXISTS"
         ] == params["filter"]
 
         params = search.meilisearch.get_search_params(
-            filter_dictionary={"enrollment_end": DateRange(lower=datetime(2024, 1, 1))}
+            filter_dictionary={"enrollment_end": DateRange(lower=datetime(2024, 1, 1))},
+            aggregation_terms=self.aggregation_terms,
         )
         assert [
             "enrollment_end >= 1704067200.0 OR enrollment_end NOT EXISTS"
@@ -288,6 +301,7 @@ class EngineTests(django.test.TestCase):
 
     def test_search_params_sort_by(self):
         params = search.meilisearch.get_search_params(
+            aggregation_terms=self.aggregation_terms,
             sort_by=[
                 search.dataclasses.SortField(name="start", order="asc"),
                 search.dataclasses.SortField(name="title", order="desc"),
@@ -299,7 +313,7 @@ class EngineTests(django.test.TestCase):
         ] == params["sort"]
 
         # No sort by
-        params = search.meilisearch.get_search_params(sort_by=[])
+        params = search.meilisearch.get_search_params(aggregation_terms=self.aggregation_terms, sort_by=[])
         assert params.get("sort") is None
 
     @patch('search.meilisearch.MeilisearchEngine.meilisearch_index', new_callable=PropertyMock)
@@ -417,7 +431,7 @@ class EngineTests(django.test.TestCase):
         filter_dict = {
             "language": ["en", "fr"]
         }
-        rules = search.meilisearch.get_filter_rules(filter_dict)
+        rules = search.meilisearch.get_filter_rules(filter_dict, or_fields=["org", "modes", "language"])
 
         self.assertListEqual(rules, ['language = "en" OR language = "fr"'])
 
@@ -479,6 +493,7 @@ class EngineTests(django.test.TestCase):
         results = engine.search(
             query_string='',
             field_dictionary={'language': ['en']},
+            aggregation_terms=self.aggregation_terms,
             is_multivalue=True,
         )
         aggregations = results["aggs"]
@@ -516,6 +531,7 @@ class EngineTests(django.test.TestCase):
         results = engine.search(
             query_string='',
             field_dictionary={'language': ['en']},
+            aggregation_terms=self.aggregation_terms,
             is_multivalue=False,
         )
         aggregations = results["aggs"]
@@ -538,7 +554,11 @@ class EngineTests(django.test.TestCase):
                 "processingTimeMs": 1,
             }
         )
-        engine.search(field_dictionary={"language": "en"}, is_multivalue=False)
+        engine.search(
+            field_dictionary={"language": "en"},
+            aggregation_terms=self.aggregation_terms,
+            is_multivalue=False
+        )
         engine._expand_facet_distibutions.assert_not_called()  # pylint: disable=protected-access
 
     def test_facet_expansion_is_triggered_if_multivalue(self):
@@ -552,7 +572,12 @@ class EngineTests(django.test.TestCase):
                 "processingTimeMs": 1,
             }
         )
-        engine.search(query_string="demo", field_dictionary={"language": ["en"]}, is_multivalue=True)
+        engine.search(
+            query_string="demo",
+            field_dictionary={"language": ["en"]},
+            aggregation_terms=self.aggregation_terms,
+            is_multivalue=True
+        )
         engine._expand_facet_distibutions.assert_called_once()  # pylint: disable=protected-access
 
     def test_multivalue_nonfacet_field_expands_to_multiple_rules(self):
