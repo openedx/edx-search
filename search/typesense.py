@@ -1,8 +1,16 @@
 """
-This is a search engine for Typesense. It implements the edx-search's SearchEngine
-API, such that it can be setup as a drop-in replacement for the ElasticSearchEngine. To
-switch to this engine, you should run a Typesense instance and define the following
-setting:
+This is a search engine for Typesense. It implements the edx-search's
+SearchEngine API, such that it can be setup as a drop-in replacement for the
+ElasticSearchEngine, for its two main use cases:
+- The "Course Discovery" view (http://local.openedx.io:8000/courses on Tutor
+  devstack)
+- The Courseware content search in the Learning MFE
+  (gated by the `courseware.mfe_courseware_search` waffle flag).
+
+Other use cases are not supported.
+
+To switch to this engine, you should run a Typesense instance and define the
+following setting:
 
     SEARCH_ENGINE = "search.typesense.TypesenseEngine"
 
@@ -10,11 +18,12 @@ You will then need to create the new indices by running:
 
     ./manage.py lms shell -c "import search.typesense; search.typesense.create_indexes()"
 
+^ This manual index creation is a temporary approach, while we're evaluating
+Typesense. A proper long-term approach is needed for all our search engines, as
+discussed at https://github.com/openedx/edx-platform/issues/36868 .
+
 For more information about the Typesense API in Python, check
 https://github.com/typesense/typesense-python
-
-(TODO: potentially copy other docs that were here in meilisearch.py, if they are
- also relevant to Typesense)
 """
 import logging
 import typing as t
