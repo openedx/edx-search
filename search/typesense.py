@@ -266,6 +266,7 @@ def get_typesense_index_name(index_name: str) -> str:
     """
     return settings.TYPESENSE_COLLECTION_PREFIX + index_name
 
+
 def _escape_str(value: str):
     """ Escape a string for use in a Typesense filter """
     # https://typesense.org/docs/guide/tips-for-filtering.html#escaping-special-characters
@@ -317,7 +318,7 @@ def get_search_params(
 
 
 def get_filter_rules(
-    rule_dict: dict[str, t.Any], exclude: bool = False, optional: bool = False
+    rule_dict: dict[str, t.Any], optional: bool = False
 ) -> list[str | list[str]]:
     """
     Convert inclusion/exclusion rules.
@@ -326,23 +327,18 @@ def get_filter_rules(
     for key, value in rule_dict.items():
         if isinstance(value, list):
             key_rules = [
-                get_filter_rule(key, v, exclude=exclude, optional=optional)
+                get_filter_rule(key, v, optional=optional)
                 for v in value
             ]
-            if exclude:
-                rules.extend(key_rules)
-            else:
-                rules.append(key_rules)
+            rules.append(key_rules)
         else:
             rules.append(
-                get_filter_rule(key, value, exclude=exclude, optional=optional)
+                get_filter_rule(key, value, optional=optional)
             )
     return rules
 
 
-def get_filter_rule(
-    key: str, value: str, exclude: bool = False, optional: bool = False
-) -> str:
+def get_filter_rule(key: str, value: str, optional: bool = False) -> str:
     """
     Create a Typesense filter rule.
 
