@@ -58,6 +58,7 @@ COURSE_INFO_INDEX = getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info
 COURSE_CONTENT_INDEX = getattr(settings, "COURSEWARE_CONTENT_INDEX_NAME", "courseware_content")
 INDEX_CONFIGURATION = {
     COURSE_INFO_INDEX: {
+        # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
             {"name": "start", "type": "datetime", "optional": True},
             {"name": "end", "type": "datetime", "optional": True},
@@ -71,8 +72,18 @@ INDEX_CONFIGURATION = {
         "query_fields": ["course", "org", "number", "content"],
     },
     COURSE_CONTENT_INDEX: {
+        # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
             {"name": "start_date", "type": "datetime", "optional": True},
+            # Enable stemming for the "content" field, so that e.g.
+            # searching for "run" will match "running", "runs", "ran".
+            # Unfortunately, this could break indexing if non-string fields get
+            # included in "content", which is possible (XBlocks can return
+            # whatever data they want from their `index_dictionary()` method).
+            # So far, the core XBlocks seem to always return strings for
+            # "content" sub-fields though.
+            {"name": "content", "type": "object"},
+            {"name": "content\\..*", "type": "string", "stem": True},
         ],
         # Which fields to use for text matches. Required by Typesense.
         "query_fields": ["content"],
