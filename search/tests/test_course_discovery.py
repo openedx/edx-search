@@ -492,6 +492,8 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
     Integration tests using real Meilisearch engine.
     """
 
+    meilisearch_client = get_meilisearch_client()
+
     def setUp(self):
         super().setUp()
         create_indexes({TEST_INDEX_NAME: [
@@ -504,18 +506,20 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
         ]})
         self.wait_for_meilisearch_indexing()
 
-    def tearDown(self):
-        client = get_meilisearch_client()
-        client.index(TEST_INDEX_NAME).delete()
+    def tearDown(self):  # pragma: no cover
+        try:
+            self.meilisearch_client.index(TEST_INDEX_NAME).delete()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
         super().tearDown()
 
-    @staticmethod
-    def wait_for_meilisearch_indexing():
+    def wait_for_meilisearch_indexing(self):  # pragma: no cover
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
-        client = get_meilisearch_client()
-        task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
-        client.wait_for_task(task.uid)
-        time.sleep(0.2)
+        task = self.meilisearch_client.index(TEST_INDEX_NAME).get_tasks().results[-1]
+        if not task:
+            return
+        self.meilisearch_client.wait_for_task(task.uid)
+        time.sleep(0.1)
 
     def test_course_matching_empty_index(self):
         """ Check for empty result count before indexing """

@@ -186,13 +186,20 @@ class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
         )
         self.wait_for_meilisearch_indexing()
 
-    def wait_for_meilisearch_indexing(self):
+    def tearDown(self):  # pragma: no cover
+        try:
+            self.meilisearch_client.index(TEST_INDEX_NAME).delete()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+        super().tearDown()
+
+    def wait_for_meilisearch_indexing(self):  # pragma: no cover
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
         task = self.meilisearch_client.index(TEST_INDEX_NAME).get_tasks().results[-1]
         if not task:
             return
         self.meilisearch_client.wait_for_task(task.uid)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
     def test_search_string(self):
         """Tests that keyword search returns correct number of matching documents."""
@@ -322,7 +329,7 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         if not task:
             return
         self.meilisearch_client.wait_for_task(task.uid)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
     def test_search_string(self):
         """Tests that keyword search returns correct number of matching documents."""
