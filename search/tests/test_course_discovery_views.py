@@ -438,10 +438,10 @@ class TestElasticsearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
     def setUp(self):
         super().setUp()
         _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
         cache.clear()
         config_body = {}
-        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
+        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)  # pylint: disable=unexpected-keyword-arg
         DemoCourse.reset_count()
         self._searcher = None
 
@@ -457,7 +457,7 @@ class TestElasticsearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
 
     def tearDown(self):
         _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
         self._searcher = None
         super().tearDown()
 
@@ -547,10 +547,10 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def setUp(self):
         super().setUp()
         _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
         cache.clear()
         config_body = {}
-        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)
+        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)  # pylint: disable=unexpected-keyword-arg
         DemoCourse.reset_count()
         self._searcher = None
 
