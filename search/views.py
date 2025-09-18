@@ -34,10 +34,11 @@ def _process_pagination_values(request):
     return size, from_, page
 
 
-def _process_field_values(request):
+def _process_field_values(request, is_multivalue=False):
     """ Create separate dictionary of supported filter values provided """
+    get_value = request.POST.getlist if is_multivalue else request.POST.get
     return {
-        field_key: request.POST[field_key]
+        field_key: get_value(field_key)
         for field_key in request.POST
         if field_key in course_discovery_filter_fields()
     }
@@ -138,11 +139,24 @@ def do_search(request, course_id=None):
 
 @require_POST
 def course_discovery(request):
+    """ Legacy single-value search endpoint """
+    return _course_discovery(request, is_multivalue=False)
+
+
+@require_POST
+def course_discovery_multivalue(request):
+    """ Main endpoint for multi-value faceted search """
+    return _course_discovery(request, is_multivalue=True)
+
+
+@require_POST
+def _course_discovery(request, is_multivalue=False):
     """
     Search for courses
 
     Args:
         request (required) - django request object
+        is_multivalue (optional) - boolean indicating whether to use multi-value faceted search
 
     Returns:
         http json response with the following fields
@@ -171,7 +185,7 @@ def course_discovery(request):
 
     try:
         size, from_, page = _process_pagination_values(request)
-        field_dictionary = _process_field_values(request)
+        field_dictionary = _process_field_values(request, is_multivalue=is_multivalue)
 
         # Analytics - log search request
         track.emit(
@@ -189,6 +203,7 @@ def course_discovery(request):
             from_=from_,
             field_dictionary=field_dictionary,
             enable_course_sorting_by_start_date=enable_course_sorting_by_start_date,
+            is_multivalue=is_multivalue,
         )
 
         # Analytics - log search results before sending to browser
