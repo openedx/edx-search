@@ -67,6 +67,11 @@ INDEX_CONFIGURATION = {
             {"name": "org", "type": "string", "facet": True},
             {"name": "modes", "type": "string[]", "facet": True},
             {"name": "language", "type": "string", "facet": True},
+            # Enable stemming for the "content" fields, so that e.g.
+            # searching for "run" will match "running", "runs", "ran" on
+            # the content.(overview|display_name|short_description) fields.
+            {"name": "content", "type": "object"},
+            {"name": "content\\..*", "type": "string", "stem": True},
         ],
         # Which fields to use for text matches. Required by Typesense.
         "query_fields": ["course", "org", "number", "content"],
