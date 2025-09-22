@@ -41,6 +41,10 @@ def convert_doc_datatypes(doc: dict[str, Any], *, record_nulls=False) -> dict[st
             # super important, but the presence of the offset field is used to
             # detect timestamp fields and convert them back to datetime values
             # when loading search results.
+            # FIXME: storing just the UTC offset is not actually sufficient -
+            # see https://github.com/openedx/edx-search/pull/222#discussion_r2366482666
+            # We should either store the full timezone or throw an error for
+            # non-UTC datetimes. (Do we have non-UTC datetimes anyways?)
             processed[key] = value.timestamp()
             utcoffset = value.utcoffset().seconds if value.tzinfo else 0
             processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
