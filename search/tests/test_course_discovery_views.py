@@ -323,7 +323,7 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         )
         self.wait_for_meilisearch_indexing()
 
-    def wait_for_meilisearch_indexing(self):
+    def wait_for_meilisearch_indexing(self):  # pragma: no cover
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
         task = self.meilisearch_client.index(TEST_INDEX_NAME).get_tasks().results[-1]
         if not task:
