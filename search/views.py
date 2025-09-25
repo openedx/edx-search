@@ -144,7 +144,7 @@ def course_discovery(request):
 
 
 @require_POST
-def course_discovery_multivalue(request):
+def course_list_search(request):
     """ Main endpoint for multi-value faceted search """
     return _course_discovery(request, is_multivalue=True)
 

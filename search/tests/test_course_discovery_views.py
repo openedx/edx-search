@@ -277,11 +277,11 @@ class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
 )
 class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     """
-    Integration tests for Meilisearch + /course_discovery_multivalue/ endpoint
+    Integration tests for Meilisearch + course_list_search endpoint
     """
 
     meilisearch_client = get_meilisearch_client()
-    multivalue_search_url = reverse("course_discovery_multivalue")
+    course_list_search_url = reverse("course_list_search")
 
     def setUp(self):
         super().setUp()
@@ -333,15 +333,15 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
 
     def test_search_string(self):
         """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
 
-        code, results = post_discovery_request({"search_string": "right"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"search_string": "right"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
 
-        code, results = post_discovery_request({"search_string": "parameter"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"search_string": "parameter"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
@@ -352,14 +352,14 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
 
-        code, results = post_discovery_request({"org": "OrgB"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"org": "OrgB"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
 
     def test_search_with_pagination(self):
         """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"page_size": 2}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(len(results["results"]), 2)
 
@@ -370,14 +370,14 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_bad_search_string(self):
         """Tests that non-matching search terms return no results."""
         code, results = post_discovery_request(
-            {"search_string": "doesnotexist123"}, address=self.multivalue_search_url
+            {"search_string": "doesnotexist123"}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 0)
 
     def test_no_filters_returns_all_aggregations(self):
         """Tests that full facet counts are returned when no filters are applied."""
-        code, results = post_discovery_request({}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
@@ -391,7 +391,7 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_single_value_filter_keeps_full_facet(self):
         """Tests that single-value filters preserve all facet options in aggregations."""
         code, results = post_discovery_request(
-            {"language": ["en"]}, address=self.multivalue_search_url
+            {"language": ["en"]}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
@@ -405,7 +405,7 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_multi_value_filter_keeps_full_facet(self):
         """Tests that multi-value filters preserve all facet options in aggregations."""
         code, results = post_discovery_request(
-            {"language": ["en", "fr"]}, address=self.multivalue_search_url
+            {"language": ["en", "fr"]}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
@@ -421,7 +421,7 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         """Tests that combining multiple facet filters returns correct aggregations."""
         code, results = post_discovery_request(
             {"language": ["en"], "org": ["OrgA", "OrgC"]},
-            address=self.multivalue_search_url
+            address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
@@ -546,10 +546,10 @@ class TestElasticsearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
 )
 class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     """
-    Integration tests for Elasticsearch + /course_discovery_multivalue/ endpoint
+    Integration tests for Elasticsearch + course_list_search endpoint
     """
 
-    multivalue_search_url = reverse("course_discovery_multivalue")
+    course_list_search_url = reverse("course_list_search")
 
     def setUp(self):
         super().setUp()
@@ -585,15 +585,15 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
 
     def test_search_string(self):
         """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
 
-        code, results = post_discovery_request({"search_string": "right"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"search_string": "right"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
 
-        code, results = post_discovery_request({"search_string": "parameter"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"search_string": "parameter"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
@@ -604,14 +604,14 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
 
-        code, results = post_discovery_request({"org": "OrgB"}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"org": "OrgB"}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
 
     def test_search_with_pagination(self):
         """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({"page_size": 2}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         self.assertEqual(len(results["results"]), 2)
 
@@ -622,14 +622,14 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_bad_search_string(self):
         """Tests that non-matching search terms return no results."""
         code, results = post_discovery_request(
-            {"search_string": "doesnotexist123"}, address=self.multivalue_search_url
+            {"search_string": "doesnotexist123"}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 0)
 
     def test_no_filters_returns_all_aggregations(self):
         """Tests that full facet counts are returned when no filters are applied."""
-        code, results = post_discovery_request({}, address=self.multivalue_search_url)
+        code, results = post_discovery_request({}, address=self.course_list_search_url)
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
@@ -643,7 +643,7 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_single_value_filter_keeps_full_facet(self):
         """Tests that single-value filters preserve all facet options in aggregations."""
         code, results = post_discovery_request(
-            {"language": ["en"]}, address=self.multivalue_search_url
+            {"language": ["en"]}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
@@ -657,7 +657,7 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
     def test_multi_value_filter_keeps_full_facet(self):
         """Tests that multi-value filters preserve all facet options in aggregations."""
         code, results = post_discovery_request(
-            {"language": ["en", "fr"]}, address=self.multivalue_search_url
+            {"language": ["en", "fr"]}, address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
@@ -673,7 +673,7 @@ class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         """Tests that combining multiple facet filters returns correct aggregations."""
         code, results = post_discovery_request(
             {"language": ["en"], "org": ["OrgA", "OrgC"]},
-            address=self.multivalue_search_url
+            address=self.course_list_search_url
         )
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
