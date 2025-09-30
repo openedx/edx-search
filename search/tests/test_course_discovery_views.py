@@ -162,6 +162,8 @@ def setup_meilisearch():
     client = get_meilisearch_client()
     try:
         client.get_index(TEST_INDEX_NAME).delete()
+        task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
+        client.wait_for_task(task.uid, timeout_in_ms=5000)
     except MeilisearchApiError:
         pass
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -170,15 +172,15 @@ def setup_meilisearch():
     create_indexes({TEST_INDEX_NAME: [
         "language", "modes", "org", "catalog_visibility", "enrollment_start", "enrollment_end",
     ]})
+    task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
+    client.wait_for_task(task.uid, timeout_in_ms=5000)
 
     def wait():
         task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
         if not task:
             return
-        client.wait_for_task(task.uid)
-        time.sleep(0.1)
+        client.wait_for_task(task.uid, timeout_in_ms=5000)
 
-    wait()
     return {"search_engine": "search.meilisearch.MeilisearchEngine", "wait": wait}
 
 
