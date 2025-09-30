@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from elasticsearch.client import Elasticsearch
+from meilisearch.errors import MeilisearchApiError
 
 from search.meilisearch import create_indexes, get_meilisearch_client
 from search.tests.tests import TEST_INDEX_NAME
@@ -162,8 +163,9 @@ class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
         super().setUp()
         try:
             self.meilisearch_client.get_index(TEST_INDEX_NAME).delete()
-        except Exception:  # pylint: disable=broad-exception-caught
+        except MeilisearchApiError:
             pass
+
         create_indexes({TEST_INDEX_NAME: [
             "language",
             "modes",
@@ -185,13 +187,6 @@ class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
             self.searcher, {"content": {"short_description": "Find this one somehow"}}
         )
         self.wait_for_meilisearch_indexing()
-
-    def tearDown(self):  # pragma: no cover
-        try:
-            self.meilisearch_client.index(TEST_INDEX_NAME).delete()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-        super().tearDown()
 
     def wait_for_meilisearch_indexing(self):  # pragma: no cover
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
@@ -287,8 +282,9 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         super().setUp()
         try:
             self.meilisearch_client.get_index(TEST_INDEX_NAME).delete()
-        except Exception:  # pylint: disable=broad-exception-caught
+        except MeilisearchApiError:
             pass
+
         create_indexes({TEST_INDEX_NAME: [
             "language",
             "modes",

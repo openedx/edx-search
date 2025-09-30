@@ -12,6 +12,7 @@ from django.core.cache import cache
 from django.test import TestCase
 from django.test.utils import override_settings
 from elasticsearch import Elasticsearch
+from meilisearch.errors import MeilisearchApiError
 
 from search.api import course_discovery_search, NoSearchEngineError
 from search.elastic import ElasticSearchEngine
@@ -496,6 +497,11 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
 
     def setUp(self):
         super().setUp()
+        try:
+            self.meilisearch_client.index(TEST_INDEX_NAME).delete()
+        except MeilisearchApiError:
+            pass
+
         create_indexes({TEST_INDEX_NAME: [
             "language",
             "modes",
@@ -505,13 +511,6 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
             "enrollment_end",
         ]})
         self.wait_for_meilisearch_indexing()
-
-    def tearDown(self):  # pragma: no cover
-        try:
-            self.meilisearch_client.index(TEST_INDEX_NAME).delete()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-        super().tearDown()
 
     def wait_for_meilisearch_indexing(self):  # pragma: no cover
         """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
