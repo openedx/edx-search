@@ -1,4 +1,5 @@
 """ High-level view tests"""
+import ddt
 import time
 
 from django.core.cache import cache
@@ -146,35 +147,51 @@ class DiscoveryUrlTest(MockSearchUrlTest):
         self.assertGreater(code, 499)
         self.assertEqual(results["error"], 'An error occurred when searching for "sun"')
 
+test_settings = {
+    "COURSEWARE_CONTENT_INDEX_NAME": TEST_INDEX_NAME,
+    "COURSEWARE_INFO_INDEX_NAME": TEST_INDEX_NAME,
+}
 
-@override_settings(
-    SEARCH_ENGINE="search.meilisearch.MeilisearchEngine",
-    COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME,
-    COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME,
-)
-class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
-    """
-    Integration tests for Meilisearch + /course_discovery/ endpoint
-    """
+def setup_meilisearch():
+    client = get_meilisearch_client()
+    try:
+        client.get_index(TEST_INDEX_NAME).delete()
+    except MeilisearchApiError:
+        pass
 
-    meilisearch_client = get_meilisearch_client()
+    create_indexes({TEST_INDEX_NAME: [
+        "language", "modes", "org", "catalog_visibility", "enrollment_start", "enrollment_end",
+    ]})
 
-    def setUp(self):
-        super().setUp()
-        try:
-            self.meilisearch_client.get_index(TEST_INDEX_NAME).delete()
-        except MeilisearchApiError:
-            pass
+    def wait():
+        task = client.index(TEST_INDEX_NAME).get_tasks().results[-1]
+        if not task:
+            return
+        client.wait_for_task(task.uid)
+        time.sleep(0.1)
 
-        create_indexes({TEST_INDEX_NAME: [
-            "language",
-            "modes",
-            "org",
-            "catalog_visibility",
-            "enrollment_start",
-            "enrollment_end",
-        ]})
-        self.wait_for_meilisearch_indexing()
+    return {"search_engine": "search.meilisearch.MeilisearchEngine", "wait": wait}
+
+def setup_elasticsearch():
+    es = Elasticsearch()
+    es.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])
+    es.indices.create(index=TEST_INDEX_NAME, ignore=400, body={})
+
+    return {"search_engine": "search.tests.utils.ForceRefreshElasticSearchEngine", "wait": lambda: None}
+
+# -------------------------------------------------------------------
+# Single-value tests (/course_discovery/)
+# -------------------------------------------------------------------
+@ddt.ddt
+@override_settings(**test_settings)
+class CourseListSearchSingleValueTest(TestCase, SearcherMixin):
+    url = reverse("course_discovery")
+
+    def _init_engine(self, config):
+        from django.conf import settings
+        settings.SEARCH_ENGINE = config["search_engine"]
+        self._searcher = None
+        self.wait = config["wait"]
 
         DemoCourse.reset_count()
         DemoCourse.get_and_index(
@@ -186,195 +203,196 @@ class TestMeilisearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
         DemoCourse.get_and_index(
             self.searcher, {"content": {"short_description": "Find this one somehow"}}
         )
-        self.wait_for_meilisearch_indexing()
+        self.wait()
 
-    def wait_for_meilisearch_indexing(self):  # pragma: no cover
-        """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
-        task = self.meilisearch_client.index(TEST_INDEX_NAME).get_tasks().results[-1]
-        if not task:
-            return
-        self.meilisearch_client.wait_for_task(task.uid)
-        time.sleep(0.1)
+    def _post(self, params):
+        return post_discovery_request(params, address=self.url)
 
-    def test_search_string(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_search_string(self, label, config):
         """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({})
+        self._init_engine(config)
+
+        code, results = self._post({})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
 
-        code, results = post_discovery_request({"search_string": "right"})
-        self.assertEqual(code, 200)
+        code, results = self._post({"search_string": "right"})
         self.assertEqual(results["total"], 1)
 
-        code, results = post_discovery_request({"search_string": "parameter"})
+        code, results = self._post({"search_string": "parameter"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
-    def test_org_filter(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_org_filter(self, label, config):
         """Tests filtering results by the 'org' facet."""
-        code, results = post_discovery_request({"org": "OrgA"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
+        self._init_engine(config)
 
-        code, results = post_discovery_request({"org": "OrgB"})
-        self.assertEqual(code, 200)
+        code, results = self._post({"org": "OrgA"})
         self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
 
-    def test_search_with_pagination(self):
+        code, results = self._post({"org": "OrgB"})
+        self.assertEqual(results["total"], 1)
+
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_search_with_pagination(self, label, config):
         """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2})
-        self.assertEqual(code, 200)
+        self._init_engine(config)
+
+        code, results = self._post({"page_size": 2})
         self.assertEqual(len(results["results"]), 2)
 
-        code, results = post_discovery_request({"page_size": 2, "page_index": 1})
-        self.assertEqual(code, 200)
+        code, results = self._post({"page_size": 2, "page_index": 1})
         self.assertEqual(len(results["results"]), 1)
 
-    def test_bad_search_string(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_bad_search_string(self, label, config):
         """Tests that non-matching search terms return no results."""
-        code, results = post_discovery_request({"search_string": "doesnotexist123"})
-        self.assertEqual(code, 200)
+        self._init_engine(config)
+
+        code, results = self._post({"search_string": "doesnotexist123"})
         self.assertEqual(results["total"], 0)
 
-    def test_aggregations_basic(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_aggregations_basic(self, label, config):
         """Tests that facet aggregations include all indexed orgs."""
-        code, results = post_discovery_request({})
+        self._init_engine(config)
+
+        code, results = self._post({})
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
+
         self.assertIn("org", aggs)
         self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
         self.assertEqual(aggs["org"]["terms"].get("OrgB", 0), 1)
 
-    def test_aggregations_filtered_down(self):
+
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_aggregations_filtered_down(self, label, config):
         """Tests that aggregations reflect active filters correctly."""
-        code, results = post_discovery_request({"org": "OrgA"})
-        self.assertEqual(code, 200)
+        self._init_engine(config)
+
+        code, results = self._post({"org": "OrgA"})
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
         self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
         self.assertNotIn("OrgB", aggs["org"]["terms"])
 
-    def test_aggregations_empty_search(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_aggregations_empty_search(self, label, config):
         """Tests that aggregations are returned even if there are no matches."""
-        code, results = post_discovery_request({"org": "DoesNotExist"})
+        self._init_engine(config)
+        code, results = self._post({"org": "DoesNotExist"})
         self.assertEqual(code, 200)
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
         self.assertEqual(aggs["org"]["terms"], {})
 
+# -------------------------------------------------------------------
+# Multi-value tests (/course_list_search/)
+# -------------------------------------------------------------------
+@ddt.ddt
+@override_settings(**test_settings)
+class CourseListSearchMultiValueTest(TestCase, SearcherMixin):
+    url = reverse("course_list_search")
 
-@override_settings(
-    SEARCH_ENGINE="search.meilisearch.MeilisearchEngine",
-    COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME,
-    COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME,
-)
-class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
-    """
-    Integration tests for Meilisearch + course_list_search endpoint
-    """
-
-    meilisearch_client = get_meilisearch_client()
-    course_list_search_url = reverse("course_list_search")
-
-    def setUp(self):
-        super().setUp()
-        try:
-            self.meilisearch_client.get_index(TEST_INDEX_NAME).delete()
-        except MeilisearchApiError:
-            pass
-
-        create_indexes({TEST_INDEX_NAME: [
-            "language",
-            "modes",
-            "org",
-            "catalog_visibility",
-            "enrollment_start",
-            "enrollment_end",
-        ]})
-        self.wait_for_meilisearch_indexing()
+    def _init_engine(self, config):
+        from django.conf import settings
+        settings.SEARCH_ENGINE = config["search_engine"]
+        self._searcher = None
+        self.wait = config["wait"]
 
         DemoCourse.reset_count()
         DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgA",
-                "language": "en",
-                "content": {"short_description": "Find this one with the right parameter"}
-            }
+            self.searcher, {"org": "OrgA", "language": "en",
+                            "content": {"short_description": "Find this one with the right parameter"}}
         )
         DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgB",
-                "language": "fr",
-                "content": {"short_description": "Find this one with another parameter"}
-            }
+            self.searcher, {"org": "OrgB", "language": "fr",
+                            "content": {"short_description": "Find this one with another parameter"}}
         )
         DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgC",
-                "language": "en",
-                "content": {"short_description": "Find this one somehow"}
-            }
+            self.searcher, {"org": "OrgC", "language": "en",
+                            "content": {"short_description": "Find this one somehow"}}
         )
-        self.wait_for_meilisearch_indexing()
+        self.wait()
 
-    def wait_for_meilisearch_indexing(self):  # pragma: no cover
-        """Helper method adding a tiny delay for Meilisearch to finish updating the index."""
-        task = self.meilisearch_client.index(TEST_INDEX_NAME).get_tasks().results[-1]
-        if not task:
-            return
-        self.meilisearch_client.wait_for_task(task.uid)
-        time.sleep(0.1)
+    def _post(self, params):
+        return post_discovery_request(params, address=self.url)
 
-    def test_search_string(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_search_string(self, label, config):
         """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({}, address=self.course_list_search_url)
+        self._init_engine(config)
+
+        code, results = self._post({})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
 
-        code, results = post_discovery_request({"search_string": "right"}, address=self.course_list_search_url)
+        code, results = self._post({"search_string": "right"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
 
-        code, results = post_discovery_request({"search_string": "parameter"}, address=self.course_list_search_url)
+        code, results = self._post({"search_string": "parameter"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
-    def test_org_filter(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_org_filter(self, label, config):
         """Tests filtering results by the 'org' facet."""
-        code, results = post_discovery_request({"org": "OrgA"})
+        self._init_engine(config)
+
+        code, results = self._post({"org": "OrgA"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
 
-        code, results = post_discovery_request({"org": "OrgB"}, address=self.course_list_search_url)
+        code, results = self._post({"org": "OrgB"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 1)
         self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
 
-    def test_search_with_pagination(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_search_with_pagination(self, label, config):
         """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2}, address=self.course_list_search_url)
+        self._init_engine(config)
+
+        code, results = self._post({"page_size": 2})
         self.assertEqual(code, 200)
         self.assertEqual(len(results["results"]), 2)
 
-        code, results = post_discovery_request({"page_size": 2, "page_index": 1})
+        code, results = self._post({"page_size": 2, "page_index": 1})
         self.assertEqual(code, 200)
         self.assertEqual(len(results["results"]), 1)
 
-    def test_bad_search_string(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_bad_search_string(self, label, config):
         """Tests that non-matching search terms return no results."""
-        code, results = post_discovery_request(
-            {"search_string": "doesnotexist123"}, address=self.course_list_search_url
-        )
+        self._init_engine(config)
+
+        code, results = self._post({"search_string": "doesnotexist123"})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 0)
 
-    def test_no_filters_returns_all_aggregations(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_no_filters_returns_all_aggregations(self, label, config):
         """Tests that full facet counts are returned when no filters are applied."""
-        code, results = post_discovery_request({}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
+        self._init_engine(config)
+
+        code, results = self._post({})
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
         self.assertIn("language", aggs)
@@ -384,25 +402,23 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         self.assertEqual(aggs["language"]["terms"]["en"], 2)
         self.assertEqual(aggs["language"]["terms"]["fr"], 1)
 
-    def test_single_value_filter_keeps_full_facet(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_single_value_filter_keeps_full_facet(self, label, config):
         """Tests that single-value filters preserve all facet options in aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en"]}, address=self.course_list_search_url
-        )
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("language", aggs)
-        # This is the key difference with multi-facet logic:
-        # all language options should be returned, even though "en" is selected
-        self.assertIn("en", aggs["language"]["terms"])
-        self.assertIn("fr", aggs["language"]["terms"])
-        self.assertEqual(results["total"], 2)
+        self._init_engine(config)
 
-    def test_multi_value_filter_keeps_full_facet(self):
+        code, results = self._post({"language": ["en"]})
+        aggs = results.get("aggs", {})
+        self.assertIn("fr", aggs["language"]["terms"])
+
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_multi_value_filter_keeps_full_facet(self, label, config):
         """Tests that multi-value filters preserve all facet options in aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en", "fr"]}, address=self.course_list_search_url
-        )
+        self._init_engine(config)
+
+        code, results = self._post({"language": ["en", "fr"]})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 3)
 
@@ -413,264 +429,13 @@ class TestMeilisearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
         self.assertEqual(aggs["language"]["terms"]["en"], 2)
         self.assertEqual(aggs["language"]["terms"]["fr"], 1)
 
-    def test_combined_facet_filter_aggregated_correctly(self):
+    @ddt.data(("meili", setup_meilisearch()), ("es", setup_elasticsearch()))
+    @ddt.unpack
+    def test_combined_facet_filter_aggregated_correctly(self, label, config):
         """Tests that combining multiple facet filters returns correct aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en"], "org": ["OrgA", "OrgC"]},
-            address=self.course_list_search_url
-        )
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 2)
+        self._init_engine(config)
 
-        aggs = results.get("aggs", {})
-        self.assertIn("org", aggs)
-        self.assertIn("OrgA", aggs["org"]["terms"])
-        self.assertIn("OrgC", aggs["org"]["terms"])
-
-
-@override_settings(
-    SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine",
-    COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME,
-    COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME,
-)
-class TestElasticsearchSingleValueDiscoveryUrl(TestCase, SearcherMixin):
-    """
-    Integration tests for Elasticsearch + /course_discovery/ endpoint
-    """
-
-    def setUp(self):
-        super().setUp()
-        _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
-        cache.clear()
-        config_body = {}
-        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)  # pylint: disable=unexpected-keyword-arg
-        DemoCourse.reset_count()
-        self._searcher = None
-
-        DemoCourse.get_and_index(self.searcher, {
-            "org": "OrgA", "content": {"short_description": "Find this one with the right parameter"}
-        })
-        DemoCourse.get_and_index(self.searcher, {
-            "org": "OrgB", "content": {"short_description": "Find this one with another parameter"}
-        })
-        DemoCourse.get_and_index(self.searcher, {
-            "content": {"short_description": "Find this one somehow"}
-        })
-
-    def tearDown(self):
-        _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
-        self._searcher = None
-        super().tearDown()
-
-        DemoCourse.reset_count()
-
-    def test_search_string(self):
-        """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 3)
-
-        code, results = post_discovery_request({"search_string": "right"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-
-        code, results = post_discovery_request({"search_string": "parameter"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 2)
-
-    def test_org_filter(self):
-        """Tests filtering results by the 'org' facet."""
-        code, results = post_discovery_request({"org": "OrgA"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
-
-        code, results = post_discovery_request({"org": "OrgB"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
-
-    def test_search_with_pagination(self):
-        """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2})
-        self.assertEqual(code, 200)
-        self.assertEqual(len(results["results"]), 2)
-
-        code, results = post_discovery_request({"page_size": 2, "page_index": 1})
-        self.assertEqual(code, 200)
-        self.assertEqual(len(results["results"]), 1)
-
-    def test_bad_search_string(self):
-        """Tests that non-matching search terms return no results."""
-        code, results = post_discovery_request({"search_string": "doesnotexist123"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 0)
-
-    def test_aggregations_basic(self):
-        """Tests that facet aggregations include all indexed orgs."""
-        code, results = post_discovery_request({})
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("org", aggs)
-        self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
-        self.assertEqual(aggs["org"]["terms"].get("OrgB", 0), 1)
-
-    def test_aggregations_filtered_down(self):
-        """Tests that aggregations reflect active filters correctly."""
-        code, results = post_discovery_request({"org": "OrgA"})
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("org", aggs)
-        self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
-        self.assertNotIn("OrgB", aggs["org"]["terms"])
-
-    def test_aggregations_empty_search(self):
-        """Tests that aggregations are returned even if there are no matches."""
-        code, results = post_discovery_request({"org": "DoesNotExist"})
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("org", aggs)
-        self.assertEqual(aggs["org"]["terms"], {})
-
-
-@override_settings(
-    SEARCH_ENGINE="search.tests.utils.ForceRefreshElasticSearchEngine",
-    COURSEWARE_CONTENT_INDEX_NAME=TEST_INDEX_NAME,
-    COURSEWARE_INFO_INDEX_NAME=TEST_INDEX_NAME,
-)
-class TestElasticsearchMultiValueDiscoveryUrl(TestCase, SearcherMixin):
-    """
-    Integration tests for Elasticsearch + course_list_search endpoint
-    """
-
-    course_list_search_url = reverse("course_list_search")
-
-    def setUp(self):
-        super().setUp()
-        _elasticsearch = Elasticsearch()
-        _elasticsearch.indices.delete(index=TEST_INDEX_NAME, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
-        cache.clear()
-        config_body = {}
-        _elasticsearch.indices.create(index=TEST_INDEX_NAME, ignore=400, body=config_body)  # pylint: disable=unexpected-keyword-arg
-        DemoCourse.reset_count()
-        self._searcher = None
-
-        DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgA",
-                "language": "en",
-                "content": {"short_description": "Find this one with the right parameter"}
-            }
-        )
-        DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgB",
-                "language": "fr",
-                "content": {"short_description": "Find this one with another parameter"}
-            }
-        )
-        DemoCourse.get_and_index(
-            self.searcher, {
-                "org": "OrgC",
-                "language": "en",
-                "content": {"short_description": "Find this one somehow"}
-            }
-        )
-
-    def test_search_string(self):
-        """Tests that keyword search returns correct number of matching documents."""
-        code, results = post_discovery_request({}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 3)
-
-        code, results = post_discovery_request({"search_string": "right"}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-
-        code, results = post_discovery_request({"search_string": "parameter"}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 2)
-
-    def test_org_filter(self):
-        """Tests filtering results by the 'org' facet."""
-        code, results = post_discovery_request({"org": "OrgA"})
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgA")
-
-        code, results = post_discovery_request({"org": "OrgB"}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 1)
-        self.assertEqual(results["results"][0]["data"]["org"], "OrgB")
-
-    def test_search_with_pagination(self):
-        """Tests that pagination limits and offsets results correctly."""
-        code, results = post_discovery_request({"page_size": 2}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        self.assertEqual(len(results["results"]), 2)
-
-        code, results = post_discovery_request({"page_size": 2, "page_index": 1})
-        self.assertEqual(code, 200)
-        self.assertEqual(len(results["results"]), 1)
-
-    def test_bad_search_string(self):
-        """Tests that non-matching search terms return no results."""
-        code, results = post_discovery_request(
-            {"search_string": "doesnotexist123"}, address=self.course_list_search_url
-        )
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 0)
-
-    def test_no_filters_returns_all_aggregations(self):
-        """Tests that full facet counts are returned when no filters are applied."""
-        code, results = post_discovery_request({}, address=self.course_list_search_url)
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("org", aggs)
-        self.assertIn("language", aggs)
-        self.assertEqual(aggs["org"]["terms"]["OrgA"], 1)
-        self.assertEqual(aggs["org"]["terms"]["OrgB"], 1)
-        self.assertEqual(aggs["org"]["terms"]["OrgC"], 1)
-        self.assertEqual(aggs["language"]["terms"]["en"], 2)
-        self.assertEqual(aggs["language"]["terms"]["fr"], 1)
-
-    def test_single_value_filter_keeps_full_facet(self):
-        """Tests that single-value filters preserve all facet options in aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en"]}, address=self.course_list_search_url
-        )
-        self.assertEqual(code, 200)
-        aggs = results.get("aggs", {})
-        self.assertIn("language", aggs)
-        # This is the key difference with multi-facet logic:
-        # all language options should be returned, even though "en" is selected
-        self.assertIn("en", aggs["language"]["terms"])
-        self.assertIn("fr", aggs["language"]["terms"])
-        self.assertEqual(results["total"], 2)
-
-    def test_multi_value_filter_keeps_full_facet(self):
-        """Tests that multi-value filters preserve all facet options in aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en", "fr"]}, address=self.course_list_search_url
-        )
-        self.assertEqual(code, 200)
-        self.assertEqual(results["total"], 3)
-
-        aggs = results.get("aggs", {})
-        self.assertIn("language", aggs)
-        self.assertIn("en", aggs["language"]["terms"])
-        self.assertIn("fr", aggs["language"]["terms"])
-        self.assertEqual(aggs["language"]["terms"]["en"], 2)
-        self.assertEqual(aggs["language"]["terms"]["fr"], 1)
-
-    def test_combined_facet_filter_aggregated_correctly(self):
-        """Tests that combining multiple facet filters returns correct aggregations."""
-        code, results = post_discovery_request(
-            {"language": ["en"], "org": ["OrgA", "OrgC"]},
-            address=self.course_list_search_url
-        )
+        code, results = self._post({"language": ["en"], "org": ["OrgA", "OrgC"]})
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
