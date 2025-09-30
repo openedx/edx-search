@@ -1,5 +1,6 @@
 """ High-level view tests"""
 import time
+import logging
 import ddt
 
 from django.test import TestCase
@@ -13,6 +14,9 @@ from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import post_discovery_request, SearcherMixin
 from .test_views import MockSearchUrlTest
 from .test_course_discovery import DemoCourse
+
+
+log = logging.getLogger(__name__)
 
 
 @override_settings(ELASTIC_FIELD_MAPPINGS={
@@ -160,6 +164,8 @@ def setup_meilisearch():
         client.get_index(TEST_INDEX_NAME).delete()
     except MeilisearchApiError:
         pass
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        log.warning(f"Unexpected error deleting Meilisearch index: {e}")
 
     create_indexes({TEST_INDEX_NAME: [
         "language", "modes", "org", "catalog_visibility", "enrollment_start", "enrollment_end",
