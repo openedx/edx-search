@@ -37,7 +37,7 @@ class DemoCourse:
         course_copy.update({"id": "{}_{}".format(course_copy["id"], cls.demo_course_count)})
         if remove_fields:
             for remove_field in remove_fields:
-                if remove_field in course_copy:
+                if remove_field in course_copy:  # pragma: no cover
                     del course_copy[remove_field]
         return course_copy
 
