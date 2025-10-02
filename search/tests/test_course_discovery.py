@@ -5,6 +5,7 @@
 
 import time
 from datetime import datetime
+import logging
 import ddt
 
 from django.core.cache import cache
@@ -19,6 +20,9 @@ from search.tests.factories import DemoCourse
 from search.tests.utils import SearcherMixin, TEST_INDEX_NAME
 from search.meilisearch import get_meilisearch_client, create_indexes
 from .mock_search_engine import MockSearchEngine
+
+
+logger = logging.getLogger(__name__)
 
 
 @override_settings(SEARCH_ENGINE="search.tests.mock_search_engine.MockSearchEngine")
@@ -441,12 +445,14 @@ class TestMeilisearchCourseDiscoverySearch(TestCase, SearcherMixin):
 
     meilisearch_client = get_meilisearch_client()
 
-    def setUp(self):
+    def setUp(self):  # pragma: no cover
         super().setUp()
         try:
             self.meilisearch_client.index(TEST_INDEX_NAME).delete()
         except MeilisearchApiError:
             pass
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning(f"Unexpected error deleting Meilisearch index: {e}")
 
         create_indexes({TEST_INDEX_NAME: [
             "language",

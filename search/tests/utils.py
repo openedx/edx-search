@@ -88,7 +88,7 @@ class ErroringElasticImpl(Elasticsearch):
         raise exceptions.ElasticsearchException("This search operation failed")
 
 
-def setup_meilisearch(index_name, logger):
+def setup_meilisearch(index_name, logger):  # pragma: no cover
     """Helper method to set up Meilisearch engine"""
     client = get_meilisearch_client()
     try:
