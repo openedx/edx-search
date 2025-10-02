@@ -7,6 +7,7 @@ from elasticsearch import Elasticsearch, exceptions
 from meilisearch.errors import MeilisearchApiError
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
+from search.tests.factories import DemoCourse
 from search.elastic import ElasticSearchEngine
 from search.meilisearch import create_indexes, get_meilisearch_client
 
@@ -120,8 +121,6 @@ def setup_elasticsearch(index_name):
 
 def setup_democourse(searcher):
     """Set up a demo course to use in api tests"""
-    from search.tests.test_course_discovery import DemoCourse  # pylint: disable=import-outside-toplevel
-
     DemoCourse.reset_count()
     DemoCourse.get_and_index(
         searcher,

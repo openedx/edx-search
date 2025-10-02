@@ -3,8 +3,8 @@ from django.test.utils import override_settings
 
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import post_discovery_request, setup_democourse
+from search.tests.factories import DemoCourse
 from .test_views import MockSearchUrlTest
-from .test_course_discovery import DemoCourse
 
 
 @override_settings(ELASTIC_FIELD_MAPPINGS={
