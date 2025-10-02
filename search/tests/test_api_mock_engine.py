@@ -1,22 +1,10 @@
 """ High-level view tests"""
-import time
-import logging
-import ddt
-
-from django.test import TestCase
 from django.test.utils import override_settings
-from django.urls import reverse
-from elasticsearch.client import Elasticsearch
-from meilisearch.errors import MeilisearchApiError
 
-from search.meilisearch import create_indexes, get_meilisearch_client
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import post_discovery_request, setup_democourse
 from .test_views import MockSearchUrlTest
 from .test_course_discovery import DemoCourse
-
-
-log = logging.getLogger(__name__)
 
 
 @override_settings(ELASTIC_FIELD_MAPPINGS={

@@ -1,25 +1,18 @@
 """ High-level view tests"""
-import time
-import logging
 import uuid
+import logging
 import ddt
 
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from elasticsearch.client import Elasticsearch
-from meilisearch.errors import MeilisearchApiError
 
-from search.meilisearch import create_indexes, get_meilisearch_client
-from search.tests.tests import TEST_INDEX_NAME
 from search.search_engine_base import SearchEngine
 from search.tests.utils import post_discovery_request, setup_meilisearch, setup_elasticsearch, setup_democourse
-from .test_views import MockSearchUrlTest
 
-
-log = logging.getLogger(__name__)
 
 index_name = f"test_index_{uuid.uuid4().hex}"
+logger = logging.getLogger(__name__)
 
 
 @ddt.ddt
@@ -46,7 +39,7 @@ class CourseListSearchSingleValueTest(TestCase):
         """Helper method to send a post request"""
         return post_discovery_request(params, address=self.url)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_search_string(self, label, config):  # pylint: disable=unused-argument
         """Tests that keyword search returns correct number of matching documents."""
@@ -63,7 +56,7 @@ class CourseListSearchSingleValueTest(TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(results["total"], 2)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_org_filter(self, label, config):  # pylint: disable=unused-argument
         """Tests filtering results by the 'org' facet."""
@@ -75,7 +68,7 @@ class CourseListSearchSingleValueTest(TestCase):
         code, results = self._post({"org": "OrgB"})
         self.assertEqual(results["total"], 1)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_search_with_pagination(self, label, config):  # pylint: disable=unused-argument
         """Tests that pagination limits and offsets results correctly."""
@@ -87,7 +80,7 @@ class CourseListSearchSingleValueTest(TestCase):
         code, results = self._post({"page_size": 2, "page_index": 1})
         self.assertEqual(len(results["results"]), 1)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_bad_search_string(self, label, config):  # pylint: disable=unused-argument
         """Tests that non-matching search terms return no results."""
@@ -96,7 +89,7 @@ class CourseListSearchSingleValueTest(TestCase):
         code, results = self._post({"search_string": "doesnotexist123"})  # pylint: disable=unused-variable
         self.assertEqual(results["total"], 0)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_aggregations_basic(self, label, config):  # pylint: disable=unused-argument
         """Tests that facet aggregations include all indexed orgs."""
@@ -110,7 +103,7 @@ class CourseListSearchSingleValueTest(TestCase):
         self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
         self.assertEqual(aggs["org"]["terms"].get("OrgB", 0), 1)
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_aggregations_filtered_down(self, label, config):  # pylint: disable=unused-argument
         """Tests that aggregations reflect active filters correctly."""
@@ -122,7 +115,7 @@ class CourseListSearchSingleValueTest(TestCase):
         self.assertEqual(aggs["org"]["terms"].get("OrgA", 0), 1)
         self.assertNotIn("OrgB", aggs["org"]["terms"])
 
-    @ddt.data(("meili", setup_meilisearch(index_name)), ("es", setup_elasticsearch(index_name)))
+    @ddt.data(("meili", setup_meilisearch(index_name, logger)), ("es", setup_elasticsearch(index_name)))
     @ddt.unpack
     def test_aggregations_empty_search(self, label, config):  # pylint: disable=unused-argument
         """Tests that aggregations are returned even if there are no matches."""
@@ -132,4 +125,3 @@ class CourseListSearchSingleValueTest(TestCase):
         aggs = results.get("aggs", {})
         self.assertIn("org", aggs)
         self.assertEqual(aggs["org"]["terms"], {})
-

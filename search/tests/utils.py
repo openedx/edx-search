@@ -4,12 +4,11 @@ import json
 import time
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
+from meilisearch.errors import MeilisearchApiError
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.elastic import ElasticSearchEngine
 from search.meilisearch import create_indexes, get_meilisearch_client
-from elasticsearch.client import Elasticsearch
-from meilisearch.errors import MeilisearchApiError
 
 
 TEST_INDEX_NAME = "test_index"
@@ -88,7 +87,7 @@ class ErroringElasticImpl(Elasticsearch):
         raise exceptions.ElasticsearchException("This search operation failed")
 
 
-def setup_meilisearch(index_name):
+def setup_meilisearch(index_name, logger):
     """Helper method to set up Meilisearch engine"""
     client = get_meilisearch_client()
     try:
@@ -97,7 +96,7 @@ def setup_meilisearch(index_name):
     except MeilisearchApiError:
         pass
     except Exception as e:  # pylint: disable=broad-exception-caught
-        log.warning(f"Unexpected error deleting Meilisearch index: {e}")
+        logger.warning(f"Unexpected error deleting Meilisearch index: {e}")
 
     create_indexes({index_name: [
         "language", "modes", "org", "catalog_visibility", "enrollment_start", "enrollment_end",
@@ -121,18 +120,36 @@ def setup_elasticsearch(index_name):
 
 def setup_democourse(searcher):
     """Set up a demo course to use in api tests"""
-    from search.tests.test_course_discovery import DemoCourse
+    from search.tests.test_course_discovery import DemoCourse  # pylint: disable=import-outside-toplevel
 
     DemoCourse.reset_count()
     DemoCourse.get_and_index(
-        searcher, {"org": "OrgA", "language": "en",
-                        "content": {"short_description": "Find this one with the right parameter"}}
+        searcher,
+        {
+            "org": "OrgA",
+            "language": "en",
+            "content": {
+                "short_description": "Find this one with the right parameter"
+            }
+        }
     )
     DemoCourse.get_and_index(
-        searcher, {"org": "OrgB", "language": "fr",
-                        "content": {"short_description": "Find this one with another parameter"}}
+        searcher,
+        {
+            "org": "OrgB",
+            "language": "fr",
+            "content": {
+                "short_description": "Find this one with another parameter"
+            }
+        }
     )
     DemoCourse.get_and_index(
-        searcher, {"org": "OrgC", "language": "en",
-                        "content": {"short_description": "Find this one somehow"}}
+        searcher,
+        {
+            "org": "OrgC",
+            "language": "en",
+            "content": {
+                "short_description": "Find this one somehow"
+            }
+        }
     )
