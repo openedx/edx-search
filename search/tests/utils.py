@@ -1,11 +1,15 @@
 """ Test utilities """
 
 import json
+import time
 from django.test import Client
 from elasticsearch import Elasticsearch, exceptions
 from search.search_engine_base import SearchEngine
 from search.tests.mock_search_engine import MockSearchEngine
 from search.elastic import ElasticSearchEngine
+from search.meilisearch import create_indexes, get_meilisearch_client
+from elasticsearch.client import Elasticsearch
+from meilisearch.errors import MeilisearchApiError
 
 
 TEST_INDEX_NAME = "test_index"
@@ -82,3 +86,53 @@ class ErroringElasticImpl(Elasticsearch):
     def search(self, **kwargs):  # pylint: disable=arguments-differ
         """ this will definitely fail """
         raise exceptions.ElasticsearchException("This search operation failed")
+
+
+def setup_meilisearch(index_name):
+    """Helper method to set up Meilisearch engine"""
+    client = get_meilisearch_client()
+    try:
+        task_info = client.get_index(index_name).delete()
+        client.wait_for_task(task_info.task_uid, timeout_in_ms=5000)
+    except MeilisearchApiError:
+        pass
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        log.warning(f"Unexpected error deleting Meilisearch index: {e}")
+
+    create_indexes({index_name: [
+        "language", "modes", "org", "catalog_visibility", "enrollment_start", "enrollment_end",
+    ]})
+
+    def wait(seconds=1):
+        """Add small delay to wait for Meilisearch tasks to complete"""
+        time.sleep(seconds)
+
+    return {"search_engine": "search.meilisearch.MeilisearchEngine", "wait": wait}
+
+
+def setup_elasticsearch(index_name):
+    """Helper method to set up Elasticsearch engine"""
+    es = Elasticsearch()
+    es.indices.delete(index=index_name, ignore=[400, 404])  # pylint: disable=unexpected-keyword-arg
+    es.indices.create(index=index_name, ignore=400, body={})  # pylint: disable=unexpected-keyword-arg
+
+    return {"search_engine": "search.tests.utils.ForceRefreshElasticSearchEngine", "wait": lambda: None}
+
+
+def setup_democourse(searcher):
+    """Set up a demo course to use in api tests"""
+    from search.tests.test_course_discovery import DemoCourse
+
+    DemoCourse.reset_count()
+    DemoCourse.get_and_index(
+        searcher, {"org": "OrgA", "language": "en",
+                        "content": {"short_description": "Find this one with the right parameter"}}
+    )
+    DemoCourse.get_and_index(
+        searcher, {"org": "OrgB", "language": "fr",
+                        "content": {"short_description": "Find this one with another parameter"}}
+    )
+    DemoCourse.get_and_index(
+        searcher, {"org": "OrgC", "language": "en",
+                        "content": {"short_description": "Find this one somehow"}}
+    )
