@@ -66,7 +66,7 @@ INDEX_CONFIGURATION = {
             {"name": "enrollment_end", "type": "datetime", "optional": True},
             {"name": "org", "type": "string", "facet": True},
             {"name": "modes", "type": "string[]", "facet": True},
-            {"name": "language", "type": "string", "facet": True},
+            {"name": "language", "type": "string", "facet": True, "optional": True},
             # Enable stemming for the "content" fields, so that e.g.
             # searching for "run" will match "running", "runs", "ran" on
             # the content.(overview|display_name|short_description) fields.
