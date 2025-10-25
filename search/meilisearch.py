@@ -98,6 +98,7 @@ INDEX_FILTERABLES: dict[str, list[str]] = {
         "language",  # aggregate by language, mode, org
         "modes",
         "org",
+        "course",  # search by course id
         "catalog_visibility",  # used if not settings.SEARCH_SKIP_SHOW_IN_CATALOG_FILTERING
         "enrollment_end",  # include only enrollable courses
     ],
