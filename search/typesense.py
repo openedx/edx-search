@@ -227,7 +227,10 @@ class TypesenseEngine(SearchEngine):
             kwargs,
         )
         if doc_ids:
-            self.typesense_index.documents.delete({'filter_by': f'filter_by=id: [{",".join(doc_ids)}]'})
+            escaped_ids = [_escape_str(doc_id) for doc_id in doc_ids]
+            self.typesense_index.documents.delete({
+                'filter_by': f'id: [{",".join(escaped_ids)}]'
+            })
 
 
 def create_indexes():
