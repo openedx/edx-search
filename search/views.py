@@ -32,13 +32,17 @@ def parse_post_data(request):
             else:
                 qdict.update({key: value})
         return qdict
-    # else return request.post 
     return request.POST
+
 def _process_pagination_values(data):
     """Extract pagination info from data."""
-    size = int(data.get("page_size", 20))
-    page = int(data.get("page_index", 0))
-    max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", 100)
+    DEFAULT_PAGE_SIZE = 20
+    DEFAULT_PAGE_INDEX = 0
+    DEFAULT_MAX_PAGE_SIZE = 100
+    max_page_size = getattr(settings, "SEARCH_MAX_PAGE_SIZE", DEFAULT_MAX_PAGE_SIZE)
+
+    size = int(data.get("page_size", DEFAULT_PAGE_SIZE))
+    page = int(data.get("page_index", DEFAULT_PAGE_INDEX))
 
     if not (0 < size <= max_page_size):
         raise ValueError(_('Invalid page size of {page_size}').format(page_size=size))
