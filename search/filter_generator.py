@@ -24,6 +24,23 @@ class SearchFilterGenerator:
         return [value]
 
     def filter_dictionary(self, *, field_filters=None, **_kwargs):
+        """
+        Build search filters by adding a default start-date range and converting
+        provided field values into term or terms filters, depending on whether
+        each field has one or multiple values.
+
+        Parameters
+        ----------
+        field_filters : dict, optional
+            A mapping of field names to raw filter values. Each value may be
+            singular or an iterable; values are normalized to lists.
+
+        Returns
+        -------
+        dict
+            A dictionary containing date and field-based filters suitable for use
+            in search queries.
+        """
         filters = {
             "start_date": DateRange(None, datetime.utcnow())
         }
