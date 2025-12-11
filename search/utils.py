@@ -107,3 +107,20 @@ class Timer:
     def elapsed_time(self):
         """ Return the elapsed time """
         return (self._end_time - self._start_time).seconds
+
+
+def normalize_bool(value):
+    """ Normalize a value to a boolean. """
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, str):
+        value = value.lower()
+        if value in ('y', 'yes', 't', 'true', 'on', '1'):
+            return True
+        if value in ('n', 'no', 'f', 'false', 'off', '0'):
+            return False
+
+        raise ValueError(f"Invalid truth value: '{value}'")
+
+    return bool(value)

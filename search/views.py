@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 from eventtracking import tracker as track
 from .api import perform_search, course_discovery_search, course_discovery_filter_fields
 from .initializer import SearchInitializer
+from .utils import normalize_bool
 
 # log appears to be standard name used for logger
 log = logging.getLogger(__name__)
@@ -181,7 +182,7 @@ def _course_discovery(request, is_multivalue=False):
     status_code = 500
 
     search_term = request.POST.get("search_string", None)
-    enable_course_sorting_by_start_date = request.POST.get("enable_course_sorting_by_start_date", False)
+    enable_course_sorting_by_start_date = normalize_bool(request.POST.get("enable_course_sorting_by_start_date", False))
 
     try:
         size, from_, page = _process_pagination_values(request)
