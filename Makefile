@@ -18,7 +18,7 @@ quality-python: ## Run python linters
 quality: quality-python
 
 requirements:
-	pip install -qr requirements/pip.txt
+	pip install -qr requirements/pip-tools.txt
 	pip install -r requirements/dev.txt
 
 validate: clean
@@ -38,9 +38,7 @@ compile-requirements: export CUSTOM_COMPILE_COMMAND=make upgrade
 compile-requirements: ## Re-compile *.in requirements to *.txt (without upgrading)
 	pip install -qr requirements/pip-tools.txt
 	# Make sure to compile files after any other files they include!
-	pip-compile --rebuild --allow-unsafe --rebuild -o requirements/pip.txt requirements/pip.in
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/pip-tools.txt requirements/pip-tools.in
-	pip install -qr requirements/pip.txt
+	pip-compile --rebuild --allow-unsafe ${COMPILE_OPTS} -o requirements/pip-tools.txt requirements/pip-tools.in
 	pip install -qr requirements/pip-tools.txt
 	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/base.txt requirements/base.in
 	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/testing.txt requirements/testing.in
