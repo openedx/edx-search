@@ -33,8 +33,8 @@ jobs:
     - name: Start Elasticsearch
       run: make elastic-up
 
-    - name: Install pip
-      run: pip install -r requirements/pip.txt
+    - name: Install pip and pip-tools
+      run: pip install -r requirements/pip-tools.txt
 
     - name: Install Dependencies
       run: |
