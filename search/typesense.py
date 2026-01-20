@@ -135,7 +135,6 @@ class TypesenseEngine(SearchEngine):
             self.typesense_index.retrieve()
         except ObjectNotFound:
             create_indexes([self.index_name])
-            logger.warning(f"CREATING INDEX {self.index_name}")
 
         logger.info(
             "Index request: index=%s sources=%s kwargs=%s",
