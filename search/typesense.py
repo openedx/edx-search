@@ -129,6 +129,14 @@ class TypesenseEngine(SearchEngine):
         """
         Index a number of documents, which can have just any type.
         """
+
+        # Create the index before indexing if it doesn't already exist
+        try:
+            self.typesense_index.retrieve()
+        except ObjectNotFound:
+            create_indexes([self.index_name])
+            logger.warning(f"CREATING INDEX {self.index_name}")
+
         logger.info(
             "Index request: index=%s sources=%s kwargs=%s",
             self.typesense_index_name,
@@ -233,13 +241,14 @@ class TypesenseEngine(SearchEngine):
             })
 
 
-def create_indexes():
+def create_indexes(index_names: t.Iterable[str] = INDEX_CONFIGURATION.keys()):
     """
     This is an initialization function that creates indexes and makes sure that they
     support the right data types, filtering, and faceting.
     """
     client = get_typesense_client()
-    for index_name, index_config in INDEX_CONFIGURATION.items():
+    for index_name in index_names:
+        index_config = INDEX_CONFIGURATION[index_name]
         field_overrides = index_config.get("field_overrides", [])
         fields_config: list[RegularCollectionFieldSchema] = [
             # Auto-create fields by default
