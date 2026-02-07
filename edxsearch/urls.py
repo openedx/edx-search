@@ -1,6 +1,5 @@
 """ import urls from search component to test it's operation when included within other django projects """
 
-import django
 from django.urls import include, path
 
 # from django.contrib import admin
