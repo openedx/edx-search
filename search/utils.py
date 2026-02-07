@@ -1,8 +1,95 @@
 """ Utility classes to support others """
-
 import importlib
 import datetime
 from collections.abc import Iterable
+from typing import Any
+
+from django.utils import timezone
+
+
+UTC_OFFSET_SUFFIX = "__utcoffset"
+IS_NULL_SUFFIX = "__is_null"
+
+
+def convert_doc_datatypes(doc: dict[str, Any], *, record_nulls=False) -> dict[str, Any]:
+    """
+    Recursively replace datatypes that our search engine doesn't support, so we
+    can store data into the search index.
+
+    This is used by the Typesense engine, and could also be used by Meilisearch
+    if we decide to keep both Typesense and Meilisearch.
+
+    - `datetime` values become timestamps.
+    - `None` values are removed (Meilisearch ignores them per
+      https://www.meilisearch.com/docs/learn/engine/datatypes#null
+      and Typesense throws an error if you try to set None/null values on
+      some field types, and ignores it on other field types.)
+
+    For Typesense, specify record_nulls=True to insert a second field marking
+    fields that have null values - this is the only way to reliably filter for
+    fields that are null, which Typesense otherwise doesn't support.
+    - https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#searching-for-null-or-empty-values
+    - https://typesense.org/docs/guide/tips-for-filtering.html#filtering-for-empty-fields
+    - https://github.com/typesense/typesense/issues/790
+    """
+    processed = {}
+    for key, value in doc.items():
+        if isinstance(value, timezone.datetime):
+            # Convert datetime objects to timestamp, and store the timezone in a
+            # separate field with a suffix given by UTC_OFFSET_SUFFIX.
+            # Most (all?) datetimes are UTC, so the actual offset is not usually
+            # super important, but the presence of the offset field is used to
+            # detect timestamp fields and convert them back to datetime values
+            # when loading search results.
+            # FIXME: storing just the UTC offset is not actually sufficient -
+            # see https://github.com/openedx/edx-search/pull/222#discussion_r2366482666
+            # We should either store the full timezone or throw an error for
+            # non-UTC datetimes. (Do we have non-UTC datetimes anyways?)
+            processed[key] = value.timestamp()
+            utcoffset = value.utcoffset().seconds if value.tzinfo else 0
+            processed[f"{key}{UTC_OFFSET_SUFFIX}"] = utcoffset
+        elif isinstance(value, dict):
+            processed[key] = convert_doc_datatypes(value, record_nulls=record_nulls)
+        elif value is None:
+            if record_nulls:
+                processed[f"{key}{IS_NULL_SUFFIX}"] = True
+            else:
+                continue  # Ignore this NULL value - the search engine will ignore it anyways.
+        else:
+            # Index the value, unmodified.
+            # Pray that there are not datetime objects inside lists.
+            # If there are, they will be converted to str by the DocumentEncoder.
+            processed[key] = value
+    return processed
+
+
+def restore_doc_datatypes(search_result: dict[str, Any]) -> dict[str, Any]:
+    """
+    Convert data values from the search index back into the more detailed
+    python data types that we want, before displaying results to the user.
+
+    This is the opposite of `convert_doc_datatypes()`.
+    """
+    processed = {}
+    for key, value in search_result.items():
+        if key.endswith(UTC_OFFSET_SUFFIX):
+            utcoffset = value
+            timestamp_key = key[: -len(UTC_OFFSET_SUFFIX)]
+            timestamp = search_result[timestamp_key]
+            tz = (
+                timezone.get_fixed_timezone(timezone.timedelta(seconds=utcoffset))
+                if utcoffset
+                else None
+            )
+            processed[timestamp_key] = timezone.datetime.fromtimestamp(timestamp, tz=tz)
+        elif key.endswith(IS_NULL_SUFFIX):
+            orig_key = key[: -len(IS_NULL_SUFFIX)]
+            processed[orig_key] = None
+        elif isinstance(value, dict):
+            processed[key] = restore_doc_datatypes(value)
+        else:
+            processed[key] = value
+    return processed
 
 
 def _load_class(class_path, default):
