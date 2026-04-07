@@ -8,8 +8,8 @@ Searching is accomplished by creating an index of documents, and then searching 
 The SearchEngine is an abstract object which may have multiple implementations. As of Verawood, there are four in existence:
 
 * Meilisearch (preferred)
-* Elasticsearch
-* Typesense (only supports LMS search functionalities, not Studio)
+* Elasticsearch (deprecated, only supports LMS search functionalities, not Studio)
+* Typesense (beta/provisional support, only supports LMS search functionalities, not Studio)
 * MockSearchEngine (primarily used for testing)
 
 To operate with the currently-specified SearchEngine from the django settings, one can invoke a static method on SearchEngine as follows:
