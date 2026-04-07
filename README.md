@@ -5,7 +5,12 @@ This is a django application to provide access to search services from within ed
 Searching is accomplished by creating an index of documents, and then searching within that index for matching information. This application provides a way to add documents to the index, and then search for them.
 
 ## SearchEngine
-The SearchEngine is an abstract object which may have multiple implementations _(at the time of writing there are 2 in existence - Elasticsearch and MockSearchEngine, which is primarily used for testing)_
+The SearchEngine is an abstract object which may have multiple implementations. As of Verawood, there are four in existence:
+
+* Meilisearch (preferred)
+* Elasticsearch
+* Typesense (only supports LMS search functionalities, not Studio)
+* MockSearchEngine (primarily used for testing)
 
 To operate with the currently-specified SearchEngine from the django settings, one can invoke a static method on SearchEngine as follows:
 ```
