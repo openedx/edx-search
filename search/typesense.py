@@ -22,6 +22,14 @@ You will then need to create the new indices by running:
 Typesense. A proper long-term approach is needed for all our search engines, as
 discussed at https://github.com/openedx/edx-platform/issues/36868 .
 
+Server version requirement
+--------------------------
+This module requires typesense-python >= 2.0.0, which in turn requires
+Typesense Server >= v30.0. If you are upgrading from a previous version of
+edx-search, you must upgrade your Typesense server before deploying.
+
+See the compatibility table: https://github.com/typesense/typesense-python#compatibility
+
 For more information about the Typesense API in Python, check
 https://github.com/typesense/typesense-python
 """
@@ -31,7 +39,7 @@ import typing as t
 from django.conf import settings
 from django.utils import timezone
 import typesense
-from typesense.collection import Collection
+from typesense.sync.collection import Collection  # moved in typesense-python 2.0
 from typesense.exceptions import ObjectNotFound, RequestMalformed, ServerError
 from typesense.types.collection import RegularCollectionFieldSchema
 from typesense.types.document import Hit, SearchResponse

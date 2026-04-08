@@ -4,6 +4,36 @@ This is a django application to provide access to search services from within ed
 
 Searching is accomplished by creating an index of documents, and then searching within that index for matching information. This application provides a way to add documents to the index, and then search for them.
 
+## Typesense Engine
+
+edx-search includes an optional `TypesenseEngine` backend (`search.typesense.TypesenseEngine`).
+
+### Server version requirement
+
+| typesense-python | Typesense Server |
+|------------------|-----------------|
+| >= 2.0.0         | >= v30.0        |
+| >= 1.0.0         | >= v28.0        |
+
+**This version of edx-search requires typesense-python >= 2.0.0 and therefore Typesense Server >= v30.0.**
+If you are running an older Typesense server you must upgrade it before deploying this version of edx-search.
+
+See the full compatibility table at https://github.com/typesense/typesense-python#compatibility.
+
+### Enabling the Typesense engine
+
+```python
+SEARCH_ENGINE = "search.typesense.TypesenseEngine"
+```
+
+You will also need to configure the Typesense connection in your Django settings (host, port, API key).
+After switching, create the indices using the shell (no management command exists yet — see
+https://github.com/openedx/edx-platform/issues/36868 for the longer-term plan):
+
+```shell
+./manage.py lms shell -c "import search.typesense; search.typesense.create_indexes()"
+```
+
 ## SearchEngine
 The SearchEngine is an abstract object which may have multiple implementations. As of Verawood, there are four in existence:
 
