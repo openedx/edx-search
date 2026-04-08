@@ -8,17 +8,17 @@ amqp==5.3.1
     # via kombu
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.1
+anyio==4.13.0
     # via httpx
 asgiref==3.11.1
     # via django
-attrs==25.4.0
+attrs==26.1.0
     # via openedx-events
 billiard==4.2.4
     # via celery
 camel-converter[pydantic]==5.1.0
     # via meilisearch
-celery==5.6.2
+celery==5.6.3
     # via event-tracking
 certifi==2026.2.25
     # via
@@ -28,9 +28,9 @@ certifi==2026.2.25
     #   requests
 cffi==2.0.0
     # via pynacl
-charset-normalizer==3.4.5
+charset-normalizer==3.4.7
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   celery
     #   click-didyoumean
@@ -44,9 +44,9 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
-code-annotations==2.3.2
+code-annotations==3.0.0
     # via edx-toggles
-django==5.2.12
+django==5.2.13
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
@@ -73,11 +73,11 @@ edx-django-utils==8.0.1
     #   edx-toggles
     #   event-tracking
     #   openedx-events
-edx-opaque-keys[django]==3.1.0
+edx-opaque-keys[django]==4.0.0
     # via
     #   edx-ccx-keys
     #   openedx-events
-edx-toggles==5.4.1
+edx-toggles==6.0.0
     # via
     #   -r requirements/base.in
     #   event-tracking
@@ -85,7 +85,7 @@ elasticsearch==7.13.4
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
-event-tracking==3.3.0
+event-tracking==4.0.0
     # via -r requirements/base.in
 fastavro==1.12.1
     # via openedx-events
@@ -108,7 +108,7 @@ markupsafe==3.0.3
     # via jinja2
 meilisearch==0.40.0
     # via -r requirements/base.in
-openedx-events==10.5.0
+openedx-events==11.1.0
     # via event-tracking
 packaging==26.0
     # via kombu
@@ -136,7 +136,7 @@ pytz==2026.1.post1
     # via event-tracking
 pyyaml==6.0.3
     # via code-annotations
-requests==2.32.5
+requests==2.33.1
     # via meilisearch
 six==1.17.0
     # via
@@ -164,7 +164,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-tzdata==2025.3
+tzdata==2026.1
     # via kombu
 tzlocal==5.3.1
     # via celery

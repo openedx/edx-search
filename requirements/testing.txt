@@ -12,7 +12,7 @@ annotated-types==0.7.0
     # via
     #   -r requirements/base.txt
     #   pydantic
-anyio==4.12.1
+anyio==4.13.0
     # via
     #   -r requirements/base.txt
     #   httpx
@@ -20,7 +20,7 @@ asgiref==3.11.1
     # via
     #   -r requirements/base.txt
     #   django
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   -r requirements/base.txt
     #   openedx-events
@@ -32,7 +32,7 @@ camel-converter[pydantic]==5.1.0
     # via
     #   -r requirements/base.txt
     #   meilisearch
-celery==5.6.2
+celery==5.6.3
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -47,11 +47,11 @@ cffi==2.0.0
     # via
     #   -r requirements/base.txt
     #   pynacl
-charset-normalizer==3.4.5
+charset-normalizer==3.4.7
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.3.1
+click==8.3.2
     # via
     #   -r requirements/base.txt
     #   celery
@@ -72,11 +72,11 @@ click-repl==0.3.0
     # via
     #   -r requirements/base.txt
     #   celery
-code-annotations==2.3.2
+code-annotations==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==7.13.4
+coverage[toml]==7.13.5
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -117,12 +117,12 @@ edx-django-utils==8.0.1
     #   edx-toggles
     #   event-tracking
     #   openedx-events
-edx-opaque-keys[django]==3.1.0
+edx-opaque-keys[django]==4.0.0
     # via
     #   -r requirements/base.txt
     #   edx-ccx-keys
     #   openedx-events
-edx-toggles==5.4.1
+edx-toggles==6.0.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -130,7 +130,7 @@ elasticsearch==7.13.4
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.txt
-event-tracking==3.3.0
+event-tracking==4.0.0
     # via -r requirements/base.txt
 fastavro==1.12.1
     # via
@@ -172,7 +172,7 @@ meilisearch==0.40.0
     # via -r requirements/base.txt
 mock==5.2.0
     # via -r requirements/testing.in
-openedx-events==10.5.0
+openedx-events==11.1.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -205,7 +205,7 @@ pydantic-core==2.41.5
     # via
     #   -r requirements/base.txt
     #   pydantic
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pymongo==4.16.0
     # via
@@ -216,9 +216,9 @@ pynacl==1.6.2
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pytest==9.0.2
+pytest==9.0.3
     # via pytest-cov
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via -r requirements/testing.in
 python-dateutil==2.9.0.post0
     # via
@@ -236,7 +236,7 @@ pyyaml==6.0.3
     # via
     #   -r requirements/base.txt
     #   code-annotations
-requests==2.32.5
+requests==2.33.1
     # via
     #   -r requirements/base.txt
     #   meilisearch
@@ -275,7 +275,7 @@ typing-inspection==0.4.2
     # via
     #   -r requirements/base.txt
     #   pydantic
-tzdata==2025.3
+tzdata==2026.1
     # via
     #   -r requirements/base.txt
     #   kombu
