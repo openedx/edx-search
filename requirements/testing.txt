@@ -172,7 +172,7 @@ meilisearch==0.40.0
     # via -r requirements/base.txt
 mock==5.2.0
     # via -r requirements/testing.in
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/base.txt
     #   event-tracking

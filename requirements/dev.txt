@@ -39,7 +39,7 @@ billiard==4.2.4
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   celery
-build==1.4.2
+build==1.4.3
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
@@ -267,7 +267,7 @@ mock==5.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -286,7 +286,7 @@ packaging==26.0
     #   wheel
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -446,7 +446,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/quality.txt
     #   pylint
-tox==4.52.0
+tox==4.52.1
     # via -r requirements/ci.txt
 typesense==2.0.0
     # via
@@ -490,7 +490,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.2.0
+virtualenv==21.2.1
     # via
     #   -r requirements/ci.txt
     #   tox

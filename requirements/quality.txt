@@ -193,7 +193,7 @@ meilisearch==0.40.0
     # via -r requirements/testing.txt
 mock==5.2.0
     # via -r requirements/testing.txt
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/testing.txt
     #   event-tracking
@@ -202,7 +202,7 @@ packaging==26.0
     #   -r requirements/testing.txt
     #   kombu
     #   pytest
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via pylint
 pluggy==1.6.0
     # via
