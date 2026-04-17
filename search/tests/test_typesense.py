@@ -12,6 +12,8 @@ from typesense.exceptions import RequestMalformed
 from search.typesense import (
     TypesenseEngine,
     _MAX_IDS_PER_DELETE_BATCH,
+    _strip_html,
+    _strip_html_from_content,
     get_search_params,
 )
 
@@ -52,11 +54,11 @@ class GetSearchParamsTests(django.test.TestCase):
 
     def test_exclude_dictionary_single_field(self):
         params = get_search_params(exclude_dictionary={"status": ["deleted"]})
-        assert params["filter_by"] == "status:!=[`deleted`]"
+        assert params["filter_by"] == "status:![`deleted`]"
 
     def test_exclude_dictionary_multiple_ids(self):
         params = get_search_params(exclude_dictionary={"id": ["id1", "id2", "id3"]})
-        assert params["filter_by"] == "id:!=[`id1`, `id2`, `id3`]"
+        assert params["filter_by"] == "id:![`id1`, `id2`, `id3`]"
 
     def test_field_dictionary_and_exclude_dictionary_combined(self):
         params = get_search_params(
@@ -64,7 +66,7 @@ class GetSearchParamsTests(django.test.TestCase):
             exclude_dictionary={"id": ["stale-id"]},
         )
         assert "course:=`course-v1:org+x+run`" in params["filter_by"]
-        assert "id:!=[`stale-id`]" in params["filter_by"]
+        assert "id:![`stale-id`]" in params["filter_by"]
 
     def test_pagination_params(self):
         params = get_search_params(from_=50, size=25)
@@ -229,3 +231,85 @@ class TypesenseEngineRemoveTests(django.test.TestCase):
         assert first_filter.count("`id-") == _MAX_IDS_PER_DELETE_BATCH
         # Second batch should contain the remaining 2
         assert second_filter.count("`id-") == 2
+
+
+class StripHtmlTests(django.test.TestCase):
+    """Tests for the _strip_html and _strip_html_from_content helpers."""
+
+    def test_strip_html_removes_tags(self):
+        assert _strip_html("<p>Hello <strong>world</strong></p>") == "Hello world"
+
+    def test_strip_html_unescapes_entities(self):
+        assert _strip_html("&lt;b&gt;bold&lt;/b&gt; &amp; more") == "<b>bold</b> & more"
+
+    def test_strip_html_normalises_whitespace(self):
+        assert _strip_html("  foo   <br/>  bar  ") == "foo bar"
+
+    def test_strip_html_plain_text_unchanged(self):
+        text = "no html here"
+        assert _strip_html(text) == text
+
+    def test_strip_html_empty_string(self):
+        assert _strip_html("") == ""
+
+    def test_strip_html_from_content_dict(self):
+        content = {
+            "display_name": "<b>My Problem</b>",
+            "body": "<p>Solve for <em>x</em> where x &gt; 0.</p>",
+        }
+        result = _strip_html_from_content(content)
+        assert result == {
+            "display_name": "My Problem",
+            "body": "Solve for x where x > 0.",
+        }
+
+    def test_strip_html_from_content_nested(self):
+        content = {"section": {"title": "<h2>Unit 1</h2>", "items": ["<li>a</li>", "<li>b</li>"]}}
+        result = _strip_html_from_content(content)
+        assert result == {"section": {"title": "Unit 1", "items": ["a", "b"]}}
+
+    def test_strip_html_from_content_non_string_unchanged(self):
+        content = {"count": 42, "active": True}
+        assert _strip_html_from_content(content) == {"count": 42, "active": True}
+
+
+@override_settings(**TYPESENSE_SETTINGS)
+class ProcessDocumentTests(django.test.TestCase):
+    """Tests for TypesenseEngine.process_document()."""
+
+    def _make_engine(self):
+        engine = TypesenseEngine.__new__(TypesenseEngine)
+        engine.index_name = "courseware_content"
+        return engine
+
+    def test_html_stripped_from_content_field(self):
+        """HTML in content sub-fields is stripped before the document is indexed."""
+        engine = self._make_engine()
+        doc = {
+            "id": "block-v1:org+x+run+type@html+block@abc",
+            "content": {
+                "display_name": "<b>Intro</b>",
+                "body": "<p>Welcome to <em>this</em> course &amp; enjoy!</p>",
+            },
+        }
+        result = engine.process_document(doc)
+        assert result["content"]["display_name"] == "Intro"
+        assert result["content"]["body"] == "Welcome to this course & enjoy!"
+
+    def test_non_content_fields_not_stripped(self):
+        """Fields outside 'content' are not modified by HTML stripping."""
+        engine = self._make_engine()
+        doc = {
+            "id": "block-v1:org+x+run+type@html+block@abc",
+            "display_name": "<b>should not be stripped</b>",
+            "content": {"body": "plain"},
+        }
+        result = engine.process_document(doc)
+        assert result["display_name"] == "<b>should not be stripped</b>"
+
+    def test_missing_content_field_handled(self):
+        """Documents without a 'content' field are processed without error."""
+        engine = self._make_engine()
+        doc = {"id": "block-v1:org+x+run+type@problem+block@xyz"}
+        result = engine.process_document(doc)
+        assert result["id"] == "block-v1:org+x+run+type@problem+block@xyz"

@@ -33,7 +33,9 @@ See the compatibility table: https://github.com/typesense/typesense-python#compa
 For more information about the Typesense API in Python, check
 https://github.com/typesense/typesense-python
 """
+import html as html_module
 import logging
+import re
 import typing as t
 
 from django.conf import settings
@@ -69,10 +71,10 @@ INDEX_CONFIGURATION = {
     COURSE_INFO_INDEX: {
         # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
-            {"name": "start", "type": "datetime", "optional": True},
-            {"name": "end", "type": "datetime", "optional": True},
-            {"name": "enrollment_start", "type": "datetime", "optional": True},
-            {"name": "enrollment_end", "type": "datetime", "optional": True},
+            {"name": "start", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "end", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "enrollment_start", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "enrollment_end", "type": "datetime", "optional": True, "range_index": True},
             {"name": "org", "type": "string", "facet": True},
             {"name": "modes", "type": "string[]", "facet": True},
             {"name": "language", "type": "string", "facet": True, "optional": True},
@@ -88,7 +90,7 @@ INDEX_CONFIGURATION = {
     COURSE_CONTENT_INDEX: {
         # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
-            {"name": "start_date", "type": "datetime", "optional": True},
+            {"name": "start_date", "type": "datetime", "optional": True, "range_index": True},
             # Enable stemming for the "content" field, so that e.g.
             # searching for "run" will match "running", "runs", "ran".
             # Unfortunately, this could break indexing if non-string fields get
@@ -175,6 +177,15 @@ class TypesenseEngine(SearchEngine):
         for field_config in index_config.get("field_overrides", []):
             if field_config.get("optional", False):
                 doc_with_nulls.setdefault(field_config["name"])
+        # Strip HTML tags from the nested 'content' field. XBlock index_dictionary()
+        # methods may return raw HTML markup; indexing tags as tokens wastes memory
+        # and degrades search quality.
+        # See: https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#html-content
+        if "content" in doc_with_nulls and isinstance(doc_with_nulls["content"], dict):
+            doc_with_nulls = {
+                **doc_with_nulls,
+                "content": _strip_html_from_content(doc_with_nulls["content"]),
+            }
         # Convert field types recursively, e.g. datetime->int64, NULL -> separate field:
         processed = convert_doc_datatypes(doc_with_nulls, record_nulls=True)
         return processed
@@ -354,6 +365,39 @@ def _escape_str(value: str):
     return f'`{value.replace("`", "")}`'
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html(text: str) -> str:
+    """
+    Remove HTML tags from *text* and unescape HTML entities.
+
+    Per the Typesense data-types guide, HTML content should be stripped to
+    plain text before indexing so that tags are not treated as searchable
+    tokens and do not bloat the in-memory index.
+    See: https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#html-content
+    """
+    text = _HTML_TAG_RE.sub(" ", text)
+    text = html_module.unescape(text)
+    return " ".join(text.split())  # normalise whitespace
+
+
+def _strip_html_from_content(value: t.Any) -> t.Any:
+    """
+    Recursively walk *value* and strip HTML from any string leaves.
+
+    Intended for use only on the nested ``content`` field, where XBlock
+    ``index_dictionary()`` implementations may return raw HTML markup.
+    """
+    if isinstance(value, str):
+        return _strip_html(value)
+    if isinstance(value, dict):
+        return {k: _strip_html_from_content(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_strip_html_from_content(item) for item in value]
+    return value
+
+
 def get_search_params(
     field_dictionary=None,
     filter_dictionary=None,
@@ -385,8 +429,9 @@ def get_search_params(
         filters += get_filter_rules(filter_dictionary, optional=True)
     if exclude_dictionary:
         for key, values in exclude_dictionary.items():
-            # Ignore multiple values for this field, e.g. {"id": ["ignorethis1", "ignorethis2"]}
-            filters += [f"{key}:!=[{', '.join(_escape_str(value) for value in values)}]"]
+            # Use the documented "is not any of" operator: field:![val1, val2, ...]
+            # (not `!=[...]`, which is the single-value inequality operator with an array arg)
+            filters += [f"{key}:![{', '.join(_escape_str(value) for value in values)}]"]
     if filters:
         params["filter_by"] = " && ".join(filters)
 
