@@ -172,11 +172,11 @@ meilisearch==0.40.0
     # via -r requirements/base.txt
 mock==5.2.0
     # via -r requirements/testing.in
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/base.txt
     #   event-tracking
-packaging==26.0
+packaging==26.1
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -197,11 +197,11 @@ pycparser==3.0
     # via
     #   -r requirements/base.txt
     #   cffi
-pydantic==2.12.5
+pydantic==2.13.2
     # via
     #   -r requirements/base.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.2
     # via
     #   -r requirements/base.txt
     #   pydantic

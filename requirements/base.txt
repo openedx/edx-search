@@ -108,9 +108,9 @@ markupsafe==3.0.3
     # via jinja2
 meilisearch==0.40.0
     # via -r requirements/base.in
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via event-tracking
-packaging==26.0
+packaging==26.1
     # via kombu
 prompt-toolkit==3.0.52
     # via click-repl
@@ -118,9 +118,9 @@ psutil==7.2.2
     # via edx-django-utils
 pycparser==3.0
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.2
     # via camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.2
     # via pydantic
 pymongo==4.16.0
     # via
