@@ -39,11 +39,11 @@ billiard==4.2.4
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   celery
-build==1.4.2
+build==1.4.4
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
-cachetools==7.0.5
+cachetools==7.0.6
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -57,7 +57,7 @@ celery==5.6.3
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   event-tracking
-certifi==2026.2.25
+certifi==2026.4.22
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -75,7 +75,7 @@ charset-normalizer==3.4.7
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   requests
-click==8.3.2
+click==8.3.3
     # via
     #   -r requirements/pip-tools.txt
     #   -r requirements/quality.txt
@@ -198,12 +198,12 @@ event-tracking==4.0.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   openedx-events
-filelock==3.25.2
+filelock==3.29.0
     # via
     #   -r requirements/ci.txt
     #   python-discovery
@@ -224,7 +224,7 @@ httpx==0.28.1
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   typesense
-idna==3.11
+idna==3.13
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -259,7 +259,7 @@ mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   pylint
-meilisearch==0.40.0
+meilisearch==0.41.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -267,12 +267,12 @@ mock==5.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
-openedx-events==11.1.0
+openedx-events==11.2.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   event-tracking
-packaging==26.0
+packaging==26.2
     # via
     #   -r requirements/ci.txt
     #   -r requirements/pip-tools.txt
@@ -286,7 +286,7 @@ packaging==26.0
     #   wheel
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
@@ -319,12 +319,12 @@ pycparser==3.0
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   cffi
-pydantic==2.12.5
+pydantic==2.13.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.3
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -354,7 +354,7 @@ pylint-plugin-utils==0.9.0
     #   -r requirements/quality.txt
     #   pylint-celery
     #   pylint-django
-pymongo==4.16.0
+pymongo==4.17.0
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -446,7 +446,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/quality.txt
     #   pylint
-tox==4.52.0
+tox==4.53.0
     # via -r requirements/ci.txt
 typesense==2.0.0
     # via
@@ -467,7 +467,7 @@ typing-inspection==0.4.2
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
@@ -490,7 +490,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.2.0
+virtualenv==21.2.4
     # via
     #   -r requirements/ci.txt
     #   tox
@@ -499,7 +499,7 @@ wcwidth==0.6.0
     #   -r requirements/quality.txt
     #   -r requirements/testing.txt
     #   prompt-toolkit
-wheel==0.46.3
+wheel==0.47.0
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools

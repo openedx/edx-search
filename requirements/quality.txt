@@ -40,7 +40,7 @@ celery==5.6.3
     # via
     #   -r requirements/testing.txt
     #   event-tracking
-certifi==2026.2.25
+certifi==2026.4.22
     # via
     #   -r requirements/testing.txt
     #   elasticsearch
@@ -55,7 +55,7 @@ charset-normalizer==3.4.7
     # via
     #   -r requirements/testing.txt
     #   requests
-click==8.3.2
+click==8.3.3
     # via
     #   -r requirements/testing.txt
     #   celery
@@ -147,7 +147,7 @@ elasticsearch==7.13.4
     #   -r requirements/testing.txt
 event-tracking==4.0.0
     # via -r requirements/testing.txt
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/testing.txt
     #   openedx-events
@@ -163,7 +163,7 @@ httpx==0.28.1
     # via
     #   -r requirements/testing.txt
     #   typesense
-idna==3.11
+idna==3.13
     # via
     #   -r requirements/testing.txt
     #   anyio
@@ -189,20 +189,20 @@ markupsafe==3.0.3
     #   jinja2
 mccabe==0.7.0
     # via pylint
-meilisearch==0.40.0
+meilisearch==0.41.0
     # via -r requirements/testing.txt
 mock==5.2.0
     # via -r requirements/testing.txt
-openedx-events==11.1.0
+openedx-events==11.2.0
     # via
     #   -r requirements/testing.txt
     #   event-tracking
-packaging==26.0
+packaging==26.2
     # via
     #   -r requirements/testing.txt
     #   kombu
     #   pytest
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via pylint
 pluggy==1.6.0
     # via
@@ -223,11 +223,11 @@ pycparser==3.0
     # via
     #   -r requirements/testing.txt
     #   cffi
-pydantic==2.12.5
+pydantic==2.13.3
     # via
     #   -r requirements/testing.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.3
     # via
     #   -r requirements/testing.txt
     #   pydantic
@@ -249,7 +249,7 @@ pylint-plugin-utils==0.9.0
     # via
     #   pylint-celery
     #   pylint-django
-pymongo==4.16.0
+pymongo==4.17.0
     # via
     #   -r requirements/testing.txt
     #   edx-opaque-keys
@@ -322,7 +322,7 @@ typing-inspection==0.4.2
     # via
     #   -r requirements/testing.txt
     #   pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via
     #   -r requirements/testing.txt
     #   kombu

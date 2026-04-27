@@ -36,7 +36,7 @@ celery==5.6.3
     # via
     #   -r requirements/base.txt
     #   event-tracking
-certifi==2026.2.25
+certifi==2026.4.22
     # via
     #   -r requirements/base.txt
     #   elasticsearch
@@ -51,7 +51,7 @@ charset-normalizer==3.4.7
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.3.2
+click==8.3.3
     # via
     #   -r requirements/base.txt
     #   celery
@@ -132,7 +132,7 @@ elasticsearch==7.13.4
     #   -r requirements/base.txt
 event-tracking==4.0.0
     # via -r requirements/base.txt
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/base.txt
     #   openedx-events
@@ -148,7 +148,7 @@ httpx==0.28.1
     # via
     #   -r requirements/base.txt
     #   typesense
-idna==3.11
+idna==3.13
     # via
     #   -r requirements/base.txt
     #   anyio
@@ -168,15 +168,15 @@ markupsafe==3.0.3
     # via
     #   -r requirements/base.txt
     #   jinja2
-meilisearch==0.40.0
+meilisearch==0.41.0
     # via -r requirements/base.txt
 mock==5.2.0
     # via -r requirements/testing.in
-openedx-events==11.1.0
+openedx-events==11.2.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
-packaging==26.0
+packaging==26.2
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -197,17 +197,17 @@ pycparser==3.0
     # via
     #   -r requirements/base.txt
     #   cffi
-pydantic==2.12.5
+pydantic==2.13.3
     # via
     #   -r requirements/base.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.3
     # via
     #   -r requirements/base.txt
     #   pydantic
 pygments==2.20.0
     # via pytest
-pymongo==4.16.0
+pymongo==4.17.0
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
@@ -275,7 +275,7 @@ typing-inspection==0.4.2
     # via
     #   -r requirements/base.txt
     #   pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via
     #   -r requirements/base.txt
     #   kombu
