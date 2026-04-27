@@ -20,7 +20,7 @@ camel-converter[pydantic]==5.1.0
     # via meilisearch
 celery==5.6.3
     # via event-tracking
-certifi==2026.2.25
+certifi==2026.4.22
     # via
     #   elasticsearch
     #   httpcore
@@ -30,7 +30,7 @@ cffi==2.0.0
     # via pynacl
 charset-normalizer==3.4.7
     # via requests
-click==8.3.2
+click==8.3.3
     # via
     #   celery
     #   click-didyoumean
@@ -87,7 +87,7 @@ elasticsearch==7.13.4
     #   -r requirements/base.in
 event-tracking==4.0.0
     # via -r requirements/base.in
-fastavro==1.12.1
+fastavro==1.12.2
     # via openedx-events
 h11==0.16.0
     # via httpcore
@@ -95,7 +95,7 @@ httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via typesense
-idna==3.11
+idna==3.13
     # via
     #   anyio
     #   httpx
@@ -106,11 +106,11 @@ kombu==5.6.2
     # via celery
 markupsafe==3.0.3
     # via jinja2
-meilisearch==0.40.0
+meilisearch==0.41.0
     # via -r requirements/base.in
-openedx-events==11.1.0
+openedx-events==11.2.0
     # via event-tracking
-packaging==26.0
+packaging==26.2
     # via kombu
 prompt-toolkit==3.0.52
     # via click-repl
@@ -118,11 +118,11 @@ psutil==7.2.2
     # via edx-django-utils
 pycparser==3.0
     # via cffi
-pydantic==2.12.5
+pydantic==2.13.3
     # via camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.3
     # via pydantic
-pymongo==4.16.0
+pymongo==4.17.0
     # via
     #   edx-opaque-keys
     #   event-tracking
@@ -164,7 +164,7 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via kombu
 tzlocal==5.3.1
     # via celery
