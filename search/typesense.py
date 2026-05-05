@@ -33,11 +33,14 @@ See the compatibility table: https://github.com/typesense/typesense-python#compa
 For more information about the Typesense API in Python, check
 https://github.com/typesense/typesense-python
 """
+import html as html_module
 import logging
+import re
 import typing as t
 
 from django.conf import settings
 from django.utils import timezone
+import httpx
 import typesense
 from typesense.sync.collection import Collection  # moved in typesense-python 2.0
 from typesense.exceptions import ObjectNotFound, RequestMalformed, ServerError
@@ -68,10 +71,10 @@ INDEX_CONFIGURATION = {
     COURSE_INFO_INDEX: {
         # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
-            {"name": "start", "type": "datetime", "optional": True},
-            {"name": "end", "type": "datetime", "optional": True},
-            {"name": "enrollment_start", "type": "datetime", "optional": True},
-            {"name": "enrollment_end", "type": "datetime", "optional": True},
+            {"name": "start", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "end", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "enrollment_start", "type": "datetime", "optional": True, "range_index": True},
+            {"name": "enrollment_end", "type": "datetime", "optional": True, "range_index": True},
             {"name": "org", "type": "string", "facet": True},
             {"name": "modes", "type": "string[]", "facet": True},
             {"name": "language", "type": "string", "facet": True, "optional": True},
@@ -87,7 +90,7 @@ INDEX_CONFIGURATION = {
     COURSE_CONTENT_INDEX: {
         # Most fields will be auto-created but some (datetimes, facet fields) need to be specified up front:
         "field_overrides": [
-            {"name": "start_date", "type": "datetime", "optional": True},
+            {"name": "start_date", "type": "datetime", "optional": True, "range_index": True},
             # Enable stemming for the "content" field, so that e.g.
             # searching for "run" will match "running", "runs", "ran".
             # Unfortunately, this could break indexing if non-string fields get
@@ -104,6 +107,10 @@ INDEX_CONFIGURATION = {
 }
 
 logger = logging.getLogger(__name__)
+
+# Maximum number of document IDs to include in a single filter-based delete request.
+# Larger batches produce a URL query string that exceeds httpx's length limit.
+_MAX_IDS_PER_DELETE_BATCH = 100
 
 
 class TypesenseEngine(SearchEngine):
@@ -170,6 +177,15 @@ class TypesenseEngine(SearchEngine):
         for field_config in index_config.get("field_overrides", []):
             if field_config.get("optional", False):
                 doc_with_nulls.setdefault(field_config["name"])
+        # Strip HTML tags from the nested 'content' field. XBlock index_dictionary()
+        # methods may return raw HTML markup; indexing tags as tokens wastes memory
+        # and degrades search quality.
+        # See: https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#html-content
+        if "content" in doc_with_nulls and isinstance(doc_with_nulls["content"], dict):
+            doc_with_nulls = {
+                **doc_with_nulls,
+                "content": _strip_html_from_content(doc_with_nulls["content"]),
+            }
         # Convert field types recursively, e.g. datetime->int64, NULL -> separate field:
         processed = convert_doc_datatypes(doc_with_nulls, record_nulls=True)
         return processed
@@ -208,9 +224,21 @@ class TypesenseEngine(SearchEngine):
         search_args = {"q": query_string, "query_by": query_by, **compiled_params}
         try:
             results = self.typesense_index.documents.search(search_args)
-        except RequestMalformed as err:
-            if "Query string exceeds max allowed length" in str(err):
-                # To do large queries (with complex filters), we need to use the multi-search endpoint:
+        except (RequestMalformed, httpx.InvalidURL) as err:
+            # Two failure modes indicate the filter/query string is too long to send as a GET request:
+            # - httpx.InvalidURL is raised client-side (before the request is sent) when the assembled
+            #   URL query string exceeds httpx's internal limit.
+            # - RequestMalformed with "Query string exceeds max allowed length" is returned by the
+            #   Typesense server when the query string passes the client but is too long server-side.
+            # In both cases we fall back to the multi-search endpoint, which uses POST and has no
+            # URL length constraint.
+            is_url_too_long = (
+                isinstance(err, httpx.InvalidURL) and "too long" in str(err).lower()
+            ) or (
+                isinstance(err, RequestMalformed)
+                and "Query string exceeds max allowed length" in str(err)
+            )
+            if is_url_too_long:
                 client = get_typesense_client()
                 multi_response = client.multi_search.perform({"searches": [{
                     "collection": self.typesense_index_name,
@@ -232,8 +260,11 @@ class TypesenseEngine(SearchEngine):
 
     def remove(self, doc_ids, **kwargs):
         """
-        Removing documents from the index is as simple as deleting the the documents
-        with the corresponding primary key.
+        Remove documents from the index by primary key.
+
+        Deletes are sent in batches of at most _MAX_IDS_PER_DELETE_BATCH to keep the
+        generated filter_by query string within URL length limits, since the Typesense
+        client sends delete parameters as URL query parameters.
         """
         logger.info(
             "Remove request: index=%s, doc_ids=%s kwargs=%s",
@@ -241,10 +272,13 @@ class TypesenseEngine(SearchEngine):
             doc_ids,
             kwargs,
         )
-        if doc_ids:
-            escaped_ids = [_escape_str(doc_id) for doc_id in doc_ids]
+        if not doc_ids:
+            return
+        escaped_ids = [_escape_str(doc_id) for doc_id in doc_ids]
+        for batch_start in range(0, len(escaped_ids), _MAX_IDS_PER_DELETE_BATCH):
+            batch = escaped_ids[batch_start:batch_start + _MAX_IDS_PER_DELETE_BATCH]
             self.typesense_index.documents.delete({
-                'filter_by': f'id: [{",".join(escaped_ids)}]'
+                'filter_by': f'id: [{",".join(batch)}]'
             })
 
 
@@ -331,6 +365,39 @@ def _escape_str(value: str):
     return f'`{value.replace("`", "")}`'
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _strip_html(text: str) -> str:
+    """
+    Remove HTML tags from *text* and unescape HTML entities.
+
+    Per the Typesense data-types guide, HTML content should be stripped to
+    plain text before indexing so that tags are not treated as searchable
+    tokens and do not bloat the in-memory index.
+    See: https://typesense.org/docs/guide/tips-for-searching-common-types-of-data.html#html-content
+    """
+    text = _HTML_TAG_RE.sub(" ", text)
+    text = html_module.unescape(text)
+    return " ".join(text.split())  # normalise whitespace
+
+
+def _strip_html_from_content(value: t.Any) -> t.Any:
+    """
+    Recursively walk *value* and strip HTML from any string leaves.
+
+    Intended for use only on the nested ``content`` field, where XBlock
+    ``index_dictionary()`` implementations may return raw HTML markup.
+    """
+    if isinstance(value, str):
+        return _strip_html(value)
+    if isinstance(value, dict):
+        return {k: _strip_html_from_content(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_strip_html_from_content(item) for item in value]
+    return value
+
+
 def get_search_params(
     field_dictionary=None,
     filter_dictionary=None,
@@ -360,9 +427,11 @@ def get_search_params(
         filters += get_filter_rules(field_dictionary)
     if filter_dictionary:
         filters += get_filter_rules(filter_dictionary, optional=True)
-    for key, values in exclude_dictionary.items():
-        # Ignore multiple values for this field, e.g. {"id": ["ignorethis1", "ignorethis2"]}
-        filters += [f"{key}:!=[{', '.join(_escape_str(value) for value in values)}]"]
+    if exclude_dictionary:
+        for key, values in exclude_dictionary.items():
+            # Use the documented "is not any of" operator: field:![val1, val2, ...]
+            # (not `!=[...]`, which is the single-value inequality operator with an array arg)
+            filters += [f"{key}:![{', '.join(_escape_str(value) for value in values)}]"]
     if filters:
         params["filter_by"] = " && ".join(filters)
 
