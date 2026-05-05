@@ -4,9 +4,13 @@ This is a django application to provide access to search services from within ed
 
 Searching is accomplished by creating an index of documents, and then searching within that index for matching information. This application provides a way to add documents to the index, and then search for them.
 
+## Meilisearch Engine
+
+edx-search includes full support for Meilisearch, and it is the default search engine in recent Open edX releases.
+
 ## Typesense Engine
 
-edx-search includes an optional `TypesenseEngine` backend (`search.typesense.TypesenseEngine`).
+edx-search includes an optional `TypesenseEngine` backend (`search.typesense.TypesenseEngine`), which can be used as an alternative to Meilisearch or Elasticsearch. See ["Use Typesense search backend"](https://docs.openedx.org/en/latest/site_ops/how-tos/use_typesense_search_backend.html) in the site operator documentation for instructions on setting it up, if you'd like to use it.
 
 ### Server version requirement
 
@@ -19,25 +23,6 @@ edx-search includes an optional `TypesenseEngine` backend (`search.typesense.Typ
 If you are running an older Typesense server you must upgrade it before deploying this version of edx-search.
 
 See the full compatibility table at https://github.com/typesense/typesense-python#compatibility.
-
-### Enabling the Typesense engine
-
-If you're using Tutor, the easiest way to use Typesense is to install [tutor-contrib-typesense](https://github.com/open-craft/tutor-contrib-typesense/). To configure it manually, you'll need to update these CMS/LMS settings:
-
-```python
-SEARCH_ENGINE = "search.typesense.TypesenseEngine"
-FORUM_SEARCH_BACKEND = "forum.search.typesense.TypesenseBackend"
-TYPESENSE_URLS = ["http://typesense:8108"]
-TYPESENSE_PUBLIC_URL = "http://typesense.example.com:8108"
-TYPESENSE_API_KEY: "..."
-```
-
-After switching, create the indices using the shell (no management command exists yet — see
-https://github.com/openedx/edx-platform/issues/36868 for the longer-term plan):
-
-```shell
-./manage.py lms shell -c "import search.typesense; search.typesense.create_indexes()"
-```
 
 ## SearchEngine
 The SearchEngine is an abstract object which may have multiple implementations. As of Verawood, there are four in existence:
