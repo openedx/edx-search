@@ -22,11 +22,16 @@ See the full compatibility table at https://github.com/typesense/typesense-pytho
 
 ### Enabling the Typesense engine
 
+If you're using Tutor, the easiest way to use Typesense is to install [tutor-contrib-typesense](https://github.com/open-craft/tutor-contrib-typesense/). To configure it manually, you'll need to update these CMS/LMS settings:
+
 ```python
 SEARCH_ENGINE = "search.typesense.TypesenseEngine"
+FORUM_SEARCH_BACKEND = "forum.search.typesense.TypesenseBackend"
+TYPESENSE_URLS = ["http://typesense:8108"]
+TYPESENSE_PUBLIC_URL = "http://typesense.example.com:8108"
+TYPESENSE_API_KEY: "..."
 ```
 
-You will also need to configure the Typesense connection in your Django settings (host, port, API key).
 After switching, create the indices using the shell (no management command exists yet — see
 https://github.com/openedx/edx-platform/issues/36868 for the longer-term plan):
 
