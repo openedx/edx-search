@@ -192,7 +192,7 @@ class TypesenseEngine(SearchEngine):
 
     def search(
         self,
-        query_string="",
+        query_string: str | None = "",
         field_dictionary=None,
         filter_dictionary=None,
         exclude_dictionary=None,
@@ -221,7 +221,7 @@ class TypesenseEngine(SearchEngine):
         # just using filters).
         index_config = INDEX_CONFIGURATION[self.index_name]
         query_by = index_config["query_fields"]
-        search_args = {"q": query_string, "query_by": query_by, **compiled_params}
+        search_args = {"q": query_string or "", "query_by": query_by, **compiled_params}
         try:
             results = self.typesense_index.documents.search(search_args)
         except (RequestMalformed, httpx.InvalidURL) as err:
