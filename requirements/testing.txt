@@ -8,15 +8,15 @@ amqp==5.3.1
     # via
     #   -r requirements/base.txt
     #   kombu
-annotated-types==0.7.0
+annotated-types==0.8.0
     # via
     #   -r requirements/base.txt
     #   pydantic
-anyio==4.13.0
+anyio==4.14.2
     # via
     #   -r requirements/base.txt
     #   httpx
-asgiref==3.11.1
+asgiref==3.12.1
     # via
     #   -r requirements/base.txt
     #   django
@@ -36,22 +36,22 @@ celery==5.6.3
     # via
     #   -r requirements/base.txt
     #   event-tracking
-certifi==2026.2.25
+certifi==2026.7.22
     # via
     #   -r requirements/base.txt
     #   elasticsearch
     #   httpcore
     #   httpx
     #   requests
-cffi==2.0.0
+cffi==2.1.0
     # via
     #   -r requirements/base.txt
     #   pynacl
-charset-normalizer==3.4.7
+charset-normalizer==3.4.9
     # via
     #   -r requirements/base.txt
     #   requests
-click==8.3.2
+click==8.4.2
     # via
     #   -r requirements/base.txt
     #   celery
@@ -76,7 +76,7 @@ code-annotations==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-toggles
-coverage[toml]==7.13.5
+coverage[toml]==7.15.2
     # via
     #   -r requirements/testing.in
     #   pytest-cov
@@ -130,9 +130,9 @@ elasticsearch==7.13.4
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.txt
-event-tracking==4.0.0
+event-tracking==4.0.2
     # via -r requirements/base.txt
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/base.txt
     #   openedx-events
@@ -148,7 +148,7 @@ httpx==0.28.1
     # via
     #   -r requirements/base.txt
     #   typesense
-idna==3.11
+idna==3.18
     # via
     #   -r requirements/base.txt
     #   anyio
@@ -168,15 +168,15 @@ markupsafe==3.0.3
     # via
     #   -r requirements/base.txt
     #   jinja2
-meilisearch==0.40.0
+meilisearch==0.43.0
     # via -r requirements/base.txt
 mock==5.2.0
     # via -r requirements/testing.in
-openedx-events==11.1.0
+openedx-events==11.2.0
     # via
     #   -r requirements/base.txt
     #   event-tracking
-packaging==26.0
+packaging==26.2
     # via
     #   -r requirements/base.txt
     #   kombu
@@ -185,7 +185,7 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-prompt-toolkit==3.0.52
+prompt-toolkit==3.0.53
     # via
     #   -r requirements/base.txt
     #   click-repl
@@ -197,17 +197,17 @@ pycparser==3.0
     # via
     #   -r requirements/base.txt
     #   cffi
-pydantic==2.12.5
+pydantic==2.13.4
     # via
     #   -r requirements/base.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.4
     # via
     #   -r requirements/base.txt
     #   pydantic
 pygments==2.20.0
     # via pytest
-pymongo==4.16.0
+pymongo==4.17.0
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
@@ -216,7 +216,7 @@ pynacl==1.6.2
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
-pytest==9.0.3
+pytest==9.1.1
     # via pytest-cov
 pytest-cov==7.1.0
     # via -r requirements/testing.in
@@ -228,7 +228,7 @@ python-slugify==8.0.4
     # via
     #   -r requirements/base.txt
     #   code-annotations
-pytz==2026.1.post1
+pytz==2026.3.post1
     # via
     #   -r requirements/base.txt
     #   event-tracking
@@ -236,7 +236,7 @@ pyyaml==6.0.3
     # via
     #   -r requirements/base.txt
     #   code-annotations
-requests==2.33.1
+requests==2.34.2
     # via
     #   -r requirements/base.txt
     #   meilisearch
@@ -250,7 +250,7 @@ sqlparse==0.5.5
     # via
     #   -r requirements/base.txt
     #   django
-stevedore==5.7.0
+stevedore==5.9.0
     # via
     #   -r requirements/base.txt
     #   code-annotations
@@ -262,7 +262,7 @@ text-unidecode==1.3
     #   python-slugify
 typesense==2.0.0
     # via -r requirements/base.txt
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   -r requirements/base.txt
     #   anyio
@@ -275,11 +275,11 @@ typing-inspection==0.4.2
     # via
     #   -r requirements/base.txt
     #   pydantic
-tzdata==2026.1
+tzdata==2026.3
     # via
     #   -r requirements/base.txt
     #   kombu
-tzlocal==5.3.1
+tzlocal==5.4.4
     # via
     #   -r requirements/base.txt
     #   celery
@@ -294,7 +294,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-wcwidth==0.6.0
+wcwidth==0.8.2
     # via
     #   -r requirements/base.txt
     #   prompt-toolkit
