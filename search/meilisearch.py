@@ -95,6 +95,7 @@ UTC_OFFSET_SUFFIX = "__utcoffset"
 # Note that index names are hard-coded here, because they are hardcoded anyway across all of edx-search.
 INDEX_FILTERABLES: dict[str, list[str]] = {
     getattr(settings, "COURSEWARE_INFO_INDEX_NAME", "course_info"): [
+        "course",
         "language",  # aggregate by language, mode, org
         "modes",
         "org",
