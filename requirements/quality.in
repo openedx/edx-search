@@ -1,8 +1,0 @@
-# Requirements for code quality checks
--c constraints.txt
-
--r testing.txt              # Core and testing dependencies for this package
-
-coverage
-edx-lint					# edX pylint rules and plugins
-pycodestyle
