@@ -577,13 +577,13 @@ def mixed_content_discovery(request):
 
         course_filters = set(course_field_dictionary.keys())
         program_filters = set(program_field_dictionary.keys())
-        # As the Learning paths' filters is a subset of the Courses' filters:
-        # IF we apply the filters only belong to the `course_index`, then we query only on the `course_index` Only:
-        if (isinstance(index_scope, list) and u'program' in index_scope
+        # Learning-path filters are a subset of course filters. When the request asks for
+        # both kinds, drop the kind that cannot apply the active filters. Never remove the
+        # last remaining kind (empty scope would be re-expanded to course+program).
+        if (isinstance(index_scope, list) and len(index_scope) > 1 and u'program' in index_scope
                 and (course_filters - program_filters) and not (program_filters - course_filters)):
             index_scope.remove(u'program')
-        # IF we apply the filters only belong to the `program_index`, then we query only on the `program_index` Only:
-        if (isinstance(index_scope, list) and u'course' in index_scope
+        if (isinstance(index_scope, list) and len(index_scope) > 1 and u'course' in index_scope
                 and (program_filters - course_filters) and not (course_filters - program_filters)):
             index_scope.remove(u'course')
 
