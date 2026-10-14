@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm>8.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edx-search"
+description = "Search and index routines for index access"
+requires-python = ">=3.12"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE*", "AUTHORS"]
+authors = [
+    {name = "Open edX Project", email = "oscm@openedx.org"},
+]
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Environment :: Web Environment',
+    'Intended Audience :: Developers',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.12',
+    'Framework :: Django',
+    'Framework :: Django :: 2.2',
+    'Framework :: Django :: 3.0',
+    'Framework :: Django :: 3.1',
+    'Framework :: Django :: 3.2',
+    'Framework :: Django :: 4.0',
+    'Framework :: Django :: 4.2',
+    'Framework :: Django :: 5.2',
+]
+dynamic = ["readme", "version"]
+
+dependencies = [
+    "Django",
+    "elasticsearch>=7.8.0,<8.0.0",
+    "edx-toggles",
+    "event-tracking",
+    "meilisearch",
+    "typesense",
+]
+
+[project.urls]
+Homepage = "https://github.com/openedx/edx-search"
+Repository = "https://github.com/openedx/edx-search"
+
+[dependency-groups]
+test-base = [
+    "coverage",
+    "pytest-cov",
+    "ddt",
+    "mock",
+]
+test = [
+    {include-group = "test-base"},
+    "Django>=5.2,<6.0",
+]
+django42 = [
+    {include-group = "test-base"},
+    "Django>=4.2,<5.0",
+]
+quality = [
+    {include-group = "test"},
+    "edx-lint",
+    "pycodestyle",
+]
+ci = [
+    "tox",
+    "tox-uv",
+]
+dev = [
+    {include-group = "quality"},
+    {include-group = "ci"},
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+readme = {file = ["README.md"], content-type = "text/markdown"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.semantic_release]
+build_command = "pip install build && SETUPTOOLS_SCM_PRETEND_VERSION=$NEW_VERSION python -m build"
+
+[tool.setuptools_scm]
+version_scheme = 'only-version'
+local_scheme = 'no-local-version'
+fallback_version = "0.0.0.dev0"
+
+[tool.uv]
+package = true
+conflicts = [
+    [{group = "test"}, {group = "django42"}],
+]
+constraint-dependencies = [
+    "Django<6.0",
+    "elasticsearch<7.14.0",
+    "social-auth-app-django<6.0.0",
+    "social-auth-core<5.0.0",
+    "pip<26.2.1",
+    "ddt<1.4.0",
+]
+
+[tool.edx_lint]
+uv_constraints = [
+    # ddt >= 1.4.0 causing test failures
+    "ddt<1.4.0",
+]
+
+[tool.coverage.run]
+branch = true
+source_pkgs = ["search"]
