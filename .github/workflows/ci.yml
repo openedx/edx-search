@@ -1,19 +1,17 @@
 name: Python CI
 
 on:
-  push:
-    branches: [master]
   pull_request:
     branches:
     - '**'
+  workflow_call:
 
 jobs:
   run_tests:
-    name: Tests
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.toxenv }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest]
         python-version: ['3.12']
         toxenv: [django42, django52, quality]
 
@@ -21,11 +19,13 @@ jobs:
       MEILISEARCH_URL: http://localhost:7700
 
     steps:
-    - uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
-    - name: setup python
-      uses: actions/setup-python@e9aba2c848f5ebd159c070c61ea2c4e2b122355e # v2.3.4
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
-        python-version: ${{ matrix.python-version }}
+        enable-cache: true
+        python-version: "${{ matrix.python-version }}"
 
     - name: Start Meilisearch
       run: make meili-up
@@ -33,24 +33,17 @@ jobs:
     - name: Start Elasticsearch
       run: make elastic-up
 
-    - name: Install pip and pip-tools
-      run: pip install -r requirements/pip-tools.txt
-
-    - name: Install Dependencies
-      run: |
-        pip install setuptools
-        pip install -r requirements/ci.txt
+    - name: Install CI dependencies
+      run: uv sync --locked --group ci
 
     - name: Run Tests
-      env:
-        TOXENV: ${{ matrix.toxenv }}
       # Sleep is needed to give elasticsearch enough time to startup.
       # Longer term we should switch to the upstream ES github action to start up the server
-      run: sleep 10 && tox
+      run: sleep 10 && uv run tox -e ${{ matrix.toxenv }}
 
     - name: Run Coverage
-      if: matrix.python-version == '3.12' && matrix.toxenv=='django52'
-      uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
+      if: matrix.toxenv == 'django52' && matrix.python-version == '3.12'
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: true
