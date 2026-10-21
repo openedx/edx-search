@@ -20,7 +20,7 @@ camel-converter[pydantic]==5.1.0
     # via meilisearch
 celery==5.6.3
     # via event-tracking
-certifi==2026.2.25
+certifi==2026.10.19
     # via
     #   elasticsearch
     #   httpcore

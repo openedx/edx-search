@@ -36,7 +36,7 @@ celery==5.6.3
     # via
     #   -r requirements/base.txt
     #   event-tracking
-certifi==2026.2.25
+certifi==2026.10.19
     # via
     #   -r requirements/base.txt
     #   elasticsearch
