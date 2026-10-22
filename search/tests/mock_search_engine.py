@@ -147,6 +147,30 @@ def _process_exclude_dictionary(documents_to_search, exclude_dictionary):
     return documents_to_search
 
 
+def _process_targeting_gate(documents_to_search, targeting_gate):
+    """
+    Keep documents when flag is not true, or when key is in allowed.
+
+    Mirrors ``search.elastic._process_targeting_gate`` for unit tests without ES.
+    """
+    if not targeting_gate:
+        return documents_to_search
+
+    flag_field = targeting_gate.get('flag_field')
+    key_field = targeting_gate.get('key_field')
+    if not flag_field or not key_field:
+        return documents_to_search
+
+    allowed = set(targeting_gate.get('allowed') or [])
+
+    def keep(document):
+        if not document.get(flag_field):
+            return True
+        return document.get(key_field) in allowed
+
+    return [document for document in documents_to_search if keep(document)]
+
+
 def _count_facet_values(documents, facet_terms):
     """
     Calculate the counts for the facets provided:
@@ -338,6 +362,7 @@ class MockSearchEngine(SearchEngine):
                filter_dictionary=None,
                exclude_dictionary=None,
                facet_terms=None,
+               targeting_gate=None,
                **kwargs):  # pylint: disable=too-many-arguments
         """ Perform search upon documents within index """
         if MockSearchEngine._disabled:
@@ -375,6 +400,9 @@ class MockSearchEngine(SearchEngine):
 
         if exclude_dictionary:
             documents_to_search = _process_exclude_dictionary(documents_to_search, exclude_dictionary)
+
+        if targeting_gate:
+            documents_to_search = _process_targeting_gate(documents_to_search, targeting_gate)
 
         # Finally, find duplicates and give them a higher score
         def score_documents(documents_to_search):

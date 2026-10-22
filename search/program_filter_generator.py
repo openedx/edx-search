@@ -31,19 +31,35 @@ class SearchFilterGenerator(object):
         """ base implementation which excludes nothing """
         return {}
 
+    def targeting_gate(self, **kwargs):
+        """
+        Optional audience-targeting gate for Learning Path catalog discovery.
+
+        See ``search.filter_generator.SearchFilterGenerator.targeting_gate``.
+        """
+        return None
+
+    @classmethod
+    def _load_generator(cls):
+        return _load_class(
+            getattr(settings, "PROGRAM_SEARCH_FILTER_GENERATOR", None),
+            cls
+        )()
+
     @classmethod
     def generate_field_filters(cls, **kwargs):
         """
         Called from within search handler
         Finds desired subclass and adds filter information based upon user information
         """
-        generator = _load_class(
-            getattr(settings, "PROGRAM_SEARCH_FILTER_GENERATOR", None),
-            cls
-        )()
-
+        generator = cls._load_generator()
         return (
             generator.field_dictionary(**kwargs),
             generator.filter_dictionary(**kwargs),
             generator.exclude_dictionary(**kwargs),
         )
+
+    @classmethod
+    def generate_targeting_gate(cls, **kwargs):
+        """Return the audience-targeting gate from the configured generator (or None)."""
+        return cls._load_generator().targeting_gate(**kwargs)

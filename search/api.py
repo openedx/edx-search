@@ -381,7 +381,8 @@ def course_discovery_search(search_terms=None, size=20, from_=0, field_dictionar
         exclude_dictionary=exclude_dictionary,
         facet_terms=course_discovery_facets(),
         sort=sort_args,
-        ga_total=kwargs.pop('ga_total', False)
+        ga_total=kwargs.pop('ga_total', False),
+        targeting_gate=CourseSearchFilterGenerator.generate_targeting_gate(**kwargs),
     )
 
     return process_range_data(results)
@@ -501,6 +502,7 @@ def mixed_content_discovery_search(
         use_field_dictionary,
         filter_dictionary,
         exclude_dictionary,
+        targeting_gate=CourseSearchFilterGenerator.generate_targeting_gate(**course_kwargs),
     )
 
     # --- program branch (query/filter only; sort is always _mixed_sort_for_cross_index) ---
@@ -542,6 +544,7 @@ def mixed_content_discovery_search(
         use_field_dictionary,
         filter_dictionary,
         exclude_dictionary,
+        targeting_gate=ProgramSearchFilterGenerator.generate_targeting_gate(**program_kwargs),
     )
 
     scopes = _normalize_index_scope(index_scope)
@@ -621,7 +624,8 @@ def programs_discovery_search(search_terms=None, size=20, from_=0, field_diction
         exclude_dictionary=exclude_dictionary,
         facet_terms=program_discovery_facets(),
         sort=sort_args,
-        ga_total=kwargs.pop('ga_total', False)
+        ga_total=kwargs.pop('ga_total', False),
+        targeting_gate=ProgramSearchFilterGenerator.generate_targeting_gate(**kwargs),
     )
 
     return process_range_data(results)

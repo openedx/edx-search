@@ -400,7 +400,7 @@ def program_discovery(request):
             size=size,
             from_=from_,
             field_dictionary=field_dictionary,
-            # user=request.user,
+            user=request.user,
             include_course_filter=True,
             sort_type=request.POST.get('sort_type')
         )
@@ -596,6 +596,7 @@ def mixed_content_discovery(request):
             program_field_dictionary=program_field_dictionary,
             sort_type=request.POST.get('sort_type'),
             index_scope=index_scope,
+            user=request.user,
         )
 
         merged_results = []

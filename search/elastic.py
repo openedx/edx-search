@@ -170,13 +170,49 @@ def _process_exclude_dictionary(exclude_dictionary):
     }
 
 
+def _process_targeting_gate(targeting_gate):
+    """
+    Build an ES filter that enforces audience-targeting discoverability.
+
+    ``targeting_gate`` is a dict with ``flag_field``, ``key_field``, and ``allowed``
+    (list of content ids the learner may see when the flag is set).
+
+    A document is kept when ``flag_field`` is not true (false or missing), or when
+    its ``key_field`` value is in ``allowed``. Flagged documents whose key is not
+    allowed are hidden. An empty ``allowed`` list hides every flagged document.
+    """
+    if not targeting_gate:
+        return {}
+
+    flag_field = targeting_gate.get('flag_field')
+    key_field = targeting_gate.get('key_field')
+    if not flag_field or not key_field:
+        return {}
+
+    allowed = list(targeting_gate.get('allowed') or [])
+    or_clauses = [
+        {
+            "not": {
+                "filter": {
+                    "term": {flag_field: True}
+                }
+            }
+        }
+    ]
+    if allowed:
+        or_clauses.append({"terms": {key_field: allowed}})
+
+    return {"or": or_clauses}
+
+
 def build_elasticsearch_query_dict(
         query_strings=None,
         field_dictionary=None,
         filter_dictionary=None,
         exclude_dictionary=None,
         exclude_ids=None,
-        use_field_match=False
+        use_field_match=False,
+        targeting_gate=None,
     ):
     """
     Build the Elasticsearch ``query`` object (inner body) used by ``search``,
@@ -236,6 +272,10 @@ def build_elasticsearch_query_dict(
 
     if exclude_dictionary:
         elastic_filters.append(_process_exclude_dictionary(exclude_dictionary))
+
+    targeting_filter = _process_targeting_gate(targeting_gate)
+    if targeting_filter:
+        elastic_filters.append(targeting_filter)
 
     query_segment = {
         "match_all": {}
@@ -691,6 +731,7 @@ class ElasticSearchEngine(SearchEngine):
                facet_terms=None,
                exclude_ids=None,
                use_field_match=False,
+               targeting_gate=None,
                **kwargs):  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, arguments-differ
         """
         Implements call to search the index for the desired content.
@@ -727,6 +768,10 @@ class ElasticSearchEngine(SearchEngine):
             use_field_match (bool): flag to indicate whether to use elastic
             filtering or elastic matching for field matches - this is nothing but a
             potential performance tune for certain queries
+
+            targeting_gate (dict): optional audience-targeting gate
+            (``flag_field``, ``key_field``, ``allowed``). When set, documents with
+            ``flag_field`` true are kept only if ``key_field`` is in ``allowed``.
 
             (deprecated) exclude_ids (list): list of id values to exclude from the results -
             useful for finding maches that aren't "one of these"
@@ -792,7 +837,8 @@ class ElasticSearchEngine(SearchEngine):
                 filter_dictionary=filter_dictionary,
                 exclude_dictionary=exclude_dictionary,
                 exclude_ids=exclude_ids,
-                use_field_match=use_field_match
+                use_field_match=use_field_match,
+                targeting_gate=targeting_gate,
             ),
         }
         if facet_terms:
