@@ -284,7 +284,7 @@ packaging==26.0
     #   pytest
     #   tox
     #   wheel
-pip-tools==7.5.3
+pip-tools==7.6.2
     # via -r requirements/pip-tools.txt
 platformdirs==4.9.4
     # via
