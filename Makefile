@@ -12,14 +12,13 @@ clean:
 	rm -fr *.egg-info
 
 quality-python: ## Run python linters
-	pycodestyle --config=.pep8 manage.py search edxsearch/settings.py setup.py
-	pylint --rcfile=pylintrc manage.py search edxsearch/settings.py setup.py
+	pycodestyle --config=.pep8 manage.py src/search src/edxsearch/settings.py
+	pylint --rcfile=pylintrc manage.py src/search src/edxsearch/settings.py
 
 quality: quality-python
 
-requirements:
-	pip install -qr requirements/pip-tools.txt
-	pip install -r requirements/dev.txt
+requirements: ## install development environment requirements
+	uv sync --locked --group dev
 
 validate: clean
 	tox
@@ -31,26 +30,12 @@ test.stop_elasticsearch:
 	docker compose stop
 
 test_with_es: clean test.start_elasticsearch
-	coverage run --source='.' manage.py test
+	coverage run --source='.' manage.py test search
 	make test.stop_elasticsearch
 
-compile-requirements: export CUSTOM_COMPILE_COMMAND=make upgrade
-compile-requirements: ## Re-compile *.in requirements to *.txt (without upgrading)
-	pip install -qr requirements/pip-tools.txt
-	# Make sure to compile files after any other files they include!
-	pip-compile --rebuild --allow-unsafe ${COMPILE_OPTS} -o requirements/pip-tools.txt requirements/pip-tools.in
-	pip install -qr requirements/pip-tools.txt
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/base.txt requirements/base.in
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/testing.txt requirements/testing.in
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/quality.txt requirements/quality.in
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/ci.txt requirements/ci.in
-	pip-compile --rebuild ${COMPILE_OPTS} -o requirements/dev.txt requirements/dev.in
-	# Let tox control the Django version for tests
-	sed '/^[dD]jango==/d' requirements/testing.txt > requirements/testing.tmp
-	mv requirements/testing.tmp requirements/testing.txt
-
-upgrade: ## update the requirements/*.txt files with the latest packages satisfying requirements/*.in
-	$(MAKE) compile-requirements COMPILE_OPTS="--upgrade"
+upgrade: ## update python dependencies
+	uv run --with edx-lint edx_lint write_uv_constraints pyproject.toml
+	uv lock --upgrade
 
 test: test_with_es ## run tests and generate coverage report
 
@@ -59,7 +44,7 @@ install-local: ## installs your local edx-search into the LMS and CMS python vir
 	docker exec -t edx.devstack.cms bash -c '. /edx/app/edxapp/venvs/edxapp/bin/activate && cd /edx/app/edxapp/edx-platform && pip uninstall -y edx-search && pip install -e /edx/src/edx-search && pip freeze | grep edx-search'
 
 test-all: create-test-network meili-up elastic-up
-	@MEILISEARCH_MASTER_KEY=test_master_key python manage.py test || true
+	@MEILISEARCH_MASTER_KEY=test_master_key python manage.py test search || true
 	@$(MAKE) meili-down
 	@$(MAKE) elastic-down
 
