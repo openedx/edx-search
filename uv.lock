@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 conflicts = [[
     { package = "edx-search", group = "django42" },
@@ -49,7 +49,7 @@ version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.15'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/d2/f4d173e22df740bc37b1db102b386ba719b66e95b0f0d751f556b387e6d2/anyio-4.15.1.tar.gz", hash = "sha256:9f28306018cbd6d329e64a36d58256edff76dd996fe423bc957326e578b82a94", size = 276966, upload-time = "2026-09-05T10:42:39.44Z" }
 wheels = [
@@ -149,7 +149,7 @@ name = "cffi"
 version = "2.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pycparser", marker = "implementation_name != 'PyPy' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "pycparser", marker = "implementation_name != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/9e/ef/008a1939e372c06329a3fce4279c02f328488f3526744906eeec3da7ad5f/cffi-2.1.1.tar.gz", hash = "sha256:dd31f52ea1086513bb9df30f8fcee9b8918323ae067a3d5b78bc826a000712be", size = 530807, upload-time = "2026-08-03T21:21:18.939Z" }
 wheels = [
@@ -591,7 +591,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "asgiref" },
     { name = "sqlparse" },
-    { name = "tzdata", marker = "(sys_platform == 'win32' and extra == 'group-10-edx-search-dev') or (sys_platform == 'win32' and extra != 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "tzdata", marker = "(sys_platform == 'win32' and extra != 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d5/d8/43e9d000519adceb189620b6869ff88031e046df91c2e9da72f8f6918399/django-5.2.17.tar.gz", hash = "sha256:9d4d93be539a18ab80d058eb515900e10951e04c537c5a6b394fc49528d3251f", size = 10889740, upload-time = "2026-08-04T15:04:03.173Z" }
 wheels = [
@@ -604,7 +604,7 @@ version = "0.7.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/34/1d/c56588f67130aeef8828e47535e8551337d2ae02f91f1414da61bc5e49fb/django-crum-0.7.9.tar.gz", hash = "sha256:65e9bc0f070a663fafc4d9e357f45fd4e6f01838b20a9e2fb7670f5706754288", size = 5168, upload-time = "2020-11-10T17:15:35.124Z" }
 wheels = [
@@ -617,7 +617,7 @@ version = "5.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/22/e1/6f533da0d4ac89f427dfd9410e39bfc14ae3a23335ecd549d76be4b2a834/django_waffle-5.0.0.tar.gz", hash = "sha256:62f9d00eedf68dafb82657beab56e601bddedc1ea1ccfef91d83df8658708509", size = 37761, upload-time = "2025-06-12T07:38:54.895Z" }
 wheels = [
@@ -653,7 +653,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
     { name = "django-crum" },
     { name = "django-waffle" },
     { name = "psutil" },
@@ -703,11 +703,11 @@ name = "edx-search"
 source = { editable = "." }
 dependencies = [
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
     { name = "edx-toggles" },
     { name = "elasticsearch" },
     { name = "event-tracking", version = "4.0.2", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "event-tracking", version = "4.1.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "event-tracking", version = "4.1.3", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
     { name = "meilisearch" },
     { name = "typesense" },
 ]
@@ -821,7 +821,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "code-annotations" },
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
     { name = "django-crum" },
     { name = "django-waffle" },
     { name = "edx-django-utils" },
@@ -868,14 +868,14 @@ name = "event-tracking"
 version = "4.1.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "celery", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "edx-django-utils", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "edx-toggles", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "openedx-events", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "pymongo", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "pytz", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
-    { name = "six", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "celery", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "edx-django-utils", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "edx-toggles", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "openedx-events", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "pymongo", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "pytz", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
+    { name = "six", marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cb/7a/ae4014aa06e525dfab6c95871f0385a4c02fe584123dd7be5897f7daa9d0/event_tracking-4.1.3.tar.gz", hash = "sha256:07c700158be45174b93d443b7d920f466eab6e34b51f0e839524b061ddc61d4e", size = 139788, upload-time = "2026-09-02T13:03:39.598Z" }
 wheels = [
@@ -923,11 +923,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "4.0.3"
+version = "4.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4f/b8/9ba8f569df649beb7058db5eb392a5f779bdbc3b82cf3942f0be439fb99e/filelock-4.0.3.tar.gz", hash = "sha256:87296d60478e14204fd9406e79831400fef76693bae2895deec236c98e87a8aa", size = 244309, upload-time = "2026-09-23T23:40:22.569Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/98/771d8ca889f220d7d7e352addf500666368f0fd081c6080a83767580c6e4/filelock-4.2.1.tar.gz", hash = "sha256:c4c937ccac2a813cee448e662a56366cfb374c0f8702e75f295c412cc1c5d5a3", size = 650997, upload-time = "2026-10-17T16:48:14.435Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/6d/db8b86e168fef0cf904737e275bccb683558088ef971e92d3b41ce980699/filelock-4.0.3-py3-none-any.whl", hash = "sha256:30cd166e2aee2c7534ce2c33c6367c4cd051b8368e20e2c4eb0c34f699bacfab", size = 108444, upload-time = "2026-09-23T23:40:20.819Z" },
+    { url = "https://files.pythonhosted.org/packages/28/00/db89d339bc4ecdc8087fa7b8607ba22ffc27bf96286f340c9620bea428b3/filelock-4.2.1-py3-none-any.whl", hash = "sha256:7be2662e9e826b9bba28afc0f843a123280d799a2ea44bb5d35ccec67905ae44", size = 162455, upload-time = "2026-10-17T16:48:12.937Z" },
 ]
 
 [[package]]
@@ -1161,7 +1161,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "django", version = "4.2.30", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-django42'" },
-    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "django", version = "5.2.17", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'group-10-edx-search-dev' or extra != 'group-10-edx-search-django42' or extra == 'group-10-edx-search-quality' or extra == 'group-10-edx-search-test'" },
     { name = "edx-ccx-keys" },
     { name = "edx-django-utils" },
     { name = "edx-opaque-keys" },
@@ -1467,7 +1467,7 @@ name = "pynacl"
 version = "1.6.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "platform_python_implementation != 'PyPy' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "cffi", marker = "platform_python_implementation != 'PyPy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/9a/4019b524b03a13438637b11538c82781a5eda427394380381af8f04f467a/pynacl-1.6.2.tar.gz", hash = "sha256:018494d6d696ae03c7e656e5e74cdfd8ea1326962cc401bcf018f1ed8436811c", size = 3511692, upload-time = "2026-01-01T17:48:10.851Z" }
 wheels = [
@@ -1514,7 +1514,7 @@ name = "pytest"
 version = "9.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -1722,7 +1722,7 @@ dependencies = [
     { name = "pyproject-api" },
     { name = "python-discovery" },
     { name = "tomli-w" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "virtualenv" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6f/88/b0fff358c90fc49e0e619604d17b1edd26ab931853ed73a559f3b5bdf0c8/tox-4.64.1.tar.gz", hash = "sha256:d10dd88c32e9f15f0ec831f9ebacb9b253f671fd1287d49bead2852fc6225271", size = 314417, upload-time = "2026-09-24T01:25:03.947Z" }
@@ -1803,7 +1803,7 @@ name = "tzlocal"
 version = "5.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "tzdata", marker = "sys_platform == 'win32' or (extra == 'group-10-edx-search-dev' and extra == 'group-10-edx-search-django42') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-quality') or (extra == 'group-10-edx-search-django42' and extra == 'group-10-edx-search-test')" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/81/5b/879b2f932adfa7a053c360d50bc896c977fa6426109185f7c12ebdd0cb9d/tzlocal-5.4.4.tar.gz", hash = "sha256:8dbb8660838688a7b6ba4fed31d18dedf842afb4d47ca050d6d891c2c15f3be4", size = 31170, upload-time = "2026-06-29T08:03:40.026Z" }
 wheels = [
