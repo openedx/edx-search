@@ -27,7 +27,7 @@ then run the `create_indexes()` function again, as indicated above.
 This search engine was tested for the following indexes:
 
 1. course_info ("course discovery"):
-    - Enable the course discovery feature: FEATURES["ENABLE_COURSE_DISCOVERY"] = True
+    - Enable the course discovery feature: ENABLE_COURSE_DISCOVERY = True
     - A search bar appears in the LMS landing page.
     - Content is automatically indexed every time a course's "schedule & details" are
       edited in the studio, course content is edited or the "reindex" button is clicked.
@@ -39,8 +39,8 @@ This search engine was tested for the following indexes:
 
     - Enable the following feature flags:
 
-        FEATURES["ENABLE_COURSEWARE_INDEX"] = True
-        FEATURES["ENABLE_COURSEWARE_SEARCH"] = True
+        ENABLE_COURSEWARE_INDEX = True
+        ENABLE_COURSEWARE_SEARCH = True
 
     - Courseware content will be indexed by editing course sections and units.
     - Alternatively, click the "Reindex" button in the Studio.
